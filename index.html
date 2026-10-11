@@ -1,0 +1,1875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#170f28">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orbwork">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%}
+body{margin:0;font:14px system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Orbwork</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: one-screen toy board. Compact HUD (label + icon buttons), hint line, felt tray filling the rest; sheets for Map and Notebook. */
+:root{
+  --felt:#2a1e45; --felt-deep:#170f28;
+  --brass:#e6b95c; --brass-dim:#8a672b; --ink:#f5eeff; --muted:#a698c4; --panel:#2c2049; --line:#43345f; --good:#7ee2b8; --bad:#ff7a9c;
+  --font-display:'Lilita One','Arial Rounded MT Bold',system-ui,sans-serif;
+  --font-body:'Nunito',ui-rounded,system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--felt-deep);color:var(--ink);font-family:var(--font-body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.app{height:100%;display:flex;flex-direction:column;gap:6px;padding-inline:16px;padding-block:8px;box-sizing:border-box}
+.hud{display:flex;align-items:center;gap:8px}
+.lvl{display:flex;flex-direction:column;line-height:1.15;min-width:0;flex:1}
+.lvl .w{font-size:.7rem;color:var(--brass);font-weight:800;text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvl b{font-family:var(--font-display);font-weight:400;font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvl .mv{font-size:.75rem;color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums}
+.lvl .mv b{font-family:var(--font-body);font-size:.75rem;color:var(--ink)}
+.btns{display:flex;gap:5px;flex:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.ib{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;min-width:40px;padding:0 10px;box-sizing:border-box;background:transparent;border:1px solid var(--line);border-radius:999px;font-weight:800;font-size:.82rem;color:var(--ink)}
+.ib svg{width:18px;height:18px;flex:none}
+.ib:hover:not(:disabled){border-color:var(--brass)}
+.ib:disabled{opacity:.35;cursor:default}
+.ib .t{display:none}
+@media (min-width:720px){.ib .t{display:inline}}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-weight:800;font-size:.85rem;color:var(--ink)}
+.ghost:hover{border-color:var(--brass)}
+.solid{background:var(--brass);border:0;border-radius:999px;padding:10px 20px;font-weight:800;color:#2a1a05}
+.hint{margin:0;font-size:.86rem;color:var(--muted);min-height:1.2em;font-weight:700;line-height:1.3}
+.hint b{color:var(--brass)}
+.stage{flex:1;min-height:0;position:relative}
+#field{display:block;width:100%;height:100%;border-radius:18px;touch-action:none;background:var(--felt);box-shadow:inset 0 0 0 1px var(--line)}
+.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--brass-dim);border-radius:14px;padding:9px 14px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 10px 30px rgba(0,0,0,.45);pointer-events:none;animation:drop .3s ease-out;width:max-content;max-width:calc(100% - 24px);text-align:center;z-index:2}
+.toast .k{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--brass);font-weight:800}
+.toast .v{font-weight:800;font-size:.92rem;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;text-wrap:balance}
+@keyframes drop{from{transform:translate(-50%,-12px);opacity:0}}
+svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
+.ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(14,8,26,.55);border-radius:18px;z-index:3}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:340px;width:100%;box-sizing:border-box;box-shadow:0 20px 50px rgba(0,0,0,.5);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.card h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:1.6rem;color:var(--brass);text-wrap:balance}
+.card p{margin:0;color:var(--muted);font-weight:700}
+.stars{font-size:2rem;letter-spacing:.15em;color:var(--brass)}
+.off{color:var(--line)}
+.row2{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.sheet{position:fixed;inset:0;background:rgba(10,6,20,.7);display:flex;align-items:center;justify-content:center;padding:12px;z-index:5}
+.sheet-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;overflow:hidden}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.sheet-head h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:1.4rem;color:var(--brass)}
+.sheet-body{overflow:auto;padding:10px 16px 16px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:800;font-size:.8rem;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--brass);color:var(--ink)}
+.box{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:7px}
+.box h3{margin:0;font-family:var(--font-display);font-weight:400;font-size:1.15rem;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.box h3 .l{display:flex;align-items:center;gap:8px}
+.box h3 small{font-family:var(--font-body);font-size:.78rem;color:var(--muted);font-weight:800}
+.box.locked{opacity:.5}
+.box p{margin:0;color:var(--muted);font-weight:700;font-size:.88rem}
+.box ul{margin:0;padding-left:1.1em;font-weight:700;font-size:.9rem;line-height:1.45}
+.unk{font-size:.86rem;color:var(--muted);font-weight:700;font-style:italic}
+.seen{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted);font-weight:800}
+.seen span{display:inline-flex;align-items:center;gap:3px}
+.seen .x{color:var(--bad)}
+.aff{display:grid;grid-template-columns:auto repeat(3,1.9em);gap:4px;align-items:center;justify-items:center;font-weight:800;font-size:.9rem;width:max-content}
+.aff .ok{color:var(--good)} .aff .no{color:var(--bad)} .aff .q{color:var(--line)}
+.sheet-foot{padding:10px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.8rem;color:var(--muted);font-weight:700}
+.danger{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.8rem;font-weight:800;color:var(--muted)}
+.danger.armed{border-color:var(--bad);color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.lv{background:transparent;border:1px solid var(--line);border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;gap:2px;align-items:center}
+.lv b{font-family:var(--font-display);font-weight:400;font-size:1.15rem}
+.lv i{font-style:normal;color:var(--brass);font-size:.72rem;letter-spacing:.06em}
+.lv.cur{border-color:var(--brass)}
+.lv.rmx{border-style:dashed}
+.dots{display:flex;gap:2px;height:6px}.dots span{width:6px;height:6px;border-radius:50%}
+.wdot{display:inline-block;width:.6em;height:.6em;border-radius:50%;flex:none}
+.rmx-head{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin-top:6px}.rmx-head b{font-family:var(--font-display);font-weight:400;color:var(--brass);font-size:1.05rem}.rmx-head span{font-size:.8rem;color:var(--muted);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;font-weight:800;color:var(--muted)}.legend>span{display:inline-flex;align-items:center;gap:5px}
+.lv:disabled{opacity:.35;cursor:default}
+@media (max-height:480px) and (orientation:landscape){.hint{display:none}.lvl .w{display:none}.app{padding-block:6px}}
+@media (prefers-reduced-motion:reduce){.toast,.card{animation:none}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="hud">
+    <div class="lvl"><span class="w" id="lvl-w">The Hatchery · Level 1</span><b id="lvl-name">First pop</b><span class="mv">Moves <b id="moves">0</b> · par <b id="par">1</b></span></div>
+    <div class="btns">
+      <button id="undo" class="ib" type="button" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span class="t">Undo</span></button>
+      <button id="restart" class="ib" type="button" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span class="t">Restart</span></button>
+      <button id="map-btn" class="ib" type="button" aria-label="Map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span class="t">Map</span></button>
+      <button id="nb-btn" class="ib" type="button" aria-label="Notebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg><span class="t">Notebook</span></button>
+      <button id="snd-btn" class="ib" type="button" aria-label="Sound on" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path id="snd-wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+    </div>
+  </header>
+  <p class="hint" id="hint"></p>
+  <main class="stage">
+    <canvas id="field" aria-label="Orbwork play field"></canvas>
+    <div class="toast" id="toast" hidden></div>
+    <div class="ov" id="done" hidden>
+      <div class="card">
+        <h2 id="done-title">Gate open</h2>
+        <div class="stars" id="done-stars"></div>
+        <p id="done-text"></p>
+        <div class="row2"><button class="ghost" id="done-retry" type="button">Replay</button><button class="solid" id="done-next" type="button">Next level</button></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="sheet" id="nb" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Notebook">
+    <div class="sheet-head"><h2>Notebook</h2><button class="ghost" id="nb-close" type="button">Close</button></div>
+    <div class="sheet-body"><div class="tabs" id="nb-tabs" role="tablist"></div><div id="nb-body" style="display:flex;flex-direction:column;gap:10px"></div></div>
+    <div class="sheet-foot"><span>What you learn carries into every level.</span><button class="danger" id="reset" type="button">Reset progress</button></div>
+  </div>
+</div>
+<div class="sheet" id="map" hidden>
+  <div class="sheet-card" role="dialog" aria-label="Map">
+    <div class="sheet-head"><h2>Map</h2><button class="ghost" id="map-close" type="button">Close</button></div>
+    <div class="sheet-body" id="map-body"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#field'), ctx = cv.getContext('2d');
+function mix(a,b,t){ const pa=parseInt(a.slice(1),16), pb=parseInt(b.slice(1),16);
+  const c=s=>Math.round(((pa>>s)&255)*(1-t)+((pb>>s)&255)*t); return '#'+((1<<24)|(c(16)<<16)|(c(8)<<8)|c(0)).toString(16).slice(1); }
+
+/* ======================= WORLD 1 · THE HATCHERY ======================= */
+const kindOf = t => t[0]==='p' ? 'pip' : t;
+const tier = t => t[0]==='p' ? +t.slice(1) : 0;
+const W1K = {
+  pip:{name:'Pip', hex:'#ffb02e', hi:'#fff0c4', lo:'#c25f00'},
+  tw:{name:'Twin', hex:'#ff5d8f', hi:'#ffd6e3', lo:'#a81f4b', glyph:'∞', bounce:.45},
+  sp:{name:'Split',hex:'#1fd1b8', hi:'#cafff5', lo:'#08726a', glyph:'ϟ'},
+  vo:{name:'Void', hex:'#4a2c94', hi:'#9d84e6', lo:'#140a2e', glyph:'◉', bounce:.12},
+  wi:{name:'Wild', hex:'#ece6ff', hi:'#ffffff', lo:'#8d98cc', glyph:'✦', sheen:true},
+};
+function react1(a,b){
+  const ka=kindOf(a), kb=kindOf(b);
+  if (ka==='pip' && kb==='pip') return (tier(a)===tier(b) && tier(a)<6) ? {out:['p'+(tier(a)+1)], verb:'fuse'} : {fail:'mismatch'};
+  const other = k => a===k ? b : (b===k ? a : null); let o;
+  if ((o=other('tw'))!==null) return o==='tw' ? {fail:'twin2'} : {out:[o,o], verb:'twin'};
+  if ((o=other('sp'))!==null) return (kindOf(o)==='pip' && tier(o)>=2) ? {out:['p'+(tier(o)-1),'p'+(tier(o)-1)], verb:'split'} : {fail:'splitf'};
+  if ((o=other('vo'))!==null) return kindOf(o)==='pip' ? {out: tier(o)>1 ? ['p'+(tier(o)-1)] : [], verb:'bite'} : {fail:'voidf'};
+  if ((o=other('wi'))!==null) return (kindOf(o)==='pip' && tier(o)<6) ? {out:['p'+(tier(o)+1)], verb:'wild'} : {fail:'wildf'};
+  return {fail:'none'};
+}
+const name1 = t => kindOf(t)==='pip' ? `${tier(t)} eye${tier(t)>1?'s':''}` : W1K[t].name;
+const W1 = {
+  id:'w1', name:'The Hatchery', short:'Hatchery', gateName:'Gate', bg:['#3a2a60','#1d1433'],
+  blurb:'Where every orbling starts out. Learn how the five kinds behave.',
+  gatePlate:['#7c8db0','#56658a','#353f5c'],
+  look(o){ const k=kindOf(o.t), d=W1K[k];
+    return {hex:d.hex, hi:d.hi, lo:d.lo, sheen:d.sheen, bounce:d.bounce||.3, face:k==='pip'?'pip':'glyph', n:tier(o.t), voice:k==='pip'?'pip'+tier(o.t):k}; },
+  radius(o){ return kindOf(o.t)==='pip' ? R*(.8+.1*tier(o.t)) : R; },
+  label:name1,
+  react(mt,ts){ const r=react1(ts[0],ts[1]); if(r.fail) return {fail:r.fail}; return {verb:r.verb, consume:true, spawn:r.out.map(t=>({t})), learn:[]}; },
+  accepts(req,o){ return req===o.t; },
+  reqLabel:name1,
+  ghost(req){ return req; },
+  seen(ts,res){ const key=ts.slice().sort().join('+'); S.seen['w1|'+key] = res.fail ? 'x' : (res.spawn.map(s=>s.t).join(',')||'-'); },
+  levels:[
+    {name:'First pop',     orbs:['p1','p1'],             gate:['p2'],           par:1, hint:'Drag both orbs into the <b>Press</b>.'},
+    {name:'Climb',         orbs:['p1','p1','p1','p1'],   gate:['p3'],           par:3, hint:'The <b>Gate</b> shows what it wants. Build up to it.'},
+    {name:'Odd one out',   orbs:['p1','p1','p2'],        gate:['p3'],           par:2, hint:'Not every pair gets along.'},
+    {name:'Meet Twin',     orbs:['tw','p2'],             gate:['p3'],           par:2, hint:'A new orb. Press it with something and watch.'},
+    {name:'Echoes',        orbs:['tw','tw','p1'],        gate:['p3'],           par:4, hint:''},
+    {name:'Meet Split',    orbs:['sp','p3'],             gate:['p2','p2'],      par:1, hint:'Another stranger. What does it do?'},
+    {name:'Spare parts',   orbs:['p3','sp','tw','p1'],   gate:['p2','p2','p2'], par:2, hint:'You won’t need everything.'},
+    {name:'Meet Void',     orbs:['vo','p3'],             gate:['p2'],           par:1, hint:'Careful with this one.'},
+    {name:'Bite and copy', orbs:['vo','tw','p3'],        gate:['p2','p2'],      par:2, hint:''},
+    {name:'Meet Wild',     orbs:['wi','p2'],             gate:['p3'],           par:1, hint:'Shiny. What does it match?'},
+    {name:'Wild card',     orbs:['wi','tw','p1'],        gate:['p3'],           par:3, hint:''},
+    {name:'Four',          orbs:['p1','tw','tw','wi'],   gate:['p4'],           par:5, hint:'Scarce orbs. Plan before you press.'},
+    {name:'Scarcity',      orbs:['p3','sp','vo','tw'],   gate:['p1','p1','p2'], par:3, hint:''},
+    {name:'Six',           orbs:['p3','tw','tw','wi'],   gate:['p6'],           par:5, hint:'The biggest pip there is.'},
+  ],
+};
+
+/* ======================= WORLD 2 · THE COMMONS ======================= */
+const C2 = {r:{hex:'#ff6b5a',name:'Red'}, b:{hex:'#4aa8ff',name:'Blue'}, y:{hex:'#ffd23f',name:'Yellow'}};
+const along = (a,b) => !((a==='r'&&b==='b')||(a==='b'&&b==='r'));
+const affKey = (a,b) => [a,b].sort().join('');
+const name2 = t => `${C2[t[0]].name} · ${t[1]==='h'?'happy':'grumpy'}`;
+const W2 = {
+  id:'w2', name:'The Commons', short:'Commons', gateName:'Friendship bench', bg:['#1f4a4f','#0f2427'],
+  blurb:'Orblings in three colors, with moods. Who gets along with whom?',
+  gatePlate:['#e48aa0','#b5566f','#7a2f45'],
+  look(o){ const happy=o.t[1]==='h'; return {hex:C2[o.t[0]].hex, face:'critter', mood:happy?'happy':'grumpy', tuft:true, bounce:happy?.42:.15, voice:happy?'happy':'grumpy'}; },
+  radius(){ return R; },
+  label:name2,
+  react(mt,ts){
+    if (mt==='meet'){ const [a,b]=ts;
+      if (a[1]==='g' && b[1]==='g') return {fail:'sulk'};
+      if (along(a[0],b[0])){ S.aff[affKey(a[0],b[0])]='ok'; return {verb:(a[1]==='g'||b[1]==='g')?'cheer':'friends', transform:[a[0]+'h',b[0]+'h'], hearts:true}; }
+      S.aff[affKey(a[0],b[0])]='no'; return {verb:'clash', transform:[a[0]+'g',b[0]+'g']}; }
+    if (mt==='camp'){ const h=ts.filter(t=>t[1]==='h').length, m=h>=2?'h':'g'; return {verb:'camp', transform:ts.map(t=>t[0]+m), hearts:m==='h'}; }
+    return {fail:'none'};
+  },
+  accepts(req,o){ return req==='any' || (req.length===1 && o.t[0]===req); },
+  reqLabel(req){ return req==='any' ? 'Anyone' : C2[req].name; },
+  ghost(req){ return req.length===1 ? req+'h' : null; },
+  validate(slots){
+    const ts=slots.map(o=>o.t);
+    for (let i=0;i<ts.length;i++) if (ts[i][1]==='g') return {fail:'benchMood', bad:[i], msg:'Too grumpy to sit'};
+    for (let i=0;i<ts.length-1;i++){ const a=ts[i][0], b=ts[i+1][0];
+      if (!along(a,b)){ S.aff[affKey(a,b)]='no'; return {fail:'benchClash', bad:[i,i+1], msg:'They won’t sit together'}; }
+      S.aff[affKey(a,b)]='ok'; }
+    return {ok:true};
+  },
+  seen(ts,res){ const key=ts.slice().sort().join('+'); S.seen['w2|'+key] = res.fail ? 'x' : res.transform.slice().sort().join(','); },
+  levels:[
+    {name:'Cheer up',        orbs:['yh','yg'],               machines:['meet'],              gate:['any','any'],               par:1, hint:'The bench wants two friends. Is everyone in the mood?'},
+    {name:'Clash',           orbs:['rh','bh','yg'],          machines:['meet'],              gate:['any','any','any'],         par:1, hint:'Three on one bench. Not every color gets along.'},
+    {name:'Bad influence',   orbs:['rh','bg','yh'],          machines:['meet'],              gate:['b','any'],                 par:1, hint:'A seat is saved for Blue. Pick who Blue meets carefully.'},
+    {name:'Campfire',        orbs:['bg','yh','yh'],          machines:['camp'],              gate:['any','any','any'],         par:1, hint:'Gather three around the <b>Campfire</b>.'},
+    {name:'Majority rules',  orbs:['rg','rg','rg','yh'],     machines:['meet','camp'],       gate:['r','r','r'],               par:3, hint:'Three grumpy Reds and one cheerful friend.'},
+    {name:'Guests of honor', orbs:['rh','bg','yg'],          machines:['meet'],              gate:['L:bh','any','any','L:rh'], par:1, hint:'Two guests already have seats. Fill the ones between them.'},
+    {name:'Peacemaker',      orbs:['rg','rg','bg','bg','yh'],machines:['meet','meet','camp'],gate:['any','any','any','any','any'], par:4, hint:'Everyone on one bench. Only one of them is smiling.'},
+  ],
+};
+
+/* ======================= WORLD 3 · THE NURSERY ======================= */
+const PH = {gold:{hex:'#ffb02e',name:'Gold'}, blue:{hex:'#4aa8ff',name:'Blue'}, red:{hex:'#ff4f6d',name:'Red'}, pink:{hex:'#ff9ec4',name:'Pink'}, white:{hex:'#f4f0ff',name:'White'}};
+const alle = t => t.slice(2);
+function phen(t){ const a=alle(t); if (t[0]==='G') return a.includes('G') ? 'gold' : 'blue'; return a==='RR' ? 'red' : a==='WW' ? 'white' : 'pink'; }
+const norm3 = (line,s) => line==='G' ? (s==='gG'?'Gg':s) : (s==='WR'?'RW':s);
+function summary(kids){ const c={}; kids.forEach(t=>{ const p=phen(t); c[p]=(c[p]||0)+1; });
+  return Object.keys(PH).filter(p=>c[p]).map(p=>`${c[p]} ${PH[p].name}`).join(' · '); }
+const W3 = {
+  id:'w3', name:'The Nursery', short:'Nursery', gateName:'Cradle', bg:['#36472a','#161f10'],
+  blurb:'Two families of orblings. Parents pass on hidden halves to their babies.',
+  gatePlate:['#f2e2c4','#cdb08a','#937652'],
+  look(o){ return {hex:PH[phen(o.t)].hex, face:'critter', mood:'happy', line:o.t[0], al:alle(o.t), baby:!!o.baby, known:!!o.known, bounce:o.baby?.45:.3, voice:o.baby?'baby':'adult'}; },
+  radius(o){ return o.baby ? R*.8 : R; },
+  label(t,o){ return PH[phen(t)].name + (o&&o.known?` (${alle(t)})`:'') + (o&&o.baby?' baby':''); },
+  react(mt,ts){
+    if (mt==='lens') return {verb:'lens', reveal:true};
+    if (mt==='nest'){ const [a,b]=ts; if (a[0]!==b[0]) return {fail:'species'};
+      const A=alle(a), B=alle(b), line=a[0];
+      const kids=[A[0]+B[0],A[0]+B[1],A[1]+B[0],A[1]+B[1]].map(s=>line+':'+norm3(line,s));
+      const pa=phen(a), pb=phen(b), pk=kids.map(phen), learn=['clutch'];
+      if (pa==='gold'&&pb==='gold'&&pk.includes('blue')) learn.push('hidden');
+      if (pa==='blue'&&pb==='blue') learn.push('bluepure');
+      if ((pa==='red'&&pb==='white')||(pa==='white'&&pb==='red')) learn.push('blend');
+      if (pa==='pink'&&pb==='pink') learn.push('unblend');
+      return {verb:null, grow:true, spawn:kids.map(t=>({t,baby:true})), learn}; }
+    return {fail:'none'};
+  },
+  accepts(req,o){ return req==='GG' ? phen(o.t)==='gold' : phen(o.t)===req; },
+  reqLabel(req){ return req==='GG' ? 'Pure gold' : PH[req].name; },
+  ghost(req){ return ({GG:'G:GG',gold:'G:G?',blue:'G:gg',red:'P:RR',pink:'P:RW',white:'P:WW'})[req]; },
+  validate(slots,req){
+    for (let i=0;i<slots.length;i++) if (req[i]==='GG' && slots[i].t!=='G:GG') return {fail:'pure', bad:[i], msg:'That one carries Blue'};
+    return {ok:true};
+  },
+  seen(ts,res){ if (ts.length!==2) return; const key='w3|'+ts.map(phen).sort().join('+');
+    const v = res.fail ? 'x' : summary(res.spawn.map(s=>s.t)); const arr=Array.isArray(S.seen[key])?S.seen[key]:[];
+    if (!arr.includes(v)) arr.push(v); S.seen[key]=arr.slice(-4); },
+  levels:[
+    {name:'First clutch',      orbs:['G:Gg','G:Gg'],               machines:['nest'],               gate:['blue'],         par:1, hint:'Two Golds. Put them in the <b>Nest</b> together.'},
+    {name:'Carriers',          orbs:['G:GG','G:Gg','G:Gg'],        machines:['nest'],               gate:['blue'],         par:1, hint:'Same body color. Look at their <b>ears</b>.'},
+    {name:'Skips a generation',orbs:['G:gg','G:GG'],               machines:['nest','nest'],        gate:['blue','blue'],  par:2, hint:'Two Nests, and each one raises a single clutch.'},
+    {name:'Pure gold',         orbs:['G:Gg','G:gg','G:gg'],        machines:['nest','nest'],        gate:['GG'],           par:2, hint:'The Cradle wants a Gold with two gold ears.'},
+    {name:'Petals',            orbs:['P:RR','P:WW'],               machines:['nest'],               gate:['pink'],         par:1, hint:'A new family. Red meets White.'},
+    {name:'Back to white',     orbs:['P:RR','P:WW'],               machines:['nest','nest'],        gate:['white','white'],par:2, hint:''},
+    {name:'Family tree',       orbs:['G:Gg','G:GG','P:RW','P:RW'], machines:['nest','nest','nest'], gate:['blue','white'], par:3, hint:'Two families, two wishes, three Nests.'},
+  ],
+};
+
+/* ======================= WORLD 4 · THE REEF ======================= */
+const RF = {s:{name:'Spiky',hex:'#ff7a3d'}, j:{name:'Jelly',hex:'#ff8fd0'}, g:{name:'Glow',hex:'#38e0e6'}, p:{name:'Pebble',hex:'#9aa0a8'}};
+const EATS = {s:'j', j:'g', g:'s'};
+const hungry = t => t!=='pe' && t[1]==='h';
+const bites = (a,b) => hungry(a) && b!=='pe' && EATS[a[0]]===b[0];
+const name4 = t => t==='pe' ? 'Pebble' : `${RF[t[0]].name} · ${t[1]==='h'?'hungry':'full'}`;
+const W4 = {
+  id:'w4', name:'The Reef', short:'Reef', gateName:'Calm pool', bg:['#134a63','#081e2b'],
+  blurb:'Tide pools full of orblings, and some of them eat each other. Who eats whom?',
+  gatePlate:['#9fd8d0','#5aa49e','#2f6763'],
+  look(o){ const t=o.t;
+    if (t==='pe') return {hex:RF.p.hex, face:'critter', mood:'pebble', bounce:.1, voice:'pebble'};
+    const sp=t[0], h=t[1]==='h';
+    return {hex:RF[sp].hex, face:'critter', mood:h?'hungry':'full', species:sp, spikes:sp==='s', tentacles:sp==='j', antenna:sp==='g', prey:EATS[sp], bounce:sp==='j'?.5:.28, voice:'reef'+sp}; },
+  radius(o){ return o.t==='pe' ? R*.85 : R; },
+  label:name4,
+  react(mt,ts){
+    const n=ts.length, eaten=new Set(), full=new Set(), learn=[];
+    for (let i=0;i<n-1;i++){
+      for (const [x,y] of [[i,i+1],[i+1,i]]){ const a=ts[x], b=ts[y];
+        if (hungry(a) && b!=='pe'){ S.food[a[0]+b[0]] = EATS[a[0]]===b[0] ? 'y' : (S.food[a[0]+b[0]]||'n'); }
+        if (bites(a,b)){ eaten.add(y); full.add(x); learn.push('eat'+a[0]); } } }
+    if (!eaten.size) return {fail: ts.some(hungry) ? 'nohunt' : 'allfull'};
+    learn.push('full'); if ([...full].some(i=>eaten.has(i))) learn.push('together');
+    return {verb:null, transform:ts.map((t,i)=>eaten.has(i)?null:full.has(i)?t[0]+'f':t), learn, chomp:true};
+  },
+  accepts(req,o){ return req==='any' || o.t[0]===req; },
+  reqLabel(req){ return req==='any' ? 'Anyone' : RF[req].name; },
+  ghost(req){ return req==='any' ? null : req==='p' ? 'pe' : req+'f'; },
+  validate(slots){
+    const ts=slots.map(o=>o.t);
+    for (let i=0;i<ts.length-1;i++) for (const [x,y] of [[i,i+1],[i+1,i]]){ const a=ts[x], b=ts[y];
+      if (bites(a,b)){ S.food[a[0]+b[0]]='y'; return {fail:'calm', bad:[i,i+1], msg:`${RF[a[0]].name} would eat ${RF[b[0]].name}`}; } }
+    if (ts.includes('pe')) learn('pebble');
+    return {ok:true};
+  },
+  seen(ts,res){ S.seen['w4|'+ts.join(',')] = res.fail ? 'x' : res.transform.map(t=>t||'0').join(','); },
+  levels:[
+    {name:'Feeding time',   orbs:['sh','jh','jh'],                     machines:['pool2'],          gate:['s','j'],                 par:1, hint:'The <b>Calm pool</b> wants a Spiky next to a Jelly. Is that safe?'},
+    {name:'Glow bites',     orbs:['gh','sh','sh'],                     machines:['pool2'],          gate:['g','s'],                 par:1, hint:'Watch who the hungry ones stare at.'},
+    {name:'The loop',       orbs:['sh','jh','jh','gh','gh'],           machines:['pool2'],          gate:['s','j','g'],             par:2, hint:'Three hungry neighbors in a row.'},
+    {name:'Pebble',         orbs:['gh','sh','jh','jh','pe'],           machines:['pool2'],          gate:['g','any','s','j'],       par:1, hint:'A Pebble joins the reef. Nobody wants to eat it.'},
+    {name:'Chain reaction', orbs:['jh','jh','sh','sh','gh'],           machines:['pool4'],          gate:['g','s','j'],             par:1, hint:'One big tide. Everyone eats at once.'},
+    {name:'Hungry crowd',   orbs:['sh','sh','sh','jh','jh','gh','gh'], machines:['pool2','pool2'],  gate:['s','j','g','s'],         par:3, hint:''},
+    {name:'Calm reef',      orbs:['sh','sh','jh','jh','gh','gh','pe'], machines:['pool3'],          gate:['s','j','g','any','s'],   par:2, hint:'Five seats, and every one of them is hungry.'},
+  ],
+};
+
+/* ======================= WORLD 5 · THE CHOIR ======================= */
+const CH = {r:{name:'Red',hex:'#ff5a5f'}, b:{name:'Blue',hex:'#4a90ff'}, y:{name:'Yellow',hex:'#ffcf3a'}, g:{name:'Green',hex:'#4fd17a'}, x:{name:'',hex:'#b7b0c8'}};
+const SOLF = ['Do','Re','Mi','Fa','Sol','La','Ti'], SEMI=[0,2,4,5,7,9,11];
+const noteOf = t => +t[1];
+const W5 = {
+  id:'w5', name:'The Choir', short:'Choir', gateName:'Stage', bg:['#4a2347','#1c0c1e'],
+  blurb:'Every orbling sings one note, and they change each other’s notes. Order matters here.',
+  gatePlate:['#c9a0dc','#8e5aa8','#562f6b'],
+  look(o){ return {hex:CH[o.t[0]].hex, face:'critter', mood:'sing', badge:SOLF[noteOf(o.t)-1], bounce:.35, voice:'sing'+noteOf(o.t)}; },
+  radius(){ return R; },
+  label(t){ return `${CH[t[0]].name} · ${SOLF[noteOf(t)-1]}`; },
+  react(mt,ts){
+    const a=ts.map(t=>({c:t[0],n:noteOf(t)})), learn=['right'];
+    for (let i=0;i<a.length-1;i++){ const L=a[i], Rt=a[i+1], before=Rt.n;
+      if (L.c==='b') Rt.n=Math.max(1,Rt.n-1); else if (L.c==='y') Rt.n=Math.min(7,Rt.n+1); else if (L.c==='g') Rt.n=L.n;
+      if (L.c==='r') learn.push('r'); else if (Rt.n!==before) learn.push(L.c);
+      else if ((L.c==='b'&&before===1)||(L.c==='y'&&before===7)) learn.push('clamp'); }
+    if (ts.length>2) learn.push('order');
+    const out=a.map(o=>o.c+o.n);
+    if (out.join()===ts.join()) return {fail:'same', learnFail:learn.filter(k=>k==='r'||k==='clamp')};
+    return {verb:null, transform:out, learn, sing:true};
+  },
+  accepts(req,o){ return req==='any' || o.t[1]===req; },
+  reqLabel(req){ return req==='any' ? 'Anyone' : SOLF[+req-1]; },
+  ghost(req){ return req==='any' ? null : 'x'+req; },
+  seen(ts,res){ S.seen['w5|'+ts.join(',')] = res.fail ? 'x' : res.transform.join(','); },
+  onWin(slots){ slots.forEach((o,k)=>{ const f=noteF(SEMI[noteOf(o.t)-1]); tone(f,f,.5,'triangle',.2,.01,.15+k*.32); tone(f*2,f*2,.4,'sine',.06,.01,.15+k*.32); }); },
+  levels:[
+    {name:'Warm up',          orbs:['y1','r1'],                 machines:['row2'],        gate:['2'],                  par:1, hint:'The <b>Stage</b> wants a Re. Nobody sings it yet. Try the <b>Rehearsal row</b>.'},
+    {name:'Going down',       orbs:['b3','r2','r1'],            machines:['row2'],        gate:['1','1'],              par:1, hint:'Pick an orbling up to hear its note.'},
+    {name:'Copycat',          orbs:['g5','r1'],                 machines:['row2'],        gate:['5','5'],              par:1, hint:''},
+    {name:'Order matters',    orbs:['y1','g2','r1'],            machines:['row3'],        gate:['3'],                  par:1, hint:'Three in a row now. Who stands where?'},
+    {name:'Three blind mice', orbs:['b4','b3','r2','r3'],       machines:['row3'],        gate:['3','2','1'],          par:1, hint:'Mi, Re, Do, in one rehearsal.'},
+    {name:'Ladder',           orbs:['y1','y1','y1','r1'],       machines:['row3','row2'], gate:['1','2','3','4'],      par:3, hint:'Climb the scale.'},
+    {name:'Twinkle',          orbs:['g1','r3','y4','r5','r6'],  machines:['row3','row2'], gate:['1','1','5','5','6'],  par:2, hint:'You might know this one.'},
+  ],
+};
+
+const QT = {
+  queue:[
+    {name:'Wait your turn', orbs:['rp','yz'], machines:[], gate:['r','y'], par:0, hint:'The <b>Ticket booth</b> lines everyone up from the front, then they shuffle once.'},
+    {name:'Pushy',          orbs:['rp','yz','bz'], machines:[], gate:['y','r','b'], par:0, hint:'Watch what the one with the bossy brows does.'},
+    {name:'Shy',            orbs:['rs','ys','bz'], machines:[], gate:['b','y','r'], par:0, hint:'Somebody here would rather not be seen.'},
+    {name:'Eager',          orbs:['re','yz','bp','rz'], machines:[], gate:['r','r','b','y'], par:0, hint:'Four in line. One of them can’t wait.'},
+    {name:'Coffee',         orbs:['rs','yz','bp'], machines:['coffee'], gate:['r','b','y'], par:1, hint:'Give someone a <b>Coffee</b>.'},
+    {name:'Pillow',         orbs:['re','ye','bz'], machines:['pillow'], gate:['y','b','r'], par:2, hint:'Too much energy in this line.'},
+    {name:'Big line',       orbs:['re','yp','bs','rz','yz'], machines:['coffee','pillow'], gate:['y','b','r','r','y'], par:1, hint:'Five in line, one change allowed.'},
+  ],
+  queueRemix:[
+    {name:'Sulky line',       orbs:['*c=r,m=g,q=p','*c=y,m=h,q=z','*c=b,m=h,q=z'], machines:[], gateKind:'booth', gate:['*c=y','*c=r','*c=b'], par:0, hint:'Moods from the Commons. Does a grumpy Pushy still push?'},
+    {name:'Make them sulk',   orbs:['*c=r,m=g,q=s','*c=b,m=h,q=e','*c=b,m=h,q=p'], machines:['meet'], gateKind:'booth', gate:['*c=r','*c=b','*c=b'], par:1, hint:'Sometimes a grump is exactly what the line needs.'},
+    {name:'Campfire line',    orbs:['*c=b,m=g,q=z','*c=y,m=h,q=s','*c=r,m=g,q=z','*c=r,m=g,q=s'], machines:['camp'], gateKind:'booth', gate:['*c=b','*c=y','*c=r','*c=r'], par:1, hint:''},
+    {name:'Copy and clash',   orbs:['*k=tw','*c=b,m=g,q=e','*c=b,m=h,q=s','*c=r,m=h,q=s'], machines:['press','meet'], gateKind:'booth', gate:['*c=r','*c=r','*c=b','*c=b'], par:2, hint:'Four seats, three in line.'},
+    {name:'Coffee, then calm', orbs:['*c=r,m=h,q=e','*c=y,m=h,q=e','*c=b,m=g,q=s'], machines:['coffee','meet'], gateKind:'booth', gate:['*c=r','*c=b','*c=y'], par:2, hint:''},
+    {name:'Wake-up call',     orbs:['*c=y,m=h,q=p','*c=b,m=g,q=z','*c=b,m=g,q=e'], machines:['coffee','meet'], gateKind:'booth', gate:['*c=b','*c=b','*c=y'], par:4, hint:'Coffee works on grumps too. Does it help them move?'},
+    {name:'Grand queue',      orbs:['*k=tw','*c=b,m=h,q=e','*c=y,m=h,q=s','*c=r,m=h,q=z','*c=y,m=h,q=e'], machines:['press','meet','coffee'], gateKind:'booth', gate:['*c=y','*c=y','*c=r','*c=b','*c=r'], par:3, hint:'Three worlds, five seats.'},
+  ],
+  tower:[
+    {name:'Two high',      tubes:[[2,'r1'],[2,'b2']], gate:['b','r'], par:2, hint:'Grab the top orbling of a tube and drop it on the <b>Summit</b>.'},
+    {name:'Big on bottom', tubes:[[3,'y1','r2'],[3,'b3']], gate:['b','r','y'], par:3, hint:'Who is willing to sit on whom?'},
+    {name:'Three high',    tubes:[[3,'r2','y1'],[3,'b3']], gate:['b','r','y'], par:4, hint:''},
+    {name:'Prickly',       tubes:[[3,'r3','y1x'],[3,'b2']], gate:['r','b','y'], par:5, hint:'Nobody wants to sit on that crown.'},
+    {name:'Sturdy',        tubes:[[2,'y3','b1'],[2,'r1f'],[1]], gate:['r','y','b'], par:4, hint:'A little one with a flat top.'},
+    {name:'Hanoi',         tubes:[[3,'r3','y2','b1'],[3],[3]], gate:['r','y','b'], par:5, hint:'Move the whole tower, one at a time.'},
+    {name:'Peak',          tubes:[[4,'y3','b1','r2f','g1x'],[3,'r3'],[2]], gate:['r','y','r','b','g'], par:8, hint:'Five high. Plan before you grab.'},
+  ],
+  towerRemix:[
+    {name:'No clashing',     tubes:[[3],[3,'*c=r,e=3,m=h','*c=r,e=3,m=h'],[2,'*c=b,e=3,m=h','*c=y,e=3,m=h']], gate:['*c=b','*c=y','*c=r'], par:4, hint:'Commons colors. Will Red sit on Blue?'},
+    {name:'Grumpy base',     tubes:[[3,'*c=r,e=3,m=h'],[3,'*c=y,e=3,m=h','*c=y,e=3,m=g'],[2,'*c=b,e=3,m=h']], gate:['*c=b','*c=y','*c=r'], par:4, hint:'One of the Yellows isn’t in the mood to carry anyone.'},
+    {name:'Twin stack',      tubes:[[3,'*c=b,e=3,m=h'],[3,'*c=b,e=2,m=h'],[2,'*k=tw','*c=b,e=3,m=h']], gate:['*c=b','*c=b','*c=b','*c=b'], par:4, hint:'Drop Twin on someone and see.'},
+    {name:'Wild climb',      tubes:[[3,'*k=wi','*c=r,e=3,m=h','*c=r,e=2,m=h'],[2,'*c=r,e=2,m=h']], gate:['*c=r','*c=r','*c=r'], par:4, hint:''},
+    {name:'Eat your way',    tubes:[[3,'*e=2,s=j,u=h','*e=2,s=s,u=h'],[2,'*e=2,s=s,u=h','*e=3,s=g,u=h']], gate:['*s=g','*s=s','*s=s','*s=j'], par:4, hint:'Reef hunters in a tower. What happens when one lands on its food?'},
+    {name:'Hungry heights',  tubes:[[3,'*e=2,s=g,u=h','*e=1,s=j,u=h'],[3,'*e=3,s=s,u=h'],[2,'*e=2,s=g,u=h']], gate:['*s=s','*s=g','*s=g','*s=j'], par:5, hint:''},
+    {name:'Grand tower',     tubes:[[3,'*k=tw','*c=b,e=1,m=h'],[2,'*c=r,e=1,m=h','*c=y,e=1,m=h']], gate:['*c=r','*c=y','*c=y','*c=b'], par:6, hint:'Three worlds, four floors.'},
+  ],
+};
+const QJ={
+ queue:[
+  {name:'Cutting in',  orbs:['rp','yz','bz'], machines:[], gate:['y','r','b'], par:3, hint:'Drop orblings near the line. They join at the <b>back</b>, one at a time.'},
+  {name:'Me first',    orbs:['re','yp','bz'], machines:[], gate:['y','r','b'], par:3, hint:''},
+  {name:'Wait for me', orbs:['rz','yz','rc'], machines:[], gate:['r','y','r'], par:3, hint:''},
+  {name:'Wake up',     orbs:['bc','rc','bc'], machines:['coffee'], gate:['b','r','b'], par:4, hint:'Someone could use a <b>Coffee</b>.'},
+  {name:'Settle down', orbs:['re','yp','be'], machines:['pillow'], gate:['y','b','r'], par:4, hint:'Too much energy. Try the <b>Pillow</b>.'},
+  {name:'Busy line',   orbs:['be','rc','bc','yz'], machines:['pillow'], gate:['y','r','b','b'], par:5, hint:''},
+  {name:'Yellow crowd',orbs:['yp','yp','yz','rp'], machines:['coffee'], gate:['y','y','y','r'], par:5, hint:'Four in line and only one of them is relaxed.'},
+ ],
+ queueRemix:[
+  {name:'Cheer up, Eager', orbs:['*c=b,m=g,q=e','*c=r,m=h,q=e','*c=y,m=h,q=p'], machines:['meet'], gateKind:'line', gate:['*c=b','*c=r','*c=y'], par:4, hint:'Moods from the Commons. Does a grumpy Eager still rush ahead?'},
+  {name:'Make them sulk',  orbs:['*c=r,m=g,q=e','*c=b,m=h,q=e','*c=b,m=g,q=c'], machines:['meet'], gateKind:'line', gate:['*c=r','*c=b','*c=b'], par:4, hint:'Sometimes a grump is exactly what the line needs.'},
+  {name:'Campfire line',   orbs:['*c=r,m=h,q=c','*c=r,m=h,q=c','*c=r,m=h,q=e','*c=y,m=g,q=e'], machines:['camp'], gateKind:'line', gate:['*c=y','*c=r','*c=r','*c=r'], par:5, hint:''},
+  {name:'Copy and cheer',  orbs:['*k=tw','*c=b,m=h,q=e','*c=y,m=g,q=e','*c=y,m=h,q=c'], machines:['press','meet'], gateKind:'line', gate:['*c=y','*c=b','*c=y','*c=y'], par:6, hint:'Four spots, three orblings.'},
+  {name:'Coffee for a grump', orbs:['*c=y,m=h,q=p','*c=y,m=h,q=p','*c=b,m=g,q=z'], machines:['coffee','meet'], gateKind:'line', gate:['*c=b','*c=y','*c=y'], par:6, hint:''},
+  {name:'Pillow fight',    orbs:['*c=b,m=h,q=e','*c=r,m=g,q=e','*c=r,m=h,q=c','*c=b,m=h,q=p'], machines:['pillow','camp'], gateKind:'line', gate:['*c=r','*c=b','*c=r','*c=b'], par:6, hint:''},
+  {name:'Grand queue',     orbs:['*k=tw','*c=r,m=h,q=c','*c=b,m=h,q=p','*c=r,m=g,q=c','*c=y,m=h,q=p'], machines:['press','meet','coffee'], gateKind:'line', gate:['*c=r','*c=r','*c=b','*c=r','*c=y'], par:8, hint:'Three worlds, five spots.'},
+ ]};
+QT.queue=QJ.queue; QT.queueRemix=QJ.queueRemix;
+
+
+
+/* ======================= WORLD 5 · THE QUEUE ======================= */
+const QP={z:'Sleepy', c:'Clingy', p:'Pushy', e:'Eager'};
+const WQ = {
+  id:'wq', name:'The Queue', short:'Queue', gateName:'Ticket line', bg:['#4b3b22','#1d150a'],
+  blurb:'Everyone wants a ticket, and every orbling has its own idea about where to stand.',
+  gatePlate:['#f2c97e','#c48c3e','#7c5220'],
+  look(o){ return {hex:C2[o.t[0]].hex, face:'critter', mood:'happy', persona:o.t[1], bounce:o.t[1]==='e'?.5:o.t[1]==='z'?.15:.32, voice:'q'+o.t[1]}; },
+  radius(){ return R; },
+  label(t){ return `${C2[t[0]].name} · ${QP[t[1]]}`; },
+  react(mt,ts){ const t=ts[0], q=(mt==='coffee'?Q_UP:Q_DOWN)[t[1]];
+    if (q===t[1]) return {fail: mt==='coffee'?'maxed':'floored'};
+    return {transform:[t[0]+q], learn:[mt]}; },
+  accepts(){ return true; },
+  boothMatch(spec,o){ return spec==='any' || spec===o.t[0]; },
+  qobj(o){ return {c:o.t[0], q:o.t[1]}; },
+  reqLabel(req){ return req==='any' ? 'Anyone' : C2[req].name; },
+  ghost(req){ return req==='any' ? null : req+'z'; },
+  seen(ts,res){ S.seen['wq|'+ts.join(',')] = res.fail ? 'x' : res.transform.join(','); },
+  levels: QT.queue.map(d=>({...d})),
+};
+/* ======================= WORLD 6 · THE TOWER ======================= */
+const towerT = t => { const m=t.match(/^([rybg])(\d)([xf]?)$/); return m ? `*c=${m[1]},e=${m[2]}`+(m[3]?`,h=${m[3]}`:'') : t; };
+const WT = {
+  id:'wt', name:'The Tower', short:'Tower', gateName:'Summit', bg:['#2c3a57','#10172a'],
+  blurb:'No floor here. Grab the top orbling of a tube and stack your way to the Summit.',
+  gatePlate:['#e4ebf6','#9fadc6','#5d6a85'],
+  look:o=>RXW.look(o), radius:o=>RXW.radius(o), label:(t,o)=>RXW.label(t,o),
+  accepts(spec,o){ return rxMatch(spec,RXP(o.t)); },
+  reqLabel:s=>RXW.reqLabel(s), ghost:s=>s==='any'?null:s, seen(){},
+  levels: QT.tower.map(d=>({...d, tubes:d.tubes.map(([cap,...it])=>[cap,...it.map(towerT)]), gate:d.gate.map(g=>g==='any'?g:'*c='+g)})),
+};
+/* LIGHT: 'L'+channels (lights), 'F'+channels (glass). channels sorted from 'rgb'. */
+const norm=s=>['r','g','b'].filter(c=>s.includes(c)).join('');
+function lightReact(mt, ts){
+  const isL=t=>t[0]==='L', ch=t=>t.slice(1);
+  if (mt==='lamp'){ if (!ts.every(isL)) return {fail:'lampglass'}; const u=norm(ts.map(ch).join(''));
+    const learn=['mix']; if (u==='rg') learn.push('yellow'); if (u==='rgb') learn.push('white');
+    return {consume:true, spawn:['L'+u], learn}; }
+  if (mt==='prism'){ const t=ts[0]; if (!isL(t)) return {fail:'prismglass'}; if (ch(t).length<2) return {fail:'pure'};
+    return {consume:true, spawn:ch(t).split('').map(c=>'L'+c), learn:['prism']}; }
+  if (mt==='filter'){ const L=ts.filter(isL), G=ts.filter(t=>!isL(t)); if (L.length!==1||G.length!==1) return {fail:'filterpair'};
+    const i=norm(ch(L[0]).split('').filter(c=>ch(G[0]).includes(c)).join(''));
+    return {transform:ts.map(t=>isL(t) ? (i?'L'+i:null) : t), learn:[i?(i===ch(L[0])?'clear':'filter'):'dark']}; }
+  return {fail:'none'};
+}
+
+
+/* ======================= WORLD 6 · THE SEESAW ======================= */
+/* weight = eyes. Balance when the sum of weight x distance is the same on both sides. Everyone must be aboard. */
+const ssGate = locked => [-3,-2,-1,0,1,2,3].map(p=>locked[p]!==undefined ? 'L:w'+locked[p] : 'any');
+const WS = {
+  id:'ws', name:'The Seesaw', short:'Seesaw', gateName:'Seesaw', bg:['#3c4a2a','#161d0f'],
+  blurb:'Everyone wants a ride. Get them all aboard and keep it level.',
+  gatePlate:['#e7c38d','#b98a4f','#7a5528'],
+  look(o){ const n=+o.t[1]; return {hex:'#ff9f6b', hi:'#ffe2cc', lo:'#b4521f', face:'pip', n, bounce:.25, voice:'pip'+n}; },
+  radius(o){ return R*(.8+.1*(+o.t[1])); },
+  label(t){ const n=+t[1]; return `${n} eye${n>1?'s':''}`; },
+  accepts(){ return true; }, reqLabel(){ return ''; }, ghost(){ return null; }, seen(){},
+  levels:[
+    {name:'Level',            orbs:['w2'],             machines:[], gate:ssGate({'-1':2}),          par:1, hint:'Everyone wants a ride on the <b>Seesaw</b>. Keep it level.'},
+    {name:'Reach',            orbs:['w1'],             machines:[], gate:ssGate({'-1':2}),          par:1, hint:''},
+    {name:'Trade places',     orbs:['w2'],             machines:[], gate:ssGate({'-2':3}),          par:1, hint:''},
+    {name:'Teamwork',         orbs:['w1','w2'],        machines:[], gate:ssGate({'-3':2,'-2':1}),   par:2, hint:''},
+    {name:'The middle',       orbs:['w1','w2'],        machines:[], gate:ssGate({'-2':3}),          par:2, hint:'Everyone has to be aboard.'},
+    {name:'Overshoot',        orbs:['w1','w1','w3'],   machines:[], gate:ssGate({'-1':2}),          par:3, hint:''},
+    {name:'Grand balance',    orbs:['w1','w2','w2','w2'], machines:[], gate:ssGate({'2':3,'-2':2}), par:4, hint:''},
+  ],
+};
+/* ======================= WORLD 7 · THE LIGHTHOUSE ======================= */
+const LCOL={r:'#ff4d4d', g:'#5dff7a', b:'#4d8bff', rg:'#ffe14d', rb:'#ff5ce0', gb:'#4de8ff', rgb:'#fffbea'};
+const LNAME={r:'Red', g:'Green', b:'Blue', rg:'Yellow', rb:'Magenta', gb:'Cyan', rgb:'White'};
+const WL = {
+  id:'wl', name:'The Lighthouse', short:'Lighthouse', gateName:'Lantern', bg:['#1d2346','#07091a'],
+  blurb:'Orblings made of light, and glass that light passes through. What is a color made of?',
+  gatePlate:['#d9dde8','#8f97ad','#4b5269'],
+  look(o){ const glass=o.t[0]==='F', c=o.t.slice(1);
+    return glass ? {hex:LCOL[c], face:'critter', mood:'happy', glass:true, bounce:.2, voice:'glass'} : {hex:LCOL[c], face:'critter', mood:'happy', glow:true, bounce:.4, voice:'light'}; },
+  radius(o){ return R; },
+  label(t){ const c=t.slice(1); return t[0]==='F' ? `${LNAME[c]} glass` : `${LNAME[c]} light`; },
+  react(mt,ts){ const r=lightReact(mt,ts); if (r.fail) return {fail:r.fail};
+    if (r.consume) return {consume:true, spawn:r.spawn.map(t=>({t})), learn:r.learn};
+    return {transform:r.transform, learn:r.learn}; },
+  accepts(req,o){ return req===o.t; },
+  reqLabel(req){ return LNAME[req.slice(1)]; },
+  ghost(req){ return req; },
+  seen(ts,res){ S.seen['wl|'+ts.slice().sort().join('+')] = res.fail ? 'x' : (res.spawn ? res.spawn.map(s=>s.t) : res.transform.filter(Boolean)).join(',') || '-'; },
+  levels:[
+    {name:'Red and Green',      orbs:['Lr','Lg'],        machines:['lamp'],          gate:['Lrg'],       par:1, hint:'The <b>Lantern</b> wants a color nobody has.'},
+    {name:'All together',       orbs:['Lr','Lg','Lb'],   machines:['lamp'],          gate:['Lrgb'],      par:2, hint:''},
+    {name:'Inside yellow',      orbs:['Lrg'],            machines:['prism'],         gate:['Lr','Lg'],   par:1, hint:''},
+    {name:'What yellow lacks',  orbs:['Lrg','Lb','Lr'],  machines:['lamp'],          gate:['Lrgb'],      par:1, hint:'One try.'},
+    {name:'Colored glass',      orbs:['Lrgb','Fgb'],     machines:['filter'],        gate:['Lgb'],       par:1, hint:''},
+    {name:'Only what is shared',orbs:['Lrg','Fgb'],      machines:['filter'],        gate:['Lg'],        par:1, hint:''},
+    {name:'Rebuild',            orbs:['Lrg','Lrb'],      machines:['prism','lamp'],  gate:['Lgb','Lr'],  par:3, hint:''},
+  ],
+};
+const WORLDS=[W1,W2,W3,W4,WQ,WS,WL];
+/* ===== QUEUE: orblings join at the back, one at a time, and react on arrival ===== */
+/* q: z Sleepy · c Clingy · p Pushy · e Eager. A grumpy one (m='g') sulks and doesn't react. */
+const Q_UP={z:'c', c:'p', p:'e', e:'e'}, Q_DOWN={e:'p', p:'c', c:'z', z:'z'};
+/* qJoin(line, o) → {line, events:[{who, say, kind}]}. line is front→back. */
+function qJoin(line, o){
+  const L=line.slice(), ev=[]; L.push(o); const pos=L.length-1;
+  if (o.m==='g' && o.q!=='z'){ ev.push({who:o, say:'Hmph.', kind:'sulk'}); return {line:L, events:ev}; }
+  if (o.q==='p' && pos>0){ const b=L[pos-1]; [L[pos-1],L[pos]]=[L[pos],L[pos-1]]; ev.push({who:o, say:'Hup!', kind:'p'},{who:b, say:'Hey!', kind:'bumped'}); }
+  else if (o.q==='e' && pos>0){ L.splice(pos,1); L.unshift(o); ev.push({who:o, say:'Me first!', kind:'e'}); }
+  else if (o.q==='c'){ let f=-1; for (let i=0;i<pos;i++) if (L[i].c===o.c) f=i;
+    if (f>=0 && f<pos-1){ L.splice(pos,1); L.splice(f+1,0,o); ev.push({who:o, say:'Wait for me!', kind:'c'},{who:L[f], say:'Oh, hi!', kind:'friend'}); }
+    else if (f===pos-1) ev.push({who:o, say:'Hi, friend!', kind:'c0'});
+    else ev.push({who:o, say:'Where’s my friend?', kind:'c0'}); }
+  else if (o.q==='z') ev.push({who:o, say:'Zz…', kind:'z'});
+  return {line:L, events:ev};
+}
+
+
+
+
+/* ===== REMIX CORE: trait-based orblings shared by every remix level ===== */
+/* traits: k special (tw sp vo wi) · e eyes 1-6 · c color r y b g · m mood h g · a genes (two of Y R B) · s species s j g p · u hunger h f · n note 1-7 */
+const RXP = t => { const o={}; t.slice(1).split(',').forEach(kv=>{ if(!kv) return; const i=kv.indexOf('='); const k=kv.slice(0,i), v=kv.slice(i+1); o[k]=(k==='e'||k==='n')?+v:v; }); return o; };
+const RXF = o => '*'+Object.keys(o).filter(k=>o[k]!==undefined&&k!=='baby').sort().map(k=>k+'='+o[k]).join(',');
+const RX_DOM='YRB';
+const rxGeneColor = a => { for (const x of RX_DOM) if (a.includes(x)) return {Y:'y',R:'r',B:'b'}[x]; };
+const rxNormGenes = s => s.split('').sort((x,y)=>RX_DOM.indexOf(x)-RX_DOM.indexOf(y)).join('');
+const rxColor = o => o.c || (o.a ? rxGeneColor(o.a) : null);
+const rxAlong = (a,b) => a==='g'||b==='g' ? true : !((a==='r'&&b==='b')||(a==='b'&&b==='r'));
+const RX_EATS = {s:'j', j:'g', g:'s'};
+const rxPreyOK = (a,b) => a.s && a.s!=='p' && a.u==='h' && b.s && b.s!=='p' && RX_EATS[a.s]===b.s;
+const rxBites = (a,b) => rxPreyOK(a,b) && (!(a.e&&b.e) || b.e<=a.e);
+const rxHasMood = o => !!o.m;
+
+function rxReact(mt, ins){            // ins: trait objects. returns {fail, learn} | {transform|spawn, consume, learn, ...}
+  const L=[];
+  if (mt==='press'){
+    const [a,b]=ins;
+    if (a.k||b.k){
+      if (a.k==='tw'&&b.k==='tw') return {fail:'w1:twin2'};
+      const [s,x] = a.k==='tw' ? [a,b] : b.k==='tw' ? [b,a] : a.k ? [a,b] : [b,a];
+      if (s.k==='tw'){ L.push('w1:twin'); if (!x.k) L.push('rx:twinAny'); return {consume:true, spawn:[{...x},{...x}], learn:L}; }
+      if (x.k) return {fail:'w1:none'};
+      if (s.k==='sp'){ if (!(x.e>=2)) return {fail:'w1:splitf'}; L.push('w1:split'); if (x.c||x.s||x.m) L.push('rx:keep'); return {consume:true, spawn:[{...x,e:x.e-1},{...x,e:x.e-1}], learn:L}; }
+      if (s.k==='vo'){ if (!x.e) return {fail:'w1:voidf'}; L.push('w1:bite'); if (x.c||x.s||x.m) L.push('rx:keep'); return {consume:true, spawn:x.e>1?[{...x,e:x.e-1}]:[], learn:L}; }
+      if (s.k==='wi'){ if (!(x.e&&x.e<6)) return {fail:'w1:wildf'}; L.push('w1:wild'); if (x.c||x.s||x.m) L.push('rx:keep'); return {consume:true, spawn:[{...x,e:x.e+1}], learn:L}; }
+      return {fail:'w1:none'};
+    }
+    if (!a.e||!b.e) return {fail:'rx:noeyes'};
+    if (a.e!==b.e || a.e>=6) return {fail:'w1:mismatch'};
+    if (rxColor(a)!==rxColor(b) || a.s!==b.s) return {fail:'rx:pressKind'};
+    const r={...a, e:a.e+1}; L.push('w1:fuse','rx:pressKindOk');
+    if (a.m||b.m){ r.m=(a.m==='h'&&b.m==='h')?'h':'g'; if (r.m==='g') L.push('rx:pressMood'); }
+    if (a.u||b.u){ r.u=(a.u==='h'||b.u==='h')?'h':'f'; }
+    return {consume:true, spawn:[r], learn:L};
+  }
+  if (mt==='meet'){
+    const [a,b]=ins;
+    if (!a.m||!b.m) return {fail:'rx:nomood'};
+    if (a.m==='g'&&b.m==='g') return {fail:'w2:sulk'};
+    const ca=rxColor(a), cb=rxColor(b);
+    if (rxAlong(ca,cb)){ L.push(a.m==='g'||b.m==='g'?'w2:cheer':'w2:friends'); if (ca==='g'||cb==='g') L.push('rx:green');
+      return {transform:[{...a,m:'h'},{...b,m:'h'}], learn:L, hearts:true, aff:[ca,cb,'ok']}; }
+    return {transform:[{...a,m:'g'},{...b,m:'g'}], learn:['w2:clash'], aff:[ca,cb,'no']};
+  }
+  if (mt==='camp'){
+    if (!ins.every(rxHasMood)) return {fail:'rx:nomood'};
+    const h=ins.filter(o=>o.m==='h').length, m=h>=2?'h':'g';
+    return {transform:ins.map(o=>({...o,m})), learn:['w2:camp'], hearts:m==='h'};
+  }
+  if (mt==='nest'){
+    const [a,b]=ins;
+    if (!a.a||!b.a) return {fail:'w3:species'};
+    const A=a.a, B=b.a, mood=(!a.m||!b.m) ? undefined : (a.m==='h'&&b.m==='h') ? 'h' : 'g';
+    const kids=[A[0]+B[0],A[0]+B[1],A[1]+B[0],A[1]+B[1]].map(g=>{ const k={a:rxNormGenes(g), baby:true}; if (mood) k.m=mood; return k; });
+    L.push('w3:clutch','rx:colorGenes'); if (mood==='g') L.push('rx:nestMood');
+    return {grow:true, spawn:kids, learn:L};
+  }
+  if (mt.startsWith('pool')){
+    const n=ins.length, eaten=new Set(), full=new Set();
+    for (let i=0;i<n-1;i++) for (const [x,y] of [[i,i+1],[i+1,i]]){ const a=ins[x], b=ins[y];
+      if (rxBites(a,b)){ eaten.add(y); full.add(x); L.push('w4:eat'+a.s); }
+      else if (rxPreyOK(a,b)) L.push('rx:bigFish'); }
+    if (!eaten.size) return {fail: ins.some(o=>o.u==='h') ? (L.includes('rx:bigFish')?'rx:bigFish':'w4:nohunt') : 'w4:allfull'};
+    L.push('w4:full'); if ([...full].some(i=>eaten.has(i))) L.push('w4:together');
+    return {transform:ins.map((o,i)=>eaten.has(i)?null:full.has(i)?{...o,u:'f'}:o), learn:L, chomp:true};
+  }
+  if (mt.startsWith('row')){
+    if (!ins.every(o=>o.n)) return {fail:'rx:nonote'};
+    const a=ins.map(o=>({...o})); L.push('w5:right');
+    for (let i=0;i<a.length-1;i++){ const Lf=a[i], Rt=a[i+1], before=Rt.n;
+      if (Lf.m==='g'){ L.push('rx:sulkSing'); continue; }
+      if (Lf.c==='b') Rt.n=Math.max(1,Rt.n-1); else if (Lf.c==='y') Rt.n=Math.min(7,Rt.n+1); else if (Lf.c==='g') Rt.n=Lf.n;
+      if (Lf.c==='r') L.push('w5:r'); else if (Rt.n!==before) L.push('w5:'+Lf.c); }
+    if (ins.length>2) L.push('w5:order');
+    if (a.every((o,i)=>o.n===ins[i].n)) return {fail:'same', learnFail:L.filter(k=>k==='rx:sulkSing'||k==='w5:r')};
+    return {transform:a, learn:L, sing:true};
+  }
+  if (mt==='coffee' || mt==='pillow'){
+    const [a]=ins; if (!a.q) return {fail:'rx:noq'};
+    const q=(mt==='coffee'?Q_UP:Q_DOWN)[a.q]; if (q===a.q) return {fail: mt==='coffee'?'wq:maxed':'wq:floored'};
+    return {transform:[{...a,q}], learn:['wq:'+mt]};
+  }
+  return {fail:'w1:none'};
+}
+
+/* ===== stacking (Tower and Tower Remix). h=x Prickly (carries nobody), h=f Sturdy (carries anyone, any size) ===== */
+/* rxDrop(stack, up, cap) → {stack, learn} or {fail}. stack: bottom→top trait objects. */
+function rxDrop(stack, up, cap){
+  const lo=stack.length ? stack[stack.length-1] : null, s=stack.slice();
+  if (up.k){
+    if (!lo){ if (s.length>=cap) return {fail:'full'}; s.push(up); return {stack:s, learn:[]}; }
+    if (lo.k) return {fail:'wt:tools'};
+    if (up.k==='tw'){ if (s.length>=cap) return {fail:'full'}; s.push({...lo}); return {stack:s, learn:['rx:twinStack']}; }
+    if (up.k==='vo'){ if (!lo.e) return {fail:'w1:voidf'}; if (lo.e>1) s[s.length-1]={...lo,e:lo.e-1}; else s.pop(); return {stack:s, learn:['rx:voidStack']}; }
+    if (up.k==='wi'){ if (!(lo.e&&lo.e<6)) return {fail:'w1:wildf'}; s[s.length-1]={...lo,e:lo.e+1}; return {stack:s, learn:['rx:wildStack']}; }
+    return {fail:'wt:tools'};
+  }
+  if (lo && rxBites(up,lo)){ s[s.length-1]={...up,u:'f'}; return {stack:s, learn:['w4:eat'+up.s,'rx:eatStack']}; }
+  if (s.length>=cap) return {fail:'full'};
+  if (lo){
+    if (lo.k) return {fail:'wt:tools'};
+    if (lo.h==='x') return {fail:'wt:prickly'};
+    if (lo.m==='g') return {fail:'rx:grumpCarry'};
+    const ca=rxColor(lo), cb=rxColor(up); if (ca&&cb&&lo.m&&up.m&&!rxAlong(ca,cb)) return {fail:'rx:clashStack'};
+    if (lo.h!=='f' && lo.e && up.e && up.e>lo.e) return {fail:'wt:size'};
+  }
+  s.push(up); return {stack:s, learn: lo&&lo.h==='f'&&lo.e&&up.e&&up.e>lo.e ? ['wt:sturdy'] : []};
+}
+/* requirement spec: 'any' or '*k=v,...' (partial traits; c compares the shown color) */
+function rxMatch(spec,o){ if (spec==='any') return true; const s=RXP(spec);
+  return Object.keys(s).every(k=> k==='c' ? rxColor(o)===s.c : o[k]===s[k]); }
+function rxValidate(kind, seat){            // seat: trait objects in gate order
+  if (kind==='bench'){
+    for (let i=0;i<seat.length;i++) if (seat[i].m==='g') return {fail:'w2:benchMood', bad:[i], msg:'Too grumpy to sit'};
+    for (let i=0;i<seat.length-1;i++) if (!rxAlong(rxColor(seat[i]),rxColor(seat[i+1]))) return {fail:'w2:benchClash', bad:[i,i+1], msg:'They won’t sit together'};
+  }
+  if (kind==='calm'){
+    for (let i=0;i<seat.length-1;i++) for (const [x,y] of [[i,i+1],[i+1,i]]) if (rxBites(seat[x],seat[y])) return {fail:'w4:calm', bad:[i,i+1], msg:'Someone would get eaten'};
+  }
+  if (kind==='booth'){            // seat is the shuffled order here; specs checked by the caller
+  }
+  if (kind==='stage' || kind==='cradle'){
+    for (let i=0;i<seat.length;i++) if (seat[i].m==='g') return {fail: kind==='stage'?'rx:stageMood':'rx:cradleMood', bad:[i], msg: kind==='stage'?'Too grumpy to sing':'Too grumpy for the Cradle'};
+  }
+  return {ok:true};
+}
+
+const RXL = {
+  1:[ // The Commons · Remix
+    {name:'A grump spoils it', orbs:['*c=r,e=1,m=h','*c=r,e=1,m=g','*c=y,e=1,m=h'], machines:['press','meet'], gateKind:'bench', gate:['*c=r,e=2'], par:2, hint:'Eyes from the Hatchery, moods from the Commons. What does a grump do in the Press?'},
+    {name:'Same color only', orbs:['*c=r,e=1,m=h','*c=y,e=1,m=h','*c=y,e=1,m=h','*c=b,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=y,e=2','*c=r'], par:1, hint:'Not every pair of one-eyed orblings will fuse.'},
+    {name:'Copy a friend', orbs:['*k=tw','*k=tw','*c=b,e=2,m=h','*c=y,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=b,e=2','*c=b,e=2','*c=y,e=2'], par:3, hint:'Will Twin copy an orbling from another world?'},
+    {name:'Cheer, then split', orbs:['*k=sp','*c=r,e=4,m=g','*c=y,e=2,m=h'], machines:['press','meet'], gateKind:'bench', gate:['*c=r,e=3','*c=y','*c=r,e=3'], par:2, hint:'Does Split care about moods?'},
+    {name:'Void and friends', orbs:['*k=vo','*c=b,e=2,m=g','*c=y,e=1,m=h','*c=r,e=1,m=g'], machines:['press','meet'], gateKind:'bench', gate:['*c=b,e=1','*c=y,e=1','*c=r,e=1'], par:3, hint:''},
+    {name:'Campfire forge', orbs:['*k=wi','*c=r,e=2,m=g','*c=r,e=2,m=g','*c=y,e=1,m=h','*c=y,e=1,m=h'], machines:['press','camp'], gateKind:'bench', gate:['*c=r,e=4','*c=y,e=2'], par:4, hint:'Fuse first, or cheer first?'},
+    {name:'Grand bench', orbs:['*k=tw','*k=sp','*c=r,e=3,m=h','*c=b,e=2,m=g','*c=y,e=1,m=g','*c=y,e=1,m=h'], machines:['press','meet','camp'], gateKind:'bench', gate:['*c=r,e=2','*c=r,e=2','*c=y,e=2','*c=b','any'], par:4, hint:'Everything you know from two worlds.'},
+  ],
+  2:[ // The Nursery · Remix
+    {name:'Hidden red', orbs:['*a=YR,m=h','*a=YR,m=h'], machines:['nest'], gateKind:'cradle', gate:['*c=r'], par:1, hint:'Commons colors are in the genes now. Read the ears.'},
+    {name:'Three colors', orbs:['*a=YB,m=h','*a=RB,m=h'], machines:['nest'], gateKind:'bench', gate:['*c=b','*c=y','*c=r'], par:1, hint:'The babies have to share a Friendship bench.'},
+    {name:'Cheer before nesting', orbs:['*a=YR,m=g','*a=RB,m=h'], machines:['nest','meet'], gateKind:'bench', gate:['*c=r','*c=r'], par:2, hint:'A grumpy parent in the Nest…'},
+    {name:'Clone the carrier', orbs:['*k=tw','*a=YB,m=h','*a=RR,m=h'], machines:['press','nest'], gateKind:'cradle', gate:['*c=b'], par:2, hint:'One Blue carrier isn’t enough on its own.'},
+    {name:'Family peace', orbs:['*a=YB,m=h','*a=RB,m=g','*a=YR,m=h'], machines:['nest','meet'], gateKind:'bench', gate:['*c=r','*c=y','*c=b'], par:2, hint:''},
+    {name:'Campfire cradle', orbs:['*a=RB,m=g','*a=RB,m=g','*a=YB,m=h','*a=YY,m=h'], machines:['nest','nest','camp'], gateKind:'cradle', gate:['*c=b','*c=b'], par:3, hint:'Two blue babies, both smiling.'},
+    {name:'Dynasty', orbs:['*k=tw','*a=YR,m=g','*a=YB,m=h'], machines:['press','nest','nest','meet'], gateKind:'bench', gate:['*c=r','*c=y','*c=b','*c=b'], par:4, hint:'Three worlds, one family bench.'},
+  ],
+  3:[ // The Reef · Remix
+    {name:'Big fish', orbs:['*e=2,s=s,u=h','*e=2,s=j,u=h','*e=2,s=j,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=s','*s=j'], par:1, hint:'Hunters have eyes now. Can a small Spiky eat a big Jelly?'},
+    {name:'Shrink the hunter', orbs:['*k=vo','*e=2,s=g,u=h','*e=2,s=s,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*e=2,s=s'], par:1, hint:''},
+    {name:'Wild growth', orbs:['*k=wi','*e=2,s=j,u=h','*e=2,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*e=2,s=j'], par:1, hint:''},
+    {name:'Size matters', orbs:['*e=2,s=s,u=h','*e=1,s=j,u=h','*e=3,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['pool3'], gateKind:'calm', gate:['*s=s','*s=j','*s=g'], par:1, hint:'One tide. Pick who goes in carefully.'},
+    {name:'Copy the prey', orbs:['*k=tw','*e=3,s=s,u=h','*e=1,s=j,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*s=s','*s=j'], par:2, hint:''},
+    {name:'Feed after you fuse', orbs:['*e=1,s=s,u=h','*e=1,s=j,u=h','*e=1,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*e=1,s=s','*e=2,s=j','*e=2,s=g'], par:2, hint:'Order matters: does a fused orbling stay full?'},
+    {name:'Grand reef', orbs:['*k=tw','*e=2,s=s,u=h','*e=3,s=j,u=h','*e=1,s=g,u=h','*e=2,s=g,u=h','*s=p'], machines:['press','pool3'], gateKind:'calm', gate:['*s=j','*s=g','*s=s','any','*s=s'], par:2, hint:'Five seats in the Calm pool.'},
+  ],
+  4: QT.queueRemix,
+  5: QT.towerRemix.map(d=>({...d, gateKind:'summit', machines:[]})),
+};
+
+/* ======================= REMIX GLUE ======================= */
+const WORLD_DOT=['#e6b95c','#ff8fb0','#9fd86a','#4fd0e0','#f2b45a','#ff9f6b','#9fb4ff'];
+const GK={gate:{name:'Gate',plate:W1.gatePlate,title:'Gate open'}, bench:{name:'Friendship bench',plate:W2.gatePlate,title:'Best friends'},
+  cradle:{name:'Cradle',plate:W3.gatePlate,title:'Welcome, little one'}, calm:{name:'Calm pool',plate:W4.gatePlate,title:'All calm'}, stage:{name:'Stage',plate:W5.gatePlate,title:'Encore!'},
+  booth:{name:'Ticket booth',plate:WQ.gatePlate,title:'Tickets, please!'}, line:{name:'Ticket line',plate:WQ.gatePlate,title:'Tickets, please!'}, summit:{name:'Summit',plate:WT.gatePlate,title:'Top of the world'},
+  seesaw:{name:'Seesaw',plate:WS.gatePlate,title:'Perfectly level'}, lantern:{name:'Lantern',plate:WL.gatePlate,title:'Let there be light'}};
+const MOWNER={press:0,meet:1,camp:1,nest:2,pool2:3,pool3:3,pool4:3,coffee:4,pillow:4};
+const KOWNER={gate:0,bench:1,cradle:2,calm:3,booth:4,line:4,summit:5};
+function rxSources(def){ const s=new Set([KOWNER[def.gateKind]]); (def.machines||[]).forEach(m=>{ if(MOWNER[m]!==undefined) s.add(MOWNER[m]); });
+  (def.orbs||(def.tubes||[]).flatMap(t=>t.slice(1))).forEach(t=>{ const x=RXP(t); if(x.k||x.e) s.add(0); if(x.m) s.add(1); if(x.a) s.add(2); if(x.s) s.add(3); if(x.q) s.add(4); if(x.h) s.add(5); });
+  return [...s].sort(); }
+const colorName = c => c ? (c==='g' ? 'Green' : C2[c].name) : '';
+const RXW = {
+  id:'rx', short:'Remix',
+  look(o){ const x=RXP(o.t);
+    if (x.k){ const d=W1K[x.k]; return {hex:d.hex,hi:d.hi,lo:d.lo,sheen:d.sheen,bounce:d.bounce||.3,face:'glyph',voice:x.k}; }
+    if (x.s==='p') return {hex:RF.p.hex, face:'critter', mood:'pebble', bounce:.1, voice:'pebble'};
+    const col=rxColor(x);
+    const hex = x.s ? RF[x.s].hex : col ? (col==='g' ? CH.g.hex : C2[col].hex) : x.n ? CH.x.hex : '#ffb02e';
+    const mood = x.u ? (x.u==='h'?'hungry':'full') : x.m==='g' ? 'grumpy' : x.n ? 'sing' : 'happy';
+    return {hex, face:'remix', n:x.e||2, mood, persona:x.q, crown:x.h==='x', cap:x.h==='f', badge:x.n?SOLF[x.n-1]:null, spikes:x.s==='s', tentacles:x.s==='j', antenna:x.s==='g',
+      species:x.s, prey:x.s?RX_EATS[x.s]:null, line:x.a?'G':null, al:x.a, baby:!!o.baby, bounce:o.baby?.45:x.s==='j'?.5:x.m==='h'?.4:.25,
+      voice: x.q ? 'q'+x.q : x.n ? 'sing'+x.n : x.s ? 'reef'+x.s : x.e ? 'pip'+x.e : x.m==='g' ? 'grumpy' : o.baby ? 'baby' : 'happy'}; },
+  radius(o){ const x=RXP(o.t); if (o.baby) return R*.8; if (x.s==='p') return R*.85; return x.e ? R*(.8+.1*x.e) : R; },
+  label(t,o){ const x=RXP(t); if (x.k) return W1K[x.k].name; if (x.s==='p') return 'Pebble';
+    const p=[]; const col=rxColor(x);
+    if (x.s) p.push(RF[x.s].name); else if (col) p.push(colorName(col)+(x.a?` (${x.a})`:''));
+    if (o&&o.baby) p[p.length-1]=(p[p.length-1]||'')+' baby';
+    if (x.e) p.push(`${x.e} eye${x.e>1?'s':''}`); if (x.n) p.push(SOLF[x.n-1]); if (x.q) p.push(QP[x.q]); if (x.h) p.push(x.h==='x'?'Prickly':'Sturdy');
+    if (x.u) p.push(x.u==='h'?'hungry':'full'); else if (x.m) p.push(x.m==='h'?'happy':'grumpy');
+    return p.join(' · '); },
+  react(mt,ts){ const r=rxReact(mt, ts.map(RXP));
+    if (r.fail) return {fail:r.fail, learnFail:r.learnFail};
+    if (r.aff) S.aff[affKey(r.aff[0],r.aff[1])]=r.aff[2];
+    const out={learn:r.learn, consume:r.consume, hearts:r.hearts, chomp:r.chomp, sing:r.sing, grow:r.grow};
+    if (r.transform) out.transform=r.transform.map(x=>x?RXF(x):null);
+    if (r.spawn) out.spawn=r.spawn.map(x=>({t:RXF(x), baby:!!x.baby}));
+    return out; },
+  accepts(spec,o){ return (L && (L.def.gateKind==='booth'||L.def.gateKind==='line')) ? true : rxMatch(spec, RXP(o.t)); },
+  boothMatch(spec,o){ return rxMatch(spec, RXP(o.t)); },
+  qobj(o){ return RXP(o.t); },
+  reqLabel(spec){ if (spec==='any') return 'Anyone'; const x=RXP(spec), p=[];
+    if (x.c) p.push(colorName(x.c)); if (x.s) p.push(x.s==='p'?'Pebble':RF[x.s].name); if (x.e) p.push(`${x.e} eye${x.e>1?'s':''}`); if (x.n) p.push(SOLF[x.n-1]);
+    return p.join(' · ') || 'Anyone'; },
+  ghost(spec){ return spec==='any' ? null : spec; },
+  validate(slots){ return rxValidate(L.def.gateKind, slots.map(o=>RXP(o.t))); },
+  seen(ts,res){ S.seen['rx|'+ts.join(' ')] = res.fail ? 'x' : (res.transform ? res.transform.map(t=>t||'0') : (res.spawn||[]).map(s=>s.t)).join(' ') || '-'; },
+  onWin(slots){ if (L.def.gateKind==='stage') W5.onWin(slots.map(o=>({t:'x'+RXP(o.t).n}))); else sfx.win(); },
+};
+[W2,W3,W4,WQ].forEach((w,i)=>RXL[i+1].forEach(d=>w.levels.push({...d, remix:true, from:rxSources(d)})));
+const isRemix = () => !!(L && L.def.remix);
+const famOf = o => o && o.t && o.t[0]==='*' ? RXW : world();
+const rules = () => isRemix() ? RXW : world();
+const radiusOf = o => famOf(o).radius(o);
+const gateKindNow = () => isRemix() ? L.def.gateKind : ['gate','bench','cradle','calm','line','seesaw','lantern'][S.world];
+const stackMode = () => !!(L && L.def.tubes);
+const MAIN_COUNT = 7;
+
+const UNLOCK_AT=6;
+const RULES = {
+  'w1:fuse':{g:'pip', text:'Two pips with the same number of eyes fuse into one with an extra eye.'},
+  'w1:mismatch':{g:'pip', text:'Pips with different eye counts refuse to fuse. Six eyes is the most.'},
+  'w1:twin':{g:'tw', text:'Turns into a copy of whatever it is pressed with.'},
+  'w1:twin2':{g:'tw', text:'Two Twins have nothing to copy.'},
+  'w1:split':{g:'sp', text:'Cracks a pip into two pips, each with one eye fewer.'},
+  'w1:splitf':{g:'sp', text:'Won’t crack a one-eyed pip, or anything that isn’t a pip.'},
+  'w1:bite':{g:'vo', text:'Shrinks a pip by one eye. A one-eyed pip vanishes completely.'},
+  'w1:voidf':{g:'vo', text:'Only bites pips. Other orbs are left alone.'},
+  'w1:wild':{g:'wi', text:'Counts as a match for any pip and fuses with it, adding an eye.'},
+  'w1:wildf':{g:'wi', text:'Only fuses with pips, and never past six eyes.'},
+  'w2:cheer':{g:'meet', text:'Orblings that get along cheer each other up.'},
+  'w2:friends':{g:'meet', text:'Two happy friends stay happy together.'},
+  'w2:clash':{g:'meet', text:'When clashing colors meet, both turn grumpy.'},
+  'w2:sulk':{g:'meet', text:'Two grumpy orblings just sulk. Nothing changes.'},
+  'w2:camp':{g:'camp', text:'Around the Campfire, the mood most of them share wins.'},
+  'w2:benchMood':{g:'bench', text:'Grumpy orblings refuse to sit on the bench.'},
+  'w2:benchClash':{g:'bench', text:'Neighbors on the bench have to get along.'},
+  'w3:clutch':{g:'nest', text:'Each baby gets one ear (or petal) from each parent. A clutch of four covers every combination.'},
+  'w3:oneclutch':{g:'nest', text:'Each Nest raises only one clutch.'},
+  'w3:species':{g:'nest', text:'Gold and Petal families can’t have babies together.'},
+  'w3:hidden':{g:'G', text:'One gold ear is enough to make the body Gold. A blue ear can hide on a Gold.'},
+  'w3:bluepure':{g:'G', text:'Two Blues only ever have Blue babies.'},
+  'w3:pure':{g:'G', text:'The Cradle checks for pure Gold: two gold ears.'},
+  'w4:eats':{g:'chain', text:'Spiky eats Jelly.'},
+  'w4:eatj':{g:'chain', text:'Jelly eats Glow.'},
+  'w4:eatg':{g:'chain', text:'Glow eats Spiky.'},
+  'w4:full':{g:'pool', text:'Once an orbling has eaten, it’s full and won’t eat again.'},
+  'w4:together':{g:'pool', text:'Everyone in the Tide pool eats at the same moment, so a hunter can be eaten while it eats.'},
+  'w4:nohunt':{g:'pool', text:'Orblings only eat the neighbor right next to them, and only their own kind of food.'},
+  'w4:allfull':{g:'pool', text:'Full orblings just float there. Nothing happens.'},
+  'w4:calm':{g:'calm', text:'The Calm pool only stays calm if no hungry orbling sits next to its food.'},
+  'w4:pebble':{g:'calm', text:'Pebbles never eat and never get eaten. They keep neighbors apart.'},
+  'w5:right':{g:'row', text:'In the Rehearsal row, each singer changes the note of the singer on its right.'},
+  'w5:order':{g:'row', text:'The row sings from left to right, so a changed singer passes on its new note.'},
+  'w5:b':{g:'voice', text:'Blue lowers its neighbor by one note.'},
+  'w5:y':{g:'voice', text:'Yellow raises its neighbor by one note.'},
+  'w5:g':{g:'voice', text:'Green makes its neighbor sing Green’s own note.'},
+  'w5:r':{g:'voice', text:'Red never changes anyone. It just sings.'},
+  'w5:clamp':{g:'voice', text:'Notes stop at Do on the way down and at Ti on the way up.'},
+  'ws:level':{g:'balance', text:'The same weight at the same distance on each side keeps the Seesaw level.'},
+  'ws:reach':{g:'balance', text:'Distance counts as much as weight: farther from the middle pushes harder.'},
+  'ws:trade':{g:'balance', text:'Weight times distance is what matters: 2 eyes three steps out balances 3 eyes two steps out.'},
+  'ws:team':{g:'balance', text:'Pushes on the same side add up.'},
+  'ws:middle':{g:'balance', text:'Whoever sits right in the middle doesn\u2019t tip it at all.'},
+  'ws:both':{g:'balance', text:'Sometimes the fix is adding weight to the heavy side too, and pushing back harder on the other.'},
+  'wl:mix':{g:'light', text:'Lights add together in the Lamp.'},
+  'wl:yellow':{g:'light', text:'Red light and Green light make Yellow.'},
+  'wl:white':{g:'light', text:'Red, Green and Blue together make White.'},
+  'wl:prism':{g:'light', text:'A Prism splits a color back into the lights it is made of.'},
+  'wl:pure':{g:'light', text:'Red, Green and Blue can\u2019t be split. They\u2019re pure.'},
+  'wl:clear':{g:'glass', text:'Light that matches the glass passes straight through.'},
+  'wl:filter':{g:'glass', text:'Glass keeps only the part of a light it shares, and drops the rest.'},
+  'wl:dark':{g:'glass', text:'If a glass shares nothing with a light, the light goes dark.'},
+  'wq:join':{g:'persona', text:'Orblings join the Ticket line at the back, one at a time, and react the moment they arrive.'},
+  'wq:z':{g:'persona', text:'Sleepy never moves.'},
+  'wq:c':{g:'persona', text:'Clingy joins right behind the last orbling of its own color.'},
+  'wq:p':{g:'persona', text:'Pushy cuts one place forward.'},
+  'wq:e':{g:'persona', text:'Eager jumps straight to the front.'},
+  'wq:coffee':{g:'cup', text:'Coffee wakes an orbling up one step: Sleepy, then Clingy, then Pushy, then Eager.'},
+  'wq:pillow':{g:'cup', text:'A Pillow calms an orbling down one step, back toward Sleepy.'},
+  'wq:maxed':{g:'cup', text:'Eager can\u2019t get any more awake.'},
+  'wq:floored':{g:'cup', text:'Sleepy can\u2019t get any sleepier.'},
+  'wt:size':{g:'stack', text:'Nobody will sit on someone smaller than themselves.'},
+  'wt:prickly':{g:'stack', text:'Prickly orblings won\u2019t carry anyone.'},
+  'wt:sturdy':{g:'stack', text:'Sturdy orblings carry anyone, whatever their size.'},
+  'wt:tools':{g:'stack', text:'Hatchery tools only work on orblings, not on each other.'},
+  'rx:sulkQueue':{g:'mix', text:'Grumpy orblings sulk when they join the line. They don\u2019t react at all.'},
+  'rx:grumpCarry':{g:'mix', text:'A grumpy orbling refuses to carry anyone.'},
+  'rx:clashStack':{g:'mix', text:'Orblings whose colors clash won\u2019t stack on each other.'},
+  'rx:twinStack':{g:'mix', text:'Twin dropped on someone turns into a copy of them, on top.'},
+  'rx:voidStack':{g:'mix', text:'Void dropped on someone takes away one of their eyes.'},
+  'rx:wildStack':{g:'mix', text:'Wild dropped on someone gives them an extra eye.'},
+  'rx:eatStack':{g:'mix', text:'A hungry hunter dropped onto its food eats it and takes its place.'},
+  'rx:twinAny':{g:'mix', text:'Twin copies any orbling, from any world, traits and all.'},
+  'rx:keep':{g:'mix', text:'Split, Void and Wild only change eyes. Color, mood and species stay the same.'},
+  'rx:pressKind':{g:'mix', text:'The Press only fuses orblings of the same color (or the same species) with the same eyes.'},
+  'rx:pressMood':{g:'mix', text:'If either one is grumpy, the fused orbling comes out grumpy.'},
+  'rx:noeyes':{g:'mix', text:'The Press only fuses orblings that have eyes to count. Twin can still copy anyone.'},
+  'rx:nomood':{g:'mix', text:'Only orblings with moods can use the Meeting spot or the Campfire.'},
+  'rx:colorGenes':{g:'mix', text:'In the remix, color is in the genes. Each ear is one color: Yellow beats Red, and Red beats Blue.'},
+  'rx:nestMood':{g:'mix', text:'Babies pick up their parents\u2019 mood. One grumpy parent means grumpy babies.'},
+  'rx:cradleMood':{g:'mix', text:'The Cradle won\u2019t take a grumpy baby.'},
+  'rx:bigFish':{g:'mix', text:'A hunter can only eat prey with no more eyes than itself.'},
+  'rx:green':{g:'mix', text:'Green gets along with everyone.'},
+  'rx:sulkSing':{g:'mix', text:'Grumpy singers sulk and don\u2019t change anyone\u2019s note.'},
+  'rx:stageMood':{g:'mix', text:'Grumpy singers won\u2019t go on stage.'},
+  'rx:nonote':{g:'mix', text:'Only singers can rehearse.'},
+  'w3:blend':{g:'P', text:'Red and White blend: their babies are Pink.'},
+  'w3:unblend':{g:'P', text:'Two Pinks can have Red, Pink and White babies.'},
+};
+const MT = {
+  press:{name:'Press',        holes:2, base:0, plate:['#f0cd7c','#c9953f','#8f6426']},
+  meet: {name:'Meeting spot', holes:2, base:2, plate:['#d9a273','#a8693f','#6e3f22']},
+  camp: {name:'Campfire',     holes:3, base:5, plate:['#7a5446','#553629','#33201a']},
+  nest: {name:'Nest',         holes:2, base:4, plate:['#e8c87a','#bf9447','#87632a']},
+  pool2:{name:'Tide pool',    holes:2, base:3, plate:['#7fc4d8','#3f8aa3','#20546a']},
+  pool3:{name:'Tide pool',    holes:3, base:3, plate:['#7fc4d8','#3f8aa3','#20546a']},
+  pool4:{name:'Tide pool',    holes:4, base:3, plate:['#7fc4d8','#3f8aa3','#20546a']},
+  row2: {name:'Rehearsal row',holes:2, base:0, plate:['#e8c6a0','#b88a5c','#7a5532']},
+  row3: {name:'Rehearsal row',holes:3, base:0, plate:['#e8c6a0','#b88a5c','#7a5532']},
+  lamp:  {name:'Lamp',       holes:2, base:4, plate:['#f3e3b0','#c9a85a','#8a6a2a']},
+  prism: {name:'Prism',      holes:1, base:9, plate:['#e2f2ff','#9fc3e6','#5e86ad']},
+  filter:{name:'Filter',     holes:2, base:6, plate:['#cfd6e4','#8d97ad','#555f75']},
+  coffee:{name:'Coffee',     holes:1, base:2, plate:['#c8a07a','#8a5a36','#4f301a']},
+  pillow:{name:'Pillow',     holes:1, base:9, plate:['#ddd6f2','#a79dd2','#6a5f99']},
+  lens: {name:'Lens',         holes:1, base:9, plate:['#b8e6f0','#6fb3c6','#3b7487']},
+};
+
+/* ======================= save ======================= */
+const KEY='orbwork-v2', OLD='orbwork-levels-v1';
+const blank = () => ({v4:1, v5:1, v6:1, world:0, prog:[0,1,2,3,4,5,6].map(()=>({level:0,best:{}})), learned:{}, seen:{}, aff:{}, food:{}, met:{}, visited:{}, cur:null});
+let S=blank();
+try {
+  const raw=localStorage.getItem(KEY);
+  if (raw){ const parsed=JSON.parse(raw); S=Object.assign(blank(), parsed); S.v4=parsed.v4; S.v5=parsed.v5; S.v6=parsed.v6; while (S.prog.length<7) S.prog.push({level:0,best:{}});
+    if (!S.v6){ S.prog[5]={level:0,best:{}}; delete S.visited[5]; delete S.visited.r5; if (S.world===5) S.world=0; if (S.cur&&S.cur.w===5) S.cur=null; S.v6=1; } S.food=S.food||{};
+    if (!S.v5){ S.prog[4]={level:0,best:{}}; S.v5=1; if (S.cur&&S.cur.w===4) S.cur=null; }
+    if (!S.v4){ S.prog[4]={level:0,best:{}}; delete S.visited[4]; delete S.visited.r4; if (S.world===4) S.world=0; if (S.cur&&S.cur.w===4) S.cur=null; S.v4=1; } }
+  else { const old=localStorage.getItem(OLD);
+    if (old){ const o=JSON.parse(old);
+      S.prog[0]={level:o.level||0, best:o.best||{}};
+      for (const k in (o.learned||{})) S.learned['w1:'+k]=1;
+      for (const k in (o.seen||{})) S.seen['w1|'+k]=o.seen[k];
+      for (const k in (o.fails||{})) S.seen['w1|'+k]='x';
+      S.met=Object.assign({}, o.met||{}); S.visited={0:1};
+      if (o.cur) S.cur=Object.assign({w:0}, o.cur);
+    } }
+} catch(e){}
+function save(){
+  if (L) S.cur = L.done ? null : {w:S.world, idx:L.idx, ...snapshot()};
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+}
+
+/* ======================= world state ======================= */
+let W=0,H=0,dpr=1,R=20,HR=29,GAP=11,PAD=14,floorY=0;
+let orbs=[], parts=[], rings=[], floats=[], queue=[], uid=0, time=0, shake=0;
+let held=null, hist=[], ptr={x:0,y:0}, spriteCache=new Map(), bg=null, machines=[], L=null;
+const world = () => WORLDS[S.world];
+const lookOf = o => famOf(o).look(o);
+
+/* ======================= audio ======================= */
+let ac=null, master=null, noiseBuf=null, muted=false, lastClack=0, lastLand=0;
+function audio(){
+  if (!ac){ try{
+    ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=.6;
+    const comp=ac.createDynamicsCompressor(); master.connect(comp).connect(ac.destination);
+    noiseBuf=ac.createBuffer(1,ac.sampleRate*.5,ac.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  }catch(e){ ac=null; } }
+  if (ac && ac.state==='suspended') ac.resume();
+}
+function tone(f0,f1,dur,type='sine',vol=.4,attack=.003,delay=0){
+  if(!ac||muted) return; const t=ac.currentTime+delay, o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+attack); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(master); o.start(t); o.stop(t+dur+.03);
+}
+function noise(dur,vol,freq,q=1,delay=0,f1){
+  if(!ac||muted) return; const t=ac.currentTime+delay, s=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
+  s.buffer=noiseBuf; f.type='bandpass'; f.frequency.setValueAtTime(freq,t); if(f1) f.frequency.exponentialRampToValueAtTime(f1,t+dur); f.Q.value=q;
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur); s.connect(f).connect(g).connect(master); s.start(t); s.stop(t+dur+.02);
+}
+const SCALE=[0,2,4,7,9,12,14,16];
+const noteF = s => 392*Math.pow(2,s/12);
+function voice(o,q=1){
+  const v=lookOf(o).voice, j=.94+Math.random()*.12;
+  if (v.startsWith('pip')){ const n=+v.slice(3), f=1350*(1-.085*(n-1))*j; tone(f,f*.24,.08+.01*n,'sine',.55*q); noise(.02,.2*q,3200,1.2); }
+  else if (v==='tw'){ tone(1200*j,330*j,.06,'sine',.45*q); tone(1500*j,400*j,.06,'sine',.4*q,.003,.07); }
+  else if (v==='sp'){ tone(1100*j,300*j,.07,'sine',.45*q); noise(.06,.28*q,6000,3); noise(.04,.2*q,4000,3,.05); }
+  else if (v==='vo'){ tone(420*j,70,.16,'sine',.65*q); noise(.1,.18*q,400,1,0,120); }
+  else if (v==='wi'){ tone(1300*j,420*j,.07,'sine',.45*q); tone(2400,2400,.25,'sine',.06*q,.004,.04); tone(3200,3200,.25,'sine',.05*q,.004,.09); }
+  else if (v==='happy'){ tone(700*j,1250*j,.09,'sine',.42*q); tone(1500*j,1800*j,.06,'sine',.2*q,.003,.08); noise(.015,.15*q,3000,1.2); }
+  else if (v==='grumpy'){ tone(300*j,160*j,.16,'triangle',.4*q); noise(.08,.12*q,500,1.5); }
+  else if (v==='baby'){ tone(1600*j,2300*j,.05,'sine',.35*q); tone(1700*j,2500*j,.05,'sine',.3*q,.003,.07); }
+  else if (v==='light'){ tone(1600*j,2200*j,.12,'sine',.25*q); tone(2400*j,2400*j,.3,'sine',.07*q,.01,.05); }
+  else if (v==='glass'){ tone(3200*j,3000*j,.18,'sine',.16*q); tone(4100*j,3900*j,.14,'sine',.08*q,.003,.04); }
+  else if (v==='qz'){ tone(330*j,200*j,.32,'sine',.3*q,.04); noise(.2,.05*q,500,1); }
+  else if (v==='qs'){ tone(1500*j,1900*j,.05,'sine',.22*q); }
+  else if (v==='qp'){ tone(520*j,380*j,.07,'square',.1*q); tone(700*j,520*j,.06,'sine',.35*q,.003,.05); }
+  else if (v==='qe'){ tone(800*j,1500*j,.07,'sine',.38*q); tone(1000*j,2000*j,.07,'sine',.3*q,.003,.08); }
+  else if (v.startsWith('sing')){ const f=noteF(SEMI[+v.slice(4)-1]); tone(f,f,.38,'triangle',.3*q,.02); tone(f*2,f*2.01,.3,'sine',.06*q,.02); }
+  else if (v==='reefs'){ tone(900*j,500*j,.06,'square',.12*q); noise(.04,.25*q,5000,4); }
+  else if (v==='reefj'){ tone(500*j,300*j,.18,'sine',.45*q); tone(520*j,700*j,.12,'sine',.2*q,.01,.08); }
+  else if (v==='reefg'){ tone(1800*j,2600*j,.08,'sine',.25*q); tone(2600,2600,.3,'sine',.07*q,.01,.06); }
+  else if (v==='pebble'){ tone(220,140,.06,'sine',.4*q); noise(.03,.3*q,900,2); }
+  else { tone(560*j,900*j,.11,'sine',.42*q); noise(.02,.15*q,2600,1.2); }
+}
+const sfx = {
+  pickup(o){ const l=lookOf(o), v=.9+Math.random()*.2; const b=l.voice==='vo'?260:l.voice==='grumpy'?320:l.voice==='baby'?800:l.n?560-40*l.n:620; tone(b*v,b*2*v,.07,'sine',.25); },
+  socket(i,base){ tone(640,105,.12,'sine',.65); noise(.025,.25,1300,2); const f=noteF(base+SCALE[i%8]); tone(f,f,.5,'triangle',.17,.004,.02); tone(f*2,f*2,.3,'sine',.05,.004,.02); },
+  clack(v){ if(time-lastClack<.04) return; lastClack=time; const p=.9+Math.random()*.3; tone(2100*p,1100*p,.025,'sine',Math.min(.16,v/4500)); },
+  land(v){ if(time-lastLand<.035) return; lastLand=time; tone(280,140,.05,'sine',Math.min(.16,v/5000)); },
+  charge(b){ const f=noteF(b); tone(f,f*2,.45,'triangle',.07,.05); },
+  fire(b){ [0,4,7,12].forEach((s,k)=>{ const f=noteF(b+s); tone(f,f,.4,'triangle',.13,.004,k*.05); }); noise(.2,.1,5000,.6,0,1200); },
+  learn(){ [12,16,19,24,28].forEach((s,k)=>{ const f=noteF(s); tone(f,f,.6,'sine',.11,.003,.25+k*.07); }); },
+  chomp(n){ for(let k=0;k<n;k++){ tone(320,120,.09,'square',.12,.003,k*.12); noise(.06,.35,1800,1.5,k*.12); tone(200,90,.12,'sine',.4,.003,.03+k*.12); } },
+  fizz(){ noise(.4,.3,1600,.8,0,200); tone(240,70,.32,'sawtooth',.05); },
+  denied(){ tone(210,150,.12,'square',.05); },
+  win(){ [0,4,7,12,16,19,24].forEach((s,k)=>{ const f=noteF(s); tone(f,f,.9,'triangle',.12,.004,k*.08); tone(f/2,f/2,.9,'sine',.06,.004,k*.08); }); },
+};
+
+/* ======================= encoding ======================= */
+const enc = o => o.t+'|'+(o.baby?'b':'')+(o.known?'k':'');
+const dec = s => { const [t,f='']=String(s).split('|'); return {t, baby:f.includes('b'), known:f.includes('k')}; };
+
+/* ======================= level setup ======================= */
+function newMachine(type, extra){ return Object.assign({type, slots:[], req:null, locked:null, state:'idle', t:0, rect:{x:0,y:0,w:0,h:0}, holesPos:[], shake:0, flash:0, bad:null, badT:0}, extra); }
+function buildMachines(def){
+  const w=world();
+  const gk=def.remix?GK[def.gateKind]:null;
+  const gate=newMachine('gate', {name:gk?gk.name:w.gateName, holes:def.gate.length, base:7, plate:gk?gk.plate:w.gatePlate,
+    req:def.gate.map(r=>r.startsWith('L:')?null:r), locked:def.gate.map(r=>r.startsWith('L:')?r.slice(2):null)});
+  gate.slots=def.gate.map(()=>null);
+  const gkind = def.remix ? def.gateKind : ['gate','bench','cradle','calm','line','seesaw','lantern'][S.world];
+  gate.kiosk = gkind==='line'; gate.seesaw = gkind==='seesaw'; gate.ang=0;
+  machines=[gate];
+  if (def.tubes){ gate.vertical=true;
+    def.tubes.forEach(([cap,...items])=>{ const m=newMachine('tube',{name:'', holes:cap, base:3, plate:['#c9d3e6','#8794ae','#4f5a75'], vertical:true, init:items}); m.slots=new Array(cap).fill(null); machines.push(m); });
+    return; }
+  (def.machines||['press']).forEach(t=>{ const m=newMachine(t, {...MT[t]}); m.slots=new Array(MT[t].holes).fill(null); machines.push(m); });
+}
+function seatGuests(){
+  const g=machines[0];
+  g.locked.forEach((t,i)=>{ if(!t) return; const o=makeOrb({t},0,0); o.locked=true; o.pop=1; o.hole={m:g,i}; g.slots[i]=o; });
+}
+function hatchList(list, gap){
+  list.forEach((s,k)=>queue.push({t:.2+k*gap, orb:s, fn:()=>{
+    const spec=dec(s), n=list.length, x=W*(k+1)/(n+1)+(Math.random()-.5)*R;
+    const o=makeOrb(spec, x, floorY-R*1.6, (Math.random()-.5)*120, -260-Math.random()*160); o.pop=0; o.phase=true; voice(o); burst(x,o.y,lookOf(o).hex,8);
+  }}));
+}
+function fillTubes(){ let k=0;
+  machines.forEach(m=>(m.init||[]).forEach((t,i)=>{ const o=makeOrb(dec(t),0,0); o.hole={m,i}; m.slots[i]=o; o.pop=0; const kk=k++; queue.push({t:.12+kk*.07, fn:()=>voice(o,.55)}); })); }
+function loadState(s){
+  if (s.stacks){ orbs=[]; queue=[]; held=null;
+    machines.forEach((m,mi)=>{ m.state='idle'; m.slots=m.slots.map(()=>null); (s.stacks[mi]||[]).forEach((e,i)=>{ if(!e) return; const o=makeOrb(dec(e),0,0); o.pop=1; o.hole={m,i}; m.slots[i]=o; }); });
+    L.moves=s.moves||0; return; }
+  orbs=orbs.filter(o=>o.locked); queue=[]; held=null;
+  machines.forEach((m,i)=>{ m.state='idle'; m.slots=m.slots.map(o=>o&&o.locked?o:null); m.used=!!(s.used&&s.used[i]); });
+  const g=machines[0];
+  (s.gate||[]).forEach((e,i)=>{ if(!e||!g.holesPos[i]||g.slots[i]) return; const o=makeOrb(dec(e),0,0); o.pop=1; o.hole={m:g,i}; g.slots[i]=o; });
+  hatchList(s.orbs||[], .09); L.moves=s.moves||0;
+}
+function startLevel(wi, i, restore){
+  S.world=wi; const w=world(); i=Math.max(0,Math.min(w.levels.length-1,i));
+  const def=w.levels[i]; L={idx:i, def, moves:0, history:[], done:false}; S.prog[wi].level=i;
+  orbs=[]; queue=[]; parts=[]; floats=[]; rings=[]; bubbles=[]; held=null;
+  buildMachines(def); layout(); seatGuests();
+  $('#done').hidden=true;
+  if (restore){ loadState(restore); updateHUD(); return; }
+  if (def.tubes) fillTubes(); else hatchList(def.orbs, .16);
+  if (def.remix){ if (!S.visited['r'+wi]){ S.visited['r'+wi]=1; S.visited.rx=1; setTimeout(()=>toast(`${w.short} Remix`, `These levels mix in rules from ${def.from.filter(f=>f!==wi).map(f=>WORLDS[f].name).join(' and ')}. Old rules still hold, plus a few new twists.`, 5200), 300); } }
+  else if (!S.visited[wi]){ S.visited[wi]=1; setTimeout(()=>toast(`New world · ${w.name}`, w.blurb, 4500), 300); }
+  else if (wi===0){ const fresh=[...new Set(def.orbs.map(kindOf))].filter(k=>k!=='pip'&&!S.met[k]);
+    fresh.forEach(k=>S.met[k]=1);
+    if (fresh.length) queue.push({t:.5+def.orbs.length*.16, fn:()=>toast(`New orb · ${W1K[fresh[0]].name}`, `${chipT(fresh[0],0)} Press it with other orbs to learn what it does`)}); }
+  (def.orbs||[]).forEach(t=>{ if(wi===0) S.met[kindOf(t)]=1; });
+  save(); updateHUD();
+}
+
+/* ======================= layout ======================= */
+function layout(){
+  const b=cv.getBoundingClientRect(); W=Math.max(1,b.width); H=Math.max(1,b.height); dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  let r=Math.max(14,Math.min(34, W*.085, H*.075));
+  while (r>11 && !tryLayout(r,false)) r-=.5;
+  tryLayout(r,true); R=r; floorY=H-4;
+  orbs.forEach(o=>{ o.r=radiusOf(o); if(!o.hole){ o.x=Math.min(Math.max(o.x,o.r),W-o.r); o.y=Math.min(o.y,floorY-o.r); } });
+  spriteCache.clear(); makeBg();
+}
+function tryLayout(r, apply){
+  const hr=r*1.45, gap=r*.55, pad=r*.7, labelH=r*1.3, badge=r*1.1, colGap=r*1.3, rowGap=r*.45, avail=W-20;
+  const kw=r*1.9, sizes=machines.map(m=>m.vertical ? {w:pad*2+hr*2, h:pad*1.5+m.holes*hr*2+(m.holes-1)*gap} : {w:pad*2+m.holes*hr*2+(m.holes-1)*gap+(m.kiosk?kw:0), h:hr*2+pad*1.5+(m.kiosk?r*.45:0)});
+  if (sizes.some(s=>s.w>avail)) return false;
+  const rows=[], total=sizes.reduce((s,z)=>s+z.w,0)+colGap*(machines.length-1);
+  if (total<=avail) rows.push(machines.map((_,i)=>i));
+  else { rows.push([0]); let row=[], rw=0;
+    for (let i=1;i<machines.length;i++){ const w=sizes[i].w; if(row.length && rw+colGap+w>avail){ rows.push(row); row=[]; rw=0; } if(row.length) rw+=colGap; rw+=w; row.push(i); }
+    if (row.length) rows.push(row); }
+  let y=badge+r*.2; const pos=[];
+  rows.forEach(row=>{ const tot=row.reduce((s,i)=>s+sizes[i].w,0)+colGap*(row.length-1), rh=Math.max(...row.map(i=>sizes[i].h)); let x=(W-tot)/2;
+    row.forEach(i=>{ pos[i]={x, y:y+(rh-sizes[i].h)/2}; x+=sizes[i].w+colGap; }); y+=rh+labelH+rowGap; });
+  if (!apply) return y<=H*(machines.some(m=>m.vertical)?.97:.6);
+  HR=hr; GAP=gap; PAD=pad;
+  machines.forEach((m,i)=>{ const s=sizes[i]; m.rect={x:pos[i].x,y:pos[i].y,w:s.w,h:s.h}; m.holesPos=[]; for(let k=0;k<m.holes;k++) m.holesPos.push(m.vertical ? {x:pos[i].x+pad+hr, y:pos[i].y+s.h-pad*.75-hr-k*(hr*2+gap)} : {x:pos[i].x+pad+hr+k*(hr*2+gap)+(m.kiosk?kw:0), y:pos[i].y+(s.h-(m.kiosk?r*.45:0))/2}); if (m.seesaw){ m.base=m.holesPos.map(p=>({...p})); applyTilt(m); } });
+  return true;
+}
+const SPR=1.45;
+function spriteFor(l){
+  const key=l.hex+(l.sheen?'s':''); if (spriteCache.has(key)) return spriteCache.get(key);
+  const rad=R*SPR, pad=3, s=Math.ceil((rad*2+pad*2)*dpr), c=document.createElement('canvas'); c.width=c.height=s;
+  const g=c.getContext('2d'); g.scale(dpr,dpr); const m=rad+pad, hi=l.hi||mix(l.hex,'#ffffff',.7), lo=l.lo||mix(l.hex,'#000000',.45);
+  const gr=g.createRadialGradient(m-rad*.35,m-rad*.4,rad*.08,m,m,rad); gr.addColorStop(0,hi); gr.addColorStop(.42,l.hex); gr.addColorStop(1,lo);
+  g.fillStyle=gr; g.beginPath(); g.arc(m,m,rad,0,7); g.fill();
+  if (l.sheen && g.createConicGradient){ const cg=g.createConicGradient(0,m,m); ['#ff8fb0','#8ff0e0','#b79bff','#ffd27a','#ff8fb0'].forEach((h,i)=>cg.addColorStop(i/4,h));
+    g.globalAlpha=.35; g.globalCompositeOperation='source-atop'; g.fillStyle=cg; g.fillRect(0,0,m*2,m*2); g.globalCompositeOperation='source-over'; g.globalAlpha=1; }
+  g.fillStyle='rgba(255,255,255,.8)'; g.beginPath(); g.ellipse(m-rad*.4,m-rad*.46,rad*.2,rad*.12,-.6,0,7); g.fill();
+  g.strokeStyle='rgba(0,0,0,.28)'; g.lineWidth=1; g.beginPath(); g.arc(m,m,rad-.5,0,7); g.stroke();
+  spriteCache.set(key,c); return c;
+}
+function makeBg(){
+  const w=world(); bg=document.createElement('canvas'); bg.width=cv.width; bg.height=cv.height; const g=bg.getContext('2d'); g.scale(dpr,dpr);
+  const gr=g.createRadialGradient(W/2,H*.25,10,W/2,H*.4,Math.max(W,H)*.8); gr.addColorStop(0,w.bg[0]); gr.addColorStop(1,w.bg[1]); g.fillStyle=gr; g.fillRect(0,0,W,H);
+  g.fillStyle='rgba(255,240,220,.05)'; const sp=26;
+  for(let y=sp/2;y<H;y+=sp) for(let x=sp/2;x<W;x+=sp){ g.beginPath();
+    if (S.world===1) g.ellipse(x,y,2.2,1,.6,0,7); else if (S.world===2) { g.arc(x+(y%52?0:13),y,1.6,0,7); } else g.arc(x,y,1.3,0,7); g.fill(); }
+  const tg=g.createLinearGradient(0,floorY-R*3,0,H); tg.addColorStop(0,'rgba(0,0,0,0)'); tg.addColorStop(1,'rgba(0,0,0,.35)'); g.fillStyle=tg; g.fillRect(0,floorY-R*3,W,H);
+}
+
+/* ======================= orbs ======================= */
+function makeOrb(spec,x,y,vx=0,vy=0){
+  const o={t:spec.t, baby:!!spec.baby, known:!!spec.known, x,y,vx,vy,r:R,sq:0,held:false,hole:null,locked:false,snap:1,sx:0,sy:0,id:++uid,pop:1,
+    lx:0,ly:0,blinkT:-1,blinkAt:time+1+Math.random()*4,trickT:-1,trickAt:time+4+Math.random()*8,glanceAt:0,gid:null,gx:0,gy:0};
+  o.r=radiusOf(o); orbs.push(o); return o; }
+function removeOrb(o){ const i=orbs.indexOf(o); if(i>=0) orbs.splice(i,1); }
+
+/* ======================= fx & ui helpers ======================= */
+function burst(x,y,hex,n=10,speed=220){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=speed*(.4+Math.random()*.8); parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0,max:.35+Math.random()*.35,c:hex,sz:R*(.12+Math.random()*.14)}); } }
+function hearts(x,y,n=4){ for(let i=0;i<n;i++) parts.push({x:x+(Math.random()-.5)*R,y,vx:(Math.random()-.5)*80,vy:-120-Math.random()*90,life:0,max:.9,c:'#ff8fb0',sz:R*.28,heart:true,g:-60}); }
+function ring(x,y,hex,max=R*2.2){ rings.push({x,y,c:hex,t:0,max}); }
+function floatText(x,y,text,c='#e6b95c'){ floats.push({x,y,text,c,t:0}); }
+let toastTimer=0;
+function toast(kind,html,ms=3400){ const t=$('#toast'); t.innerHTML=`<span class="k">${kind}</span><span class="v">${html}</span>`; t.hidden=false; t.style.animation='none'; void t.offsetWidth; t.style.animation=''; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,ms); }
+function chipT(t, wi=S.world, opts={}){
+  const w=t[0]==='*' ? RXW : WORLDS[wi], l=w.look({t, baby:opts.baby, known:false}), hi=mix(l.hex,'#ffffff',.45);
+  let inner='';
+  if (l.face==='pip') inner=`<text x="10" y="14" text-anchor="middle" font-size="11" font-weight="800" fill="#4a2000" font-family="Nunito,system-ui,sans-serif">${l.n}</text>`;
+  else if (l.face==='glyph') inner=`<text x="10" y="14" text-anchor="middle" font-size="11" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">${W1K[kindOf(t)].glyph}</text>`;
+  else if (l.face==='remix' && !l.badge && t.includes('e=')) inner=`<text x="10" y="14" text-anchor="middle" font-size="10" font-weight="800" fill="#2a1408" font-family="Nunito,system-ui,sans-serif">${l.n}</text>`+(l.mood==='grumpy'?`<path d="M5 4.6 8.4 5.8M15 4.6 11.6 5.8" stroke="#24110a" stroke-width="1.3" stroke-linecap="round"/>`:l.mood==='hungry'?`<circle cx="15.5" cy="15.5" r="2.2" fill="#24110a"/>`:'');
+  else if (l.badge) inner=`<text x="10" y="13.6" text-anchor="middle" font-size="${l.badge.length>2?7:8.5}" font-weight="800" fill="#2a1030" font-family="Nunito,system-ui,sans-serif">${l.badge}</text>`;
+  else if (l.mood==='hungry') inner=`<circle cx="7" cy="8.5" r="1.7" fill="#24110a"/><circle cx="13" cy="8.5" r="1.7" fill="#24110a"/><ellipse cx="10" cy="13.6" rx="2.6" ry="1.8" fill="#24110a"/>`;
+  else if (l.mood==='full'||l.mood==='pebble') inner=`<path d="M5.6 9h3M11.4 9h3" stroke="#24110a" stroke-width="1.4" stroke-linecap="round"/>`+(l.mood==='full'?`<path d="M7.4 12.6Q10 15 12.6 12.6" stroke="#24110a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`:'');
+  else { const grump=l.mood==='grumpy';
+    inner=`<circle cx="7" cy="9" r="1.7" fill="#24110a"/><circle cx="13" cy="9" r="1.7" fill="#24110a"/>`+
+      (grump?`<path d="M5 5.6 8.6 7M15 5.6 11.4 7M7.2 14.6Q10 12.2 12.8 14.6" stroke="#24110a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`
+            :`<path d="M7.4 12.6Q10 15 12.6 12.6" stroke="#24110a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`); }
+  return `<svg class="chip" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="${l.hex}" stroke="rgba(0,0,0,.3)"/><circle cx="7" cy="6.5" r="2" fill="${hi}" opacity=".6"/>${inner}</svg>`;
+}
+
+/* ======================= machines ======================= */
+function holeAccepts(m,i,o){
+  if (stackMode()) return false;
+  if (m.slots[i] || m.state!=='idle' || m.used || (L&&L.done)) return false;
+  if (m.type==='gate' && gateKindNow()==='line') return i===m.slots.filter(Boolean).length;
+  if (m.type==='gate' && m.seesaw) return true;
+  if (m.type==='gate') return m.req[i]!==null && rules().accepts(m.req[i],o);
+  return true;
+}
+function findHole(o, wrongToo){
+  let best=null, bd=HR*2.3;
+  machines.forEach(m=>m.holesPos.forEach((h,i)=>{ if(m.slots[i]||m.state!=='idle') return;
+    const ok=holeAccepts(m,i,o); if(!ok && (!wrongToo || m.type!=='gate')) return;
+    const d = (m.type==='gate' && gateKindNow()==='line') ? Math.hypot(o.x-Math.max(m.rect.x,Math.min(o.x,m.rect.x+m.rect.w)), o.y-Math.max(m.rect.y,Math.min(o.y,m.rect.y+m.rect.h))) : Math.hypot(h.x-o.x,h.y-o.y);
+    if(d<bd || (ok && best && !best.ok && d<HR*2.3)){ bd=d; best={m,i,h,ok}; } }));
+  return best;
+}
+function placeInHole(o,m,i){
+  const lineDrop = m.type==='gate' && gateKindNow()==='line', seatDrop = m.type==='gate' && m.seesaw;
+  if (lineDrop || seatDrop){ L.history.push(snapshot()); L.moves++; }
+  m.slots[i]=o; o.hole={m,i}; o.vx=o.vy=0; o.snap=0; o.sx=o.x; o.sy=o.y;
+  const h=m.holesPos[i], hex=lookOf(o).hex; sfx.socket(i,m.base); ring(h.x,h.y,hex,HR*1.8); burst(h.x,h.y,hex,7,160);
+  if (lineDrop){ lineArrive(m,o); return; }
+  if (seatDrop){ updateHUD(); return; }
+  if (m.slots.every(Boolean)){ m.state='charging'; m.t=m.type==='gate'?.6:.5; sfx.charge(m.base);
+    if (m.type!=='gate' || rules().validate || gateKindNow()==='booth') L.history.push(snapshot()); }
+}
+/* ---- Queue: the newcomer reacts as it joins ---- */
+function lineArrive(m,o){
+  const rl=rules(), n=m.slots.filter(Boolean).length, before=m.slots.slice(0,n);
+  const objs=before.map(x=>{ const q=rl.qobj(x); q._o=x; return q; });
+  const res=qJoin(objs.slice(0,n-1), objs[n-1]), order=res.line.map(x=>x._o);
+  learn('wq:join');
+  order.forEach((x,i)=>{ const oi=before.indexOf(x); m.slots[i]=x; x.hole={m,i};
+    if (oi!==i){ if (x===o){ x.sx=x.x; x.sy=x.y; } else { x.sx=m.holesPos[oi].x; x.sy=m.holesPos[oi].y; } x.snap=0; x.snapDur=x===o?.42:.3; } });
+  res.events.forEach((ev,k)=>{ const who=ev._o||ev.who._o; const d=k*.35;
+    queue.push({t:.12+d, fn:()=>{ say(who, ev.say, ev.kind);
+      if (ev.kind==='p'){ tone(520,300,.08,'square',.12); noise(.05,.3,900,2); who.sq=.3; }
+      else if (ev.kind==='bumped'){ who.sq=.25; tone(700,520,.06,'sine',.2); }
+      else if (ev.kind==='e'){ tone(600,1600,.18,'sine',.25); noise(.18,.12,3000,.8,0,6000); }
+      else if (ev.kind==='c'||ev.kind==='friend'){ voice(who,.6); hearts(posOf(who).x, posOf(who).y-who.r, 2); }
+      else if (ev.kind==='sulk'){ tone(260,170,.18,'triangle',.25); }
+      else voice(who,.5); }});
+    const kind={p:'wq:p',e:'wq:e',c:'wq:c',z:'wq:z',sulk:'rx:sulkQueue'}[ev.kind]; if (kind) queue.push({t:.9+d, fn:()=>learn(kind)}); });
+  if (m.slots.every(Boolean)){ m.state='charging'; m.t=.9+res.events.length*.35; sfx.charge(m.base); }
+  updateHUD();
+}
+/* ---- Seesaw: weight x distance ---- */
+function torque(m){ let t=0; m.slots.forEach((o,i)=>{ if(o) t+=(+o.t[1])*(i-3); }); return t; }
+function applyTilt(m){ if (!m.base) return; const pv=m.base[3], c=Math.cos(m.ang||0), s=Math.sin(m.ang||0);
+  m.holesPos=m.base.map(p=>({x:pv.x+(p.x-pv.x)*c-(p.y-pv.y)*s, y:pv.y+(p.x-pv.x)*s+(p.y-pv.y)*c})); }
+function seesawTick(m,dt){
+  const tq=torque(m), target=Math.max(-.34,Math.min(.34,tq*.09)); const was=m.ang||0;
+  m.ang=was+(target-was)*Math.min(1,dt*5); applyTilt(m);
+  if (Math.abs(target-was)>.01 && Math.abs(m.ang-target)<.004 && !m.creaked){ m.creaked=true; tone(140,110,.18,'triangle',.12); noise(.12,.06,600,2); }
+  if (Math.abs(target-m.ang)>.02) m.creaked=false;
+  const aboard = !orbs.some(o=>!o.hole) && !held && !queue.some(q=>q.orb);
+  if (m.state==='idle' && !L.done && aboard && tq===0 && Math.abs(m.ang)<.02){ m.state='charging'; m.t=.8; sfx.charge(m.base?7:0); seesawLearn(m); }
+  if (m.state==='idle' && aboard && tq!==0 && !m.toldTip){ m.toldTip=true; floatText(m.rect.x+m.rect.w/2, m.rect.y-R*.8, 'Everyone\u2019s aboard, but it\u2019s tipping', '#ffd27a'); }
+  if (!aboard) m.toldTip=false;
+}
+function seesawLearn(m){
+  const sides={L:[],R:[]}; m.slots.forEach((o,i)=>{ if(!o) return; const d=i-3; if(d<0) sides.L.push([+o.t[1],-d,o.locked]); else if(d>0) sides.R.push([+o.t[1],d,o.locked]); });
+  learn('ws:level');
+  const all=[...sides.L,...sides.R]; if (sides.L.length===1&&sides.R.length===1&&all[0][0]!==all[1][0]) learn(all[0][1]*all[0][0]===all[1][1]*all[1][0] && all[0][0]>1 && all[1][0]>1 ? 'ws:trade' : 'ws:reach');
+  if (sides.L.length>1||sides.R.length>1) learn('ws:team');
+  if (m.slots[3]) learn('ws:middle');
+  const lockedSide = s=>s.some(x=>x[2]); if ((lockedSide(sides.L)&&sides.L.some(x=>!x[2])) || (lockedSide(sides.R)&&sides.R.some(x=>!x[2]))) learn('ws:both');
+}
+/* ---- Commons: clashing neighbors glare at each other ---- */
+function clashColor(o){ if (o.t[0]==='*') return rxColor(RXP(o.t)); if (S.world===1 && !isRemix()) return o.t[0]; return null; }
+function clashes(a,b){ const ca=clashColor(a), cb=clashColor(b); return !!(ca&&cb&&!rxAlong(ca,cb)); }
+function glareTick(){
+  orbs.forEach(o=>{ o.glare=null; });
+  if (gateKindNow()!=='bench' || !machines[0]) return;
+  const g=machines[0], pairs=[];
+  for (let i=0;i<g.holes-1;i++){ const a=g.slots[i], b=g.slots[i+1]; if (a&&b&&clashes(a,b)) pairs.push([a,b]); }
+  if (held){ const t=findHole(held,false); if (t && t.m===g) [t.i-1,t.i+1].forEach(j=>{ const n=g.slots[j]; if (n && clashes(held,n)) pairs.push([held,n]); }); }
+  pairs.forEach(([a,b])=>{ a.glare=b; b.glare=a; });
+  orbs.forEach(o=>{ if (o.glare && !o.glareWas){ tone(170,120,.22,'sawtooth',.06); noise(.15,.1,400,2); o.sq=.2; } o.glareWas=!!o.glare; });
+}
+function angerFx(o,r){
+  ctx.fillStyle='rgba(255,40,40,.22)'; ctx.beginPath(); ctx.arc(0,0,r*.98,0,7); ctx.fill();
+  ctx.strokeStyle='#4a0d0d'; ctx.lineWidth=Math.max(1.6,r*.09); ctx.lineCap='round'; ctx.beginPath();
+  ctx.moveTo(-r*.55,-r*.52); ctx.lineTo(-r*.12,-r*.32); ctx.moveTo(r*.55,-r*.52); ctx.lineTo(r*.12,-r*.32); ctx.stroke();
+  ctx.fillStyle='#fff'; rr(-r*.2,r*.32,r*.4,r*.17,r*.05); ctx.fill(); ctx.strokeStyle='#4a0d0d'; ctx.lineWidth=Math.max(1,r*.04); ctx.stroke();
+  ctx.beginPath(); for (let k=1;k<4;k++){ ctx.moveTo(-r*.2+k*r*.1,r*.32); ctx.lineTo(-r*.2+k*r*.1,r*.49); } ctx.stroke();
+  const vx=r*.62, vy=-r*.78, vs=r*.17; ctx.strokeStyle='#ff3b3b'; ctx.lineWidth=Math.max(1.6,r*.08);
+  [[1,1],[-1,1],[1,-1],[-1,-1]].forEach(([a,b])=>{ ctx.beginPath(); ctx.arc(vx+a*vs,vy+b*vs,vs*.75, a>0?(b>0?Math.PI:Math.PI*1.5):(b>0?Math.PI*.5:0), (a>0?(b>0?Math.PI:Math.PI*1.5):(b>0?Math.PI*.5:0))+Math.PI*.5); ctx.stroke(); });
+}
+/* ---- speech bubbles ---- */
+let bubbles=[];
+function say(o, text, kind){ bubbles=bubbles.filter(b=>b.o!==o); bubbles.push({o, text, t:0, life:1.9, bad:kind==='sulk'||kind==='bumped'}); }
+/* ---- Tower: stacks ---- */
+const stackOf = m => m.slots.filter(Boolean);
+function topIndex(m){ let t=-1; m.slots.forEach((o,i)=>{ if(o) t=i; }); return t; }
+function stackTarget(o, px, py){
+  let best=null, bd=Infinity;
+  machines.forEach(m=>{ const r=m.rect, cx=Math.max(r.x,Math.min(px,r.x+r.w)), cy=Math.max(r.y,Math.min(py,r.y+r.h)), d=Math.hypot(px-cx,py-cy); if (d<HR*1.4 && d<bd){ bd=d; best=m; } });
+  if (!best) return null;
+  const m=best, objs=stackOf(m).map(x=>RXP(x.t)), up=RXP(o.t), res=rxDrop(objs, up, m.holes);
+  let ok=!res.fail, why=res.fail;
+  if (ok && m.type==='gate' && !res.stack.every((x,i)=>rxMatch(m.req[i],x))){ ok=false; why='summitSpec'; }
+  const n=objs.length; let land=n;
+  if (ok && (up.k==='vo'||up.k==='wi'||(!up.k&&n&&rxBites(up,objs[n-1])))) land=n-1;
+  land=Math.max(0,Math.min(m.holes-1,land));
+  return {m, ok, res, land, why, same: !!(o.origin && o.origin.m===m)};
+}
+const WHY={'wt:size':'Too big to sit there','wt:prickly':'Prickly! Nobody sits on that','rx:grumpCarry':'Too grumpy to carry anyone','rx:clashStack':'They clash','wt:tools':'Tools only work on orblings','full':'No room','w1:voidf':'Void only bites orblings with eyes','w1:wildf':'Wild can\u2019t add an eye there'};
+function returnHome(o){ const g=o.origin; o.origin=null; if(!g) return; g.m.slots[g.i]=o; o.hole={m:g.m,i:g.i}; o.snap=0; o.sx=o.x; o.sy=o.y; tone(500,300,.05,'sine',.15); }
+function dropOnStack(o, st){
+  const m=st.m, up=RXP(o.t), n=stackOf(m).length, lo=n?m.slots[n-1]:null;
+  L.history.push(L.pending||snapshot()); L.moves++; o.origin=null;
+  const newTop=st.res.stack[st.res.stack.length-1];
+  if (up.k==='vo' || up.k==='wi'){
+    const h=m.holesPos[n-1]; burst(h.x,h.y,lookOf(o).hex,16,260); ring(h.x,h.y,lookOf(o).hex,HR*2); removeOrb(o);
+    if (st.res.stack.length<n){ burst(h.x,h.y,lookOf(lo).hex,16,260); removeOrb(lo); m.slots[n-1]=null; floatText(h.x,m.rect.y-4,'Gone','#b9a2ff'); }
+    else { lo.t=RXF(newTop); lo.r=radiusOf(lo); lo.blinkT=0; lo.sq=.3; floatText(h.x,m.rect.y-4,up.k==='wi'?'+1 eye':'\u22121 eye','#ffd27a'); }
+    sfx.fire(m.base);
+  } else if (!up.k && lo && rxBites(up,RXP(lo.t))){
+    const h=m.holesPos[n-1]; burst(h.x,h.y,lookOf(lo).hex,18,320); removeOrb(lo); sfx.chomp(1); floatText(h.x,m.rect.y-4,'Chomp!','#ffd27a');
+    o.t=RXF(newTop); o.r=radiusOf(o); m.slots[n-1]=o; o.hole={m,i:n-1}; o.snap=0; o.sx=o.x; o.sy=o.y;
+  } else {
+    if (up.k==='tw'){ o.t=RXF(newTop); o.r=radiusOf(o); burst(o.x,o.y,lookOf(o).hex,14,240); floatText(o.x,m.rect.y-4,'Copy!','#ffd27a'); }
+    m.slots[n]=o; o.hole={m,i:n}; o.snap=0; o.sx=o.x; o.sy=o.y;
+    const h=m.holesPos[n]; sfx.socket(n,m.base); ring(h.x,h.y,lookOf(o).hex,HR*1.8); burst(h.x,h.y,lookOf(o).hex,7,160);
+  }
+  (st.res.learn||[]).forEach(learn);
+  const g=machines[0];
+  if (g.slots.every(Boolean) && g.slots.every((x,i)=>rxMatch(g.req[i],RXP(x.t)))){ g.state='charging'; g.t=.6; sfx.charge(g.base); }
+  updateHUD();
+}
+function snapshot(){
+  if (stackMode()) return {stacks:machines.map(m=>m.slots.map(o=>o?enc(o):null)), moves:L.moves};
+  const g=machines[0];
+  return { orbs:[...orbs.filter(o=>!o.locked && !(o.hole&&o.hole.m===g)).map(enc), ...queue.filter(q=>q.orb).map(q=>q.orb)],
+           gate:g.slots.map(o=>o&&!o.locked?enc(o):null), used:machines.map(m=>m.used?1:0), moves:L?L.moves:0 }; }
+function ejectFrom(m, list){
+  const by=m.rect.y+m.rect.h, n=list.length;
+  list.forEach((o,k)=>{ const h=m.holesPos[o.hole?o.hole.i:k]||m.holesPos[0]; o.hole=null; o.r=radiusOf(o);
+    o.x=h.x; o.y=by+o.r+1; o.vx=(k-(n-1)/2)*240+(Math.random()-.5)*80; o.vy=60+Math.random()*100; o.sq=.25; o.phase=true; });
+}
+function resolveMachine(m){
+  const w=rules(), ins=m.slots.slice(), ts=ins.map(o=>o.t), res=w.react(m.type,ts);
+  const cx=m.rect.x+m.rect.w/2, by=m.rect.y+m.rect.h;
+  L.moves++; w.seen(ts,res);
+  m.slots=m.slots.map(()=>null);
+  if (res.fail){
+    ejectFrom(m, ins); m.shake=.5; sfx.fizz(); floatText(cx,m.rect.y-4,'Nothing happens','#a698c4'); learn(res.fail); (res.learnFail||[]).forEach(learn);
+  } else {
+    if (res.consume){ ins.forEach((o,i)=>{ const h=m.holesPos[i], hex=lookOf(o).hex; burst(h.x,h.y,hex,14,280); ring(h.x,h.y,hex,HR*2.6); removeOrb(o); }); }
+    else {
+      let alive=ins;
+      if (res.transform){
+        const gone=ins.filter((o,i)=>res.transform[i]===null);
+        ins.forEach((o,i)=>{ const nt=res.transform[i]; if(nt===null) return; const was=o.t; o.t=nt; if(was!==o.t){ const h=m.holesPos[i]; burst(h.x,h.y,lookOf(o).hex,12,240); o.blinkT=0; } });
+        gone.forEach(o=>{ const h=m.holesPos[o.hole.i], hex=lookOf(o).hex; burst(h.x,h.y,hex,18,320); ring(h.x,h.y,hex,HR*2.4); removeOrb(o); });
+        if (gone.length){ sfx.chomp(gone.length); floatText(cx,m.rect.y-4,gone.length>1?'Chomp chomp!':'Chomp!','#ffd27a'); }
+        alive=ins.filter(o=>!gone.includes(o));
+      }
+      if (res.reveal) alive.forEach(o=>{ o.known=true; floatText(cx,m.rect.y-4,`${alle(o.t)}`,'#cfeff7'); });
+      if (res.grow) alive.forEach(o=>{ o.baby=false; });
+      ejectFrom(m, alive);
+      alive.forEach(o=>{ o.trickT=0; });
+      if (m.type==='coffee'||m.type==='pillow') alive.forEach(o=>queue.push({t:.15, fn:()=>say(o, m.type==='coffee'?'Wide awake!':'Yaaawn\u2026')}));
+      const gap=res.sing?260:70;
+      queue.push({t:.05, fn:()=>alive.forEach((o,k)=>setTimeout(()=>voice(o,.8),k*gap))});
+    }
+    if (res.hearts) hearts(cx,m.rect.y,6);
+    (res.spawn||[]).forEach((s,k,arr)=>queue.push({t:.12+k*.11, orb:enc(s), fn:()=>{
+      const o=makeOrb(s, cx+(k-(arr.length-1)/2)*R*1.4, by+R+2, (k-(arr.length-1)/2)*240+(Math.random()-.5)*80, 90+Math.random()*80);
+      o.pop=0; o.phase=true; burst(o.x,o.y,lookOf(o).hex,8); voice(o,.85); }}));
+    if (res.consume && !(res.spawn||[]).length) floatText(cx,m.rect.y-4,'Gone','#b9a2ff');
+    sfx.fire(m.base); m.flash=1; shake=Math.max(shake,.3);
+    learn(res.verb); (res.learn||[]).forEach(learn);
+    if (m.type==='nest'){ m.used=true; if (machines.filter(x=>x.type==='nest').length>1) learn('oneclutch'); }
+  }
+  m.state='idle'; save(); updateHUD();
+}
+function learn(rule){
+  const key=String(rule).includes(':') ? rule : world().id+':'+rule;
+  if (!rule || !RULES[key] || S.learned[key]) return;
+  S.learned[key]=1; sfx.learn(); toast(`Notebook · ${({w1:'Hatchery',w2:'Commons',w3:'Nursery',w4:'Reef',wq:'Queue',wt:'Tower',ws:'Seesaw',wl:'Lighthouse',rx:'Remix'})[key.split(':')[0]]}`, RULES[key].text, 4200);
+}
+function resolveGate(m){
+  const w=world(), rl=rules();
+  let v = rl.validate ? rl.validate(m.slots, m.req) : {ok:true};
+  if (v.ok && gateKindNow()==='line'){ const bad=m.slots.map((o,i)=>rl.boothMatch(m.req[i],o)?-1:i).filter(i=>i>=0);
+    if (bad.length) v={fail:'wq:wrong', bad, msg:'Not the right order. Everyone steps out.'}; }
+  if (!v.ok){
+    if (gateKindNow()!=='line') L.moves++; m.bad=v.bad; m.badT=1.6; m.shake=.6; sfx.fizz(); learn(v.fail);
+    v.bad.forEach(i=>{ const h=m.holesPos[i]; ring(h.x,h.y,'#ff7a9c',HR*2.2); });
+    floatText(m.rect.x+m.rect.w/2, m.rect.y-R*1.2, v.msg, '#ff9db4');
+    const out=m.slots.filter(o=>o&&!o.locked); m.slots=m.slots.map(o=>o&&o.locked?o:null);
+    ejectFrom(m,out); out.forEach(o=>{ if(lookOf(o).mood==='grumpy') o.trickT=0; });
+    m.state='idle'; save(); updateHUD(); return;
+  }
+  const winSlots=m.slots.slice();
+  m.slots.forEach((o,i)=>{ const h=m.holesPos[i]; for(let k=0;k<3;k++) ring(h.x,h.y,k?'#ffffff':'#e6b95c',HR*(2+k*1.5)); burst(h.x,h.y,'#e6b95c',22,360); if(gateKindNow()==='bench') hearts(h.x,h.y,3); removeOrb(o); });
+  m.slots=m.slots.map(()=>null); m.state='open'; shake=1; if (rl.onWin) rl.onWin(winSlots); else sfx.win(); L.done=true;
+  const par=L.def.par, mv=L.moves, stars = mv<=par?3 : mv<=par+2?2 : 1;
+  const best=S.prog[S.world].best; best[L.idx]=Math.max(best[L.idx]||0,stars);
+  const justUnlocked = S.world===0 && Object.keys(best).length===UNLOCK_AT && !S.unlockNote;
+  if (justUnlocked) S.unlockNote=1;
+  save(); updateHUD();
+  setTimeout(()=>{
+    const last=L.idx===w.levels.length-1;
+    const mainDone = L.idx===MAIN_COUNT-1 && w.levels.length>MAIN_COUNT;
+    $('#done-title').textContent = last ? `${w.name}: all done` : mainDone ? `${w.name} complete` : GK[gateKindNow()].title;
+    $('#done-stars').innerHTML = [1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">★</span>`).join('');
+    $('#done-text').textContent = `${mv} move${mv===1?'':'s'} · par ${par}` + (stars<3?' · Replay to beat par':'') + (justUnlocked?' · New worlds opened on the Map':'') + (mainDone?' · Remix levels unlocked':'');
+    $('#done-next').textContent = (last||justUnlocked)?'Open the Map':mainDone?'Play the Remix':'Next level';
+    $('#done-next').dataset.map = (last||justUnlocked)?'1':'';
+    $('#done').hidden=false;
+  }, 900);
+}
+function undo(){
+  if (!L || !L.history.length || L.done) return;
+  loadState(L.history.pop()); updateHUD(); save();
+}
+
+/* ======================= input ======================= */
+function pt(e){ const b=cv.getBoundingClientRect(); return {x:e.clientX-b.left, y:e.clientY-b.top}; }
+cv.addEventListener('pointerdown',e=>{
+  audio(); if(!L||L.done) return; const p=pt(e); ptr=p;
+  if (stackMode()){ let pk=null;
+    machines.forEach(m=>{ if(m.state!=='idle') return; const ti=topIndex(m); if(ti<0) return; const h=m.holesPos[ti]; if (Math.hypot(h.x-p.x,h.y-p.y)<HR*1.25) pk={m,i:ti}; });
+    if (!pk) return; L.pending=snapshot();
+    const o=pk.m.slots[pk.i]; pk.m.slots[pk.i]=null; o.hole=null; o.x=pk.m.holesPos[pk.i].x; o.y=pk.m.holesPos[pk.i].y; o.origin=pk; o.snap=1;
+    held=o; o.held=true; o.vx=o.vy=0; hist=[{x:p.x,y:p.y,t:performance.now()}]; sfx.pickup(o); ring(o.x,o.y,lookOf(o).hex,o.r*1.8);
+    try{ cv.setPointerCapture(e.pointerId); }catch(_){} return; }
+  let pick=null, pd=Infinity;
+  for (const o of orbs){ if(o.hole) continue; const d=Math.hypot(o.x-p.x,o.y-p.y); if(d<Math.max(o.r*1.5,22) && d<pd){ pd=d; pick=o; } }
+  if (!pick) machines.forEach(m=>{ if(m.state!=='idle') return; m.slots.forEach((o,i)=>{ if(!o||o.locked||(m.type==='gate'&&gateKindNow()==='line')) return; const h=m.holesPos[i];
+    if (Math.hypot(h.x-p.x,h.y-p.y)<HR){ pick=o; m.slots[i]=null; o.hole=null; o.x=h.x; o.y=h.y; o.snap=1; } }); });
+  if (pick){ held=pick; pick.held=true; pick.phase=false; pick.vx=pick.vy=0; hist=[{x:p.x,y:p.y,t:performance.now()}]; sfx.pickup(pick); ring(pick.x,pick.y,lookOf(pick).hex,pick.r*1.8);
+    try{ cv.setPointerCapture(e.pointerId); }catch(_){} }
+});
+cv.addEventListener('pointermove',e=>{ ptr=pt(e); if(held){ hist.push({x:ptr.x,y:ptr.y,t:performance.now()}); if(hist.length>8) hist.shift(); } });
+function release(){
+  if (!held) return; const o=held; held=null; o.held=false;
+  if (stackMode()){ const st=stackTarget(o, ptr.x, ptr.y);
+    if (st && st.ok && !st.same) dropOnStack(o, st);
+    else { if (st && !st.ok && !st.same){ sfx.denied(); st.m.shake=.35; learn(st.why);
+        const msg = st.why==='summitSpec' ? `The Summit wants ${rules().reqLabel(st.m.req[Math.min(st.m.holes-1,stackOf(st.m).length)])}` : (WHY[st.why]||'Won\u2019t fit there');
+        floatText(st.m.rect.x+st.m.rect.w/2, st.m.rect.y-R*.4, msg, '#ff9db4'); }
+      returnHome(o); }
+    save(); return; }
+  const t=findHole(o,true);
+  if (t && t.ok){ placeInHole(o,t.m,t.i); }
+  else {
+    if (t && !t.ok && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4 && t.m.req[t.i]){ sfx.denied(); t.m.shake=.35; floatText(t.h.x,t.m.rect.y-R*1.2,`Wants ${rules().reqLabel(t.m.req[t.i])}`,'#ff7a9c'); }
+    const now=performance.now(); let a=hist[0]; for(const h of hist) if(now-h.t<=90){ a=h; break; }
+    const b=hist[hist.length-1], dt=Math.max(16,b.t-a.t)/1000;
+    o.vx=Math.max(-1600,Math.min(1600,(b.x-a.x)/dt)); o.vy=Math.max(-1600,Math.min(1600,(b.y-a.y)/dt));
+  }
+  save();
+}
+cv.addEventListener('pointerup',release); cv.addEventListener('pointercancel',release);
+
+/* ======================= physics ======================= */
+const G=1900;
+function circleRect(o,r){
+  const cx=Math.max(r.x,Math.min(o.x,r.x+r.w)), cy=Math.max(r.y,Math.min(o.y,r.y+r.h)); const dx=o.x-cx, dy=o.y-cy, d=Math.hypot(dx,dy);
+  if (d>=o.r) return; let nx,ny,pen;
+  if (d<.001){ const l=o.x-r.x, rr=r.x+r.w-o.x, t=o.y-r.y, bb=r.y+r.h-o.y, mn=Math.min(l,rr,t,bb);
+    if(mn===l){nx=-1;ny=0;pen=l+o.r;} else if(mn===rr){nx=1;ny=0;pen=rr+o.r;} else if(mn===t){nx=0;ny=-1;pen=t+o.r;} else {nx=0;ny=1;pen=bb+o.r;} }
+  else { nx=dx/d; ny=dy/d; pen=o.r-d; }
+  o.x+=nx*pen; o.y+=ny*pen; const vn=o.vx*nx+o.vy*ny; if(vn<0){ if(-vn>400) sfx.clack(-vn); o.vx-=1.4*vn*nx; o.vy-=1.4*vn*ny; }
+}
+function physics(dt){
+  const free=orbs.filter(o=>!o.hole);
+  for (const o of free){
+    if (o.held) continue;
+    const bounce=lookOf(o).bounce;
+    o.vy+=G*dt; o.x+=o.vx*dt; o.y+=o.vy*dt;
+    if (o.x<o.r){ o.x=o.r; o.vx=Math.abs(o.vx)*.5; } if (o.x>W-o.r){ o.x=W-o.r; o.vx=-Math.abs(o.vx)*.5; }
+    if (o.y<o.r){ o.y=o.r; o.vy=Math.abs(o.vy)*.4; }
+    if (o.y>floorY-o.r){ o.y=floorY-o.r; o.phase=false; if(o.vy>0){ if(o.vy>320){ sfx.land(o.vy); o.sq=Math.min(.28,o.vy/3200); if(o.vy>700) o.blinkT=0; } o.vy=-o.vy*bounce; if(Math.abs(o.vy)<45) o.vy=0; }
+      o.vx*=Math.pow(.12,dt); if(Math.abs(o.vx)<3) o.vx=0; }
+    if (!o.phase) for (const m of machines) circleRect(o,m.rect);
+  }
+  for (let i=0;i<free.length;i++) for (let j=i+1;j<free.length;j++){
+    const a=free[i], b=free[j], dx=b.x-a.x, dy=b.y-a.y, d2=dx*dx+dy*dy, md=a.r+b.r;
+    if (d2>=md*md||d2<1e-4) continue;
+    const d=Math.sqrt(d2), nx=dx/d, ny=dy/d, pen=md-d;
+    if (a.held){ b.x+=nx*pen; b.y+=ny*pen; } else if (b.held){ a.x-=nx*pen; a.y-=ny*pen; }
+    else { a.x-=nx*pen/2; a.y-=ny*pen/2; b.x+=nx*pen/2; b.y+=ny*pen/2; }
+    const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+    if (rv<0){ if(-rv>450) sfx.clack(-rv); let j2=-1.25*rv;
+      if (a.held){ b.vx+=j2*nx; b.vy+=j2*ny; } else if (b.held){ a.vx-=j2*nx; a.vy-=j2*ny; }
+      else { j2/=2; a.vx-=j2*nx; a.vy-=j2*ny; b.vx+=j2*nx; b.vy+=j2*ny; } }
+  }
+}
+
+/* ======================= faces ======================= */
+const posOf = o => o.hole ? o.hole.m.holesPos[o.hole.i] : o;
+function nearestHole(o){ let best=null, bd=Infinity;
+  machines.forEach(m=>m.holesPos.forEach((h,i)=>{ if(!holeAccepts(m,i,o)) return; let d=Math.hypot(h.x-o.x,h.y-o.y); if(m.type==='gate') d*=.6; if(d<bd){ bd=d; best=h; } }));
+  return best; }
+function faces(dt){
+  const k=1-Math.exp(-dt*9);
+  for (const o of orbs){
+    const l=lookOf(o); if (l.face==='glyph') continue;
+    const p=posOf(o); let tx=null, ty=null;
+    if (o===held){ const h=nearestHole(o); if(h){ tx=h.x; ty=h.y; } }
+    else if (held){ tx=held.x; ty=held.y; }
+    else {
+      if (time>=o.glanceAt){ o.glanceAt=time+1.2+Math.random()*3;
+        const food=l.mood==='hungry' ? orbs.filter(x=>x!==o && lookOf(x).species===l.prey) : l.persona==='c' ? orbs.filter(x=>x!==o && lookOf(x).hex===l.hex) : [];
+        const others=food.length && Math.random()<.8 ? food : orbs.filter(x=>x!==o); if (others.length && Math.random()<.75){ o.gid=others[Math.floor(Math.random()*others.length)].id; }
+        else { o.gid=null; const a=Math.random()*Math.PI*2; o.gx=Math.cos(a)*.7; o.gy=Math.sin(a)*.5; } }
+      const g=o.gid!==null && orbs.find(x=>x.id===o.gid);
+      if (g){ const gp=posOf(g); tx=gp.x; ty=gp.y; } else if (o.gid!==null) o.glanceAt=0;
+    }
+    let wx=o.gx, wy=o.gy;
+    if (tx!==null){ const dx=tx-p.x, dy=ty-p.y, d=Math.hypot(dx,dy)||1, mag=Math.min(1,d/(o.r*2.5)); wx=dx/d*mag; wy=dy/d*mag; }
+    if (o.glare){ const gp=posOf(o.glare), dx=gp.x-p.x, dy=gp.y-p.y, d=Math.hypot(dx,dy)||1; wx=dx/d; wy=dy/d*.5; }
+    else if (l.mood==='grumpy' && o!==held){ wx=-wx; wy=wy*.4+.25; }   // grumpy ones look away
+    o.lx+=(wx-o.lx)*k; o.ly+=(wy-o.ly)*k;
+    if (time>=o.blinkAt){ o.blinkT=0; o.blinkAt=time+2.5+Math.random()*4.5; }
+    if (o.blinkT>=0){ o.blinkT+=dt; if(o.blinkT>.16) o.blinkT=-1; }
+    if (time>=o.trickAt && o!==held){ o.trickT=0; o.trickAt=time+(l.baby?4:7)+Math.random()*9;
+      const grounded=!o.hole && o.vy===0;
+      if (grounded && ((l.face==='pip'&&(l.n===2||l.n===4)) || l.mood==='happy')) o.vy=-(l.baby?340:l.face==='pip'&&l.n===4?200:280); }
+    if (o.trickT>=0){ o.trickT+=dt; if(o.trickT>1.4) o.trickT=-1;
+      if (l.mood==='grumpy' && o.trickT<.5 && Math.random()<.3){ const pp=posOf(o); parts.push({x:pp.x+(Math.random()-.5)*o.r,y:pp.y-o.r,vx:(Math.random()-.5)*40,vy:-60,life:0,max:.6,c:'rgba(200,200,220,.6)',sz:o.r*.18,g:-40}); } }
+    if (o.pop<1) o.pop=Math.min(1,o.pop+dt/.28);
+  }
+  orbs.forEach(o=>{ if(o.pop<1 && lookOf(o).face==='glyph') o.pop=Math.min(1,o.pop+dt/.28); });
+}
+
+/* ======================= update ======================= */
+function update(dt){
+  time+=dt;
+  for (let i=queue.length-1;i>=0;i--){ queue[i].t-=dt; if(queue[i].t<=0){ const q=queue[i]; queue.splice(i,1); q.fn(); } }
+  if (held){ let tx=ptr.x, ty=ptr.y;
+    if (stackMode()){ const st=stackTarget(held,ptr.x,ptr.y); if (st&&st.ok&&!st.same){ const h=st.m.holesPos[st.land]; tx+=(h.x-tx)*.3; ty+=(h.y-ty)*.3; } }
+    else { const h=findHole({...held,x:ptr.x,y:ptr.y},false); if(h){ tx+=(h.h.x-tx)*.35; ty+=(h.h.y-ty)*.35; } }
+    const k=1-Math.exp(-dt*28); held.x+=(tx-held.x)*k; held.y+=(ty-held.y)*k; }
+  for (let s=0;s<2;s++) physics(dt/2);
+  glareTick();
+  faces(dt);
+  orbs.forEach(o=>{ o.sq*=Math.exp(-dt*12); if(o.snap<1){ o.snap=Math.min(1,o.snap+dt/(o.snapDur||.09)); if(o.snap>=1) o.snapDur=0; } });
+  machines.forEach(m=>{ if (m.seesaw) seesawTick(m,dt); if(m.state==='charging'){ m.t-=dt; if(m.t<=0) (m.type==='gate'?resolveGate:resolveMachine)(m); }
+    m.shake=Math.max(0,m.shake-dt*1.5); m.flash=Math.max(0,m.flash-dt*2); if(m.badT>0){ m.badT-=dt; if(m.badT<=0) m.bad=null; } });
+  shake=Math.max(0,shake-dt*2.2);
+  parts.forEach(p=>{ p.life+=dt; p.vy+=(p.g!==undefined?p.g:600)*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=.98; }); parts=parts.filter(p=>p.life<p.max);
+  rings.forEach(r=>r.t+=dt); rings=rings.filter(r=>r.t<.45);
+  floats.forEach(f=>f.t+=dt); floats=floats.filter(f=>f.t<1.5);
+  bubbles.forEach(b=>b.t+=dt); bubbles=bubbles.filter(b=>b.t<b.life && orbs.includes(b.o));
+}
+
+/* ======================= draw ======================= */
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+const EYES={1:{e:[[0,-.1]],s:.36,m:.5}, 2:{e:[[-.34,-.12],[.34,-.12]],s:.25,m:.45}, 3:{e:[[-.38,0],[0,-.38],[.38,0]],s:.21,m:.5},
+  4:{e:[[-.31,-.33],[.31,-.33],[-.31,.13],[.31,.13]],s:.2,m:.58}, 5:{e:[[-.37,-.36],[.37,-.36],[0,-.1],[-.37,.17],[.37,.17]],s:.17,m:.58},
+  6:{e:[[-.38,-.38],[0,-.38],[.38,-.38],[-.38,.04],[0,.04],[.38,.04]],s:.16,m:.5}};
+function eye(x,y,er,open,lx,ly,ghost,squint){
+  if (open<.15){ ctx.strokeStyle=ghost?'rgba(255,240,210,.95)':'#4a2000'; ctx.lineWidth=Math.max(1.3,er*.24); ctx.lineCap='round'; ctx.beginPath();
+    if (squint) ctx.arc(x,y+er*.35,er*.7,1.15*Math.PI,1.85*Math.PI); else ctx.arc(x,y-er*.25,er*.75,.2*Math.PI,.8*Math.PI); ctx.stroke(); return; }
+  ctx.save(); ctx.translate(x,y); ctx.scale(1,open);
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(0,0,er,er*1.1,0,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(74,32,0,.6)'; ctx.lineWidth=Math.max(1,er*.11); ctx.stroke();
+  const pr=er*.56, px=lx*er*.42, py=ly*er*.45;
+  ctx.fillStyle='#24110a'; ctx.beginPath(); ctx.arc(px,py,pr,0,7); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px-pr*.35,py-pr*.38,pr*.33,0,7); ctx.fill();
+  ctx.restore();
+}
+function mouth(r,my,kind){
+  ctx.strokeStyle='#4a2000'; ctx.fillStyle='#4a2000'; ctx.lineWidth=Math.max(1.2,r*.06); ctx.lineCap='round';
+  if (kind==='o'){ ctx.beginPath(); ctx.ellipse(0,my,r*.09,r*.11,0,0,7); ctx.fill(); }
+  else if (kind==='frown'){ ctx.beginPath(); ctx.arc(0,my+r*.12,r*.13,1.2*Math.PI,1.8*Math.PI); ctx.stroke(); }
+  else { ctx.beginPath(); ctx.arc(0,my-r*.1,r*.12,.2*Math.PI,.8*Math.PI); ctx.stroke(); }
+}
+function pipFace(o,r,ghost,l){
+  const n=l.n, cfg=EYES[n], tk=o.trickT>=0 ? o.trickT/1.4 : -1, isHeld=o===held;
+  const blink = o.blinkT>=0 ? Math.abs(o.blinkT/.08-1) : 1;
+  let rot=0; if (n===5 && tk>=0){ const e=tk<.5?2*tk*tk:1-Math.pow(-2*tk+2,2)/2; rot=e*Math.PI*2; }
+  const cy=-.1*r, shiv=(n===6 && tk>=0) ? Math.sin(time*70)*r*.025 : 0;
+  cfg.e.forEach(([ex,ey],i)=>{
+    let x=ex*r, y=ey*r;
+    if (rot){ const dx=x, dy=y-cy; x=dx*Math.cos(rot)-dy*Math.sin(rot); y=cy+dx*Math.sin(rot)+dy*Math.cos(rot); }
+    let open=blink, lx=o.lx, ly=o.ly;
+    if (tk>=0){
+      if (n===1){ const a=tk*Math.PI*4; lx=Math.cos(a); ly=Math.sin(a); }
+      if (n===2 && i===1){ open=Math.min(open,1-Math.sin(Math.min(1,tk*1.8)*Math.PI)); }
+      if (n===3 || n===6){ const ph=tk*1.6-i*.17; if(ph>0&&ph<.25) open=Math.min(open,Math.abs(ph/.125-1)); }
+      if (n===4){ const a=i*Math.PI/2+tk*7; lx=Math.cos(a)*.95; ly=Math.sin(a)*.95; }
+    }
+    if (isHeld) open=Math.min(1.12,open*1.12);
+    eye(x+shiv,y,cfg.s*r,ghost?0:open,lx,ly,ghost);
+  });
+  if (!ghost) mouth(r,cfg.m*r,isHeld?'o':'smile');
+}
+function critterFace(o,r,ghost,l){
+  const isHeld=o===held, tk=o.trickT>=0?o.trickT/1.4:-1, grumpy=l.mood==='grumpy', md=l.mood;
+  const er=r*(l.baby?.29:.23), ex=r*.33, ey=-r*.1;
+  let open = o.blinkT>=0 ? Math.abs(o.blinkT/.08-1) : 1;
+  const P=l.persona;
+  const squint = (md==='happy'||md==='sing') && !isHeld && tk>=0 && tk<.55 && P!=='z';
+  if (squint) open=0;
+  if (md==='full' && !isHeld) open=Math.min(open,.5);
+  if (md==='pebble') open=isHeld?Math.min(open,.6):0;
+  if (P==='z') open=isHeld?Math.min(open,.45):0;
+  if (isHeld) open=Math.min(1.15,open*1.15);
+  const ly=P==='s'&&!isHeld ? .55+o.ly*.3 : o.ly, erP=P==='e'?er*1.15:er;
+  [-1,1].forEach(s=>eye(s*ex,ey,erP,ghost?0:open,o.lx,ly,ghost,squint));
+  if (P && !ghost) personaFx(o,r,P,ey-erP*1.5,isHeld);
+  if (P && !ghost && !grumpy){ if (P==='p'){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.3,r*.065); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-r*.13,r*.42); ctx.lineTo(r*.13,r*.42); ctx.stroke(); return; }
+    if (P==='e' || isHeld){ mouth(r,r*.42,'o'); return; } }
+  if (ghost) return;
+  if (md==='hungry'){ const ch=Math.abs(Math.sin(time*7+o.id)); ctx.fillStyle='#4a2000';
+    ctx.beginPath(); ctx.ellipse(0,r*.42,r*.17,r*(.05+.1*(isHeld?1:ch)),0,0,7); ctx.fill();
+    ctx.fillStyle='#fff'; [-1,1].forEach(s=>{ ctx.beginPath(); ctx.moveTo(s*r*.12,r*.34); ctx.lineTo(s*r*.05,r*.34); ctx.lineTo(s*r*.085,r*.42); ctx.fill(); }); return; }
+  if (md==='full'){ ctx.fillStyle='rgba(255,110,140,.42)'; [-1,1].forEach(s=>{ ctx.beginPath(); ctx.ellipse(s*r*.56,r*.2,r*.14,r*.085,0,0,7); ctx.fill(); });
+    mouth(r,r*.42,isHeld?'o':'smile'); return; }
+  if (md==='pebble'){ ctx.strokeStyle='#3a3d44'; ctx.lineWidth=Math.max(1.2,r*.06); ctx.beginPath(); ctx.moveTo(-r*.1,r*.4); ctx.lineTo(r*.1,r*.4); ctx.stroke(); return; }
+  if (md==='sing'){ const singing=isHeld||tk>=0; if (singing){ ctx.fillStyle='#4a2000'; ctx.beginPath(); ctx.ellipse(0,r*.42,r*.12,r*(.1+.05*Math.sin(time*12)),0,0,7); ctx.fill(); }
+    else mouth(r,r*.42,'smile'); return; }
+  if (grumpy){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.4,r*.075); ctx.lineCap='round';
+    [-1,1].forEach(s=>{ ctx.beginPath(); ctx.moveTo(s*(ex+er*1.05),ey-er*1.55); ctx.lineTo(s*(ex-er*.7),ey-er*1.05); ctx.stroke(); }); }
+  else { ctx.fillStyle='rgba(255,110,140,.42)'; [-1,1].forEach(s=>{ ctx.beginPath(); ctx.ellipse(s*r*.56,r*.2,r*.14,r*.085,0,0,7); ctx.fill(); }); }
+  mouth(r, r*.42, isHeld?'o':grumpy?'frown':'smile');
+}
+/* hybrid orblings: Hatchery eye layouts + Commons moods + Reef hunger + Choir singing */
+function remixFace(o,r,ghost,l){
+  const n=l.n, cfg=EYES[n], isHeld=o===held, md=l.mood, tk=o.trickT>=0?o.trickT/1.4:-1;
+  let open = o.blinkT>=0 ? Math.abs(o.blinkT/.08-1) : 1;
+  const squint=(md==='happy'||md==='sing') && !isHeld && tk>=0 && tk<.55;
+  if (squint) open=0;
+  if (md==='full' && !isHeld) open=Math.min(open,.5);
+  if (isHeld) open=Math.min(1.15,open*1.15);
+  const P=l.persona;
+  if (P==='z') open=isHeld?Math.min(open,.45):0;
+  const es=cfg.s*(l.baby?1.15:1)*(P==='e'?1.12:1), lyR=P==='s'&&!isHeld ? .55+o.ly*.3 : o.ly;
+  cfg.e.forEach(([ex,ey])=>eye(ex*r,ey*r,es*r,ghost?0:open,o.lx,lyR,ghost,squint&&P!=='z'));
+  if (ghost) return;
+  const top=Math.min(...cfg.e.map(e=>e[1]))*r - es*r*1.5, my=cfg.m*r;
+  if (P) personaFx(o,r,P,top,isHeld);
+  if (P && md!=='grumpy'){ if (P==='p'){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.3,r*.065); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-r*.13,my); ctx.lineTo(r*.13,my); ctx.stroke(); return; }
+    if (P==='e'){ mouth(r,my,'o'); return; } }
+  if (md==='grumpy'){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.4,r*.075); ctx.lineCap='round'; ctx.beginPath();
+    ctx.moveTo(-r*.5,top-r*.05); ctx.lineTo(-r*.1,top+r*.09); ctx.moveTo(r*.5,top-r*.05); ctx.lineTo(r*.1,top+r*.09); ctx.stroke(); }
+  if ((md==='happy'||md==='full') && n<=2){ ctx.fillStyle='rgba(255,110,140,.42)'; [-1,1].forEach(s=>{ ctx.beginPath(); ctx.ellipse(s*r*.56,r*.2,r*.14,r*.085,0,0,7); ctx.fill(); }); }
+  if (md==='hungry'){ const ch=Math.abs(Math.sin(time*7+o.id)); ctx.fillStyle='#4a2000';
+    ctx.beginPath(); ctx.ellipse(0,my,r*.16,r*(.05+.09*(isHeld?1:ch)),0,0,7); ctx.fill();
+    ctx.fillStyle='#fff'; [-1,1].forEach(s=>{ ctx.beginPath(); ctx.moveTo(s*r*.11,my-r*.07); ctx.lineTo(s*r*.04,my-r*.07); ctx.lineTo(s*r*.075,my); ctx.fill(); }); return; }
+  if (md==='sing' && (isHeld||tk>=0)){ ctx.fillStyle='#4a2000'; ctx.beginPath(); ctx.ellipse(0,my,r*.11,r*(.09+.04*Math.sin(time*12)),0,0,7); ctx.fill(); return; }
+  mouth(r,my,isHeld?'o':md==='grumpy'?'frown':'smile');
+}
+/* Queue personalities: Sleepy Zz, Shy blush, Pushy brows, Eager sparkles */
+function personaFx(o,r,P,top,isHeld){
+  if (P==='z'){ ctx.fillStyle='rgba(235,230,255,.85)'; ctx.font=`800 ${Math.max(9,Math.round(r*.42))}px Nunito, system-ui, sans-serif`; ctx.textAlign='left'; ctx.textBaseline='middle';
+    const b=(time*.8+o.id*.37)%1; ctx.save(); ctx.globalAlpha*=1-b; ctx.fillText('z',r*.55+b*r*.3,-r*.75-b*r*.5); ctx.restore(); }
+  if (P==='s'){ ctx.fillStyle='rgba(255,90,130,.55)'; [-1,1].forEach(s=>{ ctx.beginPath(); ctx.ellipse(s*r*.52,r*.18,r*.17,r*.1,0,0,7); ctx.fill(); }); }
+  if (P==='p'){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.5,r*.08); ctx.lineCap='round'; ctx.beginPath();
+    ctx.moveTo(-r*.52,top-r*.08); ctx.lineTo(-r*.12,top+r*.06); ctx.moveTo(r*.52,top-r*.08); ctx.lineTo(r*.12,top+r*.06); ctx.stroke(); }
+  if (P==='c'){ const b=1+.12*Math.sin(time*4+o.id); heart(r*.62,r*.05,r*.26*b,false); }
+  if (P==='e'){ const tw=.6+.4*Math.sin(time*6+o.id); ctx.fillStyle=`rgba(255,250,210,${tw})`;
+    [[-.7,-.75],[.72,-.62]].forEach(([sx,sy],k)=>{ const s=r*(.12+.04*k); ctx.save(); ctx.translate(sx*r,sy*r); ctx.rotate(time*2); ctx.beginPath(); for(let i=0;i<8;i++){ const a=i*Math.PI/4, rad=i%2?s*.35:s; ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad); } ctx.fill(); ctx.restore(); }); }
+}
+function appendages(l,r,ghost){
+  if (l.crown){ ctx.fillStyle='#2f6b3a'; ctx.strokeStyle='#173d1f'; ctx.lineWidth=1;
+    for(let i=0;i<5;i++){ const a=Math.PI*(1.2+i*.15); ctx.beginPath(); ctx.moveTo(Math.cos(a-.14)*r*.92,Math.sin(a-.14)*r*.92); ctx.lineTo(Math.cos(a)*r*1.38,Math.sin(a)*r*1.38); ctx.lineTo(Math.cos(a+.14)*r*.92,Math.sin(a+.14)*r*.92); ctx.fill(); ctx.stroke(); } }
+  if (l.cap){ ctx.fillStyle='#8a5a2e'; ctx.strokeStyle='#4f3017'; ctx.lineWidth=Math.max(1,r*.06); rr(-r*.7,-r*1.12,r*1.4,r*.32,r*.1); ctx.fill(); ctx.stroke(); }
+  const lo=mix(l.hex,'#000000',.35), hi=mix(l.hex,'#ffffff',.35);
+  if (l.spikes){ ctx.fillStyle=lo; for(let i=0;i<9;i++){ const a=Math.PI*(1.05+i*.1125); ctx.beginPath();
+      ctx.moveTo(Math.cos(a-.12)*r*.9,Math.sin(a-.12)*r*.9); ctx.lineTo(Math.cos(a)*r*1.3,Math.sin(a)*r*1.3); ctx.lineTo(Math.cos(a+.12)*r*.9,Math.sin(a+.12)*r*.9); ctx.fill(); } }
+  if (l.tentacles){ ctx.strokeStyle=lo; ctx.lineWidth=Math.max(1.5,r*.1); ctx.lineCap='round';
+    for(let i=0;i<4;i++){ const x0=(-.45+i*.3)*r, w=Math.sin(time*4+i)*r*.12; ctx.beginPath(); ctx.moveTo(x0,r*.7); ctx.quadraticCurveTo(x0+w,r*1.05,x0-w*.5,r*1.25); ctx.stroke(); } }
+  if (l.antenna){ ctx.strokeStyle=lo; ctx.lineWidth=Math.max(1.3,r*.07); ctx.beginPath(); ctx.moveTo(0,-r*.85); ctx.quadraticCurveTo(r*.25,-r*1.2,r*.1,-r*1.4); ctx.stroke();
+    const glow=.6+.4*Math.sin(time*3); ctx.fillStyle=`rgba(220,255,255,${glow})`; ctx.shadowColor='#8ff'; ctx.shadowBlur=r*.6*glow; ctx.beginPath(); ctx.arc(r*.1,-r*1.42,r*.16,0,7); ctx.fill(); ctx.shadowBlur=0; ctx.shadowColor='transparent'; }
+  if (l.tuft){ ctx.strokeStyle=lo; ctx.lineWidth=Math.max(1.5,r*.1); ctx.lineCap='round'; ctx.beginPath();
+    ctx.moveTo(-r*.05,-r*.9); ctx.quadraticCurveTo(r*.1,-r*1.35,r*.32,-r*1.12); ctx.stroke(); }
+  /* Nursery: each ear / petal is one allele, so genes are always visible */
+  const AC={G:'#ffb02e', g:'#3f95f2', R:'#ff4f6d', W:'#f6f2ff', Y:'#ffd23f', B:'#4aa8ff', '?':'#9a90b0'};
+  if (l.line==='G'){ [-1,1].forEach((s,i)=>{ const c=AC[l.al[i]]||AC['?'];
+    ctx.fillStyle=c; ctx.strokeStyle=mix(c,'#000000',.4); ctx.lineWidth=Math.max(1.2,r*.07);
+    ctx.beginPath(); ctx.arc(s*r*.6,-r*.72,r*.3,0,7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=mix(c,'#ffffff',.45); ctx.beginPath(); ctx.arc(s*r*.6,-r*.72,r*.13,0,7); ctx.fill(); }); }
+  if (l.line==='P'){ [-1,1].forEach((s,i)=>{ const c=AC[l.al[i]]||AC['?'];
+    ctx.save(); ctx.translate(s*r*.3,-r*.9); ctx.rotate(s*.55); ctx.fillStyle=c; ctx.strokeStyle=mix(c,'#000000',.4); ctx.lineWidth=Math.max(1.2,r*.06);
+    ctx.beginPath(); ctx.ellipse(0,0,r*.2,r*.34,0,0,7); ctx.fill(); ctx.stroke(); ctx.restore(); });
+    ctx.fillStyle='#5aa04a'; ctx.beginPath(); ctx.arc(0,-r*.9,r*.09,0,7); ctx.fill(); }
+}
+function glyph(o,r){
+  const k=kindOf(o.t), id=o.id;
+  if (k==='tw'){ const blink=(Math.sin(time*1.7+id)>.97)?.15:1; ctx.strokeStyle='#fff'; ctx.lineWidth=r*.1; [-1,1].forEach(sx=>{ ctx.beginPath(); ctx.ellipse(sx*r*.3,0,r*.2,r*.2*blink,0,0,7); ctx.stroke(); }); }
+  else if (k==='sp'){ ctx.save(); ctx.rotate(Math.sin(time*11+id)*.07); ctx.strokeStyle='#05433d'; ctx.lineWidth=r*.12; ctx.lineJoin='round';
+    ctx.beginPath(); ctx.moveTo(0,-r*.62); ctx.lineTo(-r*.18,-r*.18); ctx.lineTo(r*.16,r*.05); ctx.lineTo(-r*.08,r*.62); ctx.stroke(); ctx.restore(); }
+  else if (k==='vo'){ ctx.strokeStyle='rgba(205,186,255,.8)'; ctx.lineWidth=r*.08; ctx.lineCap='round';
+    for(let i=0;i<3;i++){ const a=-time*2.2+i*2.1; ctx.beginPath(); ctx.arc(0,0,r*(.22+.16*i),a,a+1.7); ctx.stroke(); } }
+  else if (k==='wi'){ ctx.save(); ctx.rotate(time*.8+id); ctx.fillStyle='rgba(255,255,255,.95)'; ctx.beginPath();
+    for(let i=0;i<8;i++){ const a=i*Math.PI/2/2, rad=i%2?r*.16:r*.52; ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad); } ctx.closePath(); ctx.fill(); ctx.restore(); }
+}
+function drawOrb(o,x,y,scale=1,alpha=1,ghost=false){
+  const l=lookOf(o); const pe=o.pop<1 ? (1+2.2*Math.pow(o.pop-1,3)+1.2*Math.pow(o.pop-1,2)) : 1;
+  const r=o.r*scale*pe; if (!ghost){ o.dx=x; o.dy=y; o.dr=r; } if (r<=.5) return; const sp=spriteFor(l), s=(r/(R*SPR))*(R*SPR+3);
+  const shk = o.glare && !ghost ? Math.sin(time*48+o.id)*r*.07 : 0;
+  ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x+shk,y); ctx.scale(1+o.sq,1-o.sq);
+  if (l.baby && o.trickT>=0) ctx.rotate(Math.sin(o.trickT*14)*.15*(1-o.trickT/1.4));
+  appendages(l,r,ghost);
+  if (l.glow && !ghost){ ctx.save(); ctx.globalCompositeOperation='lighter'; const gg=ctx.createRadialGradient(0,0,r*.4,0,0,r*2.1); gg.addColorStop(0,l.hex+'66'); gg.addColorStop(1,l.hex+'00'); ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(0,0,r*2.1,0,7); ctx.fill(); ctx.restore(); }
+  if (l.glass){ ctx.save(); ctx.globalAlpha*=.5; ctx.drawImage(sp,-s,-s,s*2,s*2); ctx.restore(); ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=Math.max(1.5,r*.08); ctx.beginPath(); ctx.arc(0,0,r*.96,0,7); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=Math.max(1.2,r*.07); ctx.beginPath(); ctx.arc(0,0,r*.72,-2.4,-1.5); ctx.stroke(); }
+  else ctx.drawImage(sp,-s,-s,s*2,s*2);
+  if (ghost) ctx.globalAlpha=Math.min(1,alpha*1.8);
+  if (l.face==='pip') pipFace(o,r,ghost,l); else if (l.face==='critter') critterFace(o,r,ghost,l); else if (l.face==='remix') remixFace(o,r,ghost,l); else glyph(o,r);
+  if (o.glare && !ghost) angerFx(o,r);
+  ctx.restore();
+  if (l.badge && !ghost){ ctx.font=`800 ${Math.max(10,Math.round(r*.48))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tw=ctx.measureText(l.badge).width+r*.5, bh=Math.max(14,r*.6), py=y-r*1.02;
+    ctx.fillStyle='rgba(30,12,32,.9)'; rr(x-tw/2,py-bh/2,tw,bh,bh/2); ctx.fill(); ctx.strokeStyle=l.hex; ctx.lineWidth=1.2; ctx.stroke();
+    ctx.fillStyle='#fff3cf'; ctx.fillText(l.badge,x,py+1); }
+  if (l.known && !ghost){ const txt=alle(o.t); ctx.font=`800 ${Math.max(10,Math.round(r*.5))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tw=ctx.measureText(txt).width+r*.5, bh=Math.max(14,r*.62), py=y+r*.92;
+    ctx.fillStyle='rgba(18,26,40,.88)'; rr(x-tw/2,py-bh/2,tw,bh,bh/2); ctx.fill(); ctx.fillStyle='#cfeff7'; ctx.fillText(txt,x,py+1); }
+}
+function heart(x,y,s,broken){
+  ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle=broken?'#ff4f6d':'#ffd0dc';
+  ctx.beginPath(); ctx.moveTo(0,.35); ctx.bezierCurveTo(-.9,-.3,-.45,-.95,0,-.45); ctx.bezierCurveTo(.45,-.95,.9,-.3,0,.35); ctx.fill();
+  if (broken){ ctx.strokeStyle='#2a0f18'; ctx.lineWidth=.12; ctx.beginPath(); ctx.moveTo(0,-.45); ctx.lineTo(-.12,-.1); ctx.lineTo(.1,.05); ctx.lineTo(0,.35); ctx.stroke(); }
+  ctx.restore();
+}
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H); if(bg) ctx.drawImage(bg,0,0,W,H);
+  const sh=shake*shake*6; ctx.save(); if(sh>0) ctx.translate((Math.random()-.5)*sh,(Math.random()-.5)*sh);
+  const target = held && !stackMode() ? findHole(held,true) : null, w=world(), sTgt = held && stackMode() ? stackTarget(held,held.x,held.y) : null;
+  machines.forEach(m=>{
+    const r=m.rect, ox=m.shake>0?Math.sin(time*70)*m.shake*5:0, gate=m.type==='gate';
+    ctx.save(); ctx.translate(ox,0);
+    if (m.state==='charging'||m.flash>0){ const a=m.state==='charging'?.5+.5*Math.sin(time*30):m.flash; ctx.shadowColor=gate?'#7ee2b8':'#ffd27a'; ctx.shadowBlur=R*1.8*a; }
+    else { ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=R*.8; ctx.shadowOffsetY=R*.25; }
+    if (m.seesaw && m.base){ const pv=m.base[3]; ctx.save(); ctx.shadowColor='transparent'; ctx.fillStyle='#5b4326'; ctx.beginPath();
+        ctx.moveTo(pv.x,pv.y+R*.2); ctx.lineTo(pv.x-R*1.4,pv.y+r.h*.5+R*2.1); ctx.lineTo(pv.x+R*1.4,pv.y+r.h*.5+R*2.1); ctx.closePath(); ctx.fill();
+        ctx.fillStyle='#3d2c18'; rr(pv.x-R*1.9,pv.y+r.h*.5+R*2.0,R*3.8,R*.35,R*.15); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.translate(pv.x,pv.y); ctx.rotate(m.ang||0); ctx.translate(-pv.x,-pv.y); }
+    const pl=m.plate, g=ctx.createLinearGradient(0,r.y,0,r.y+r.h); g.addColorStop(0,pl[0]); g.addColorStop(.55,pl[1]); g.addColorStop(1,pl[2]);
+    ctx.fillStyle=g; rr(r.x,r.y,r.w,r.h,R*.7); ctx.fill(); ctx.shadowColor='transparent';
+    ctx.strokeStyle='rgba(255,245,225,.45)'; ctx.lineWidth=1.2; rr(r.x+1.5,r.y+1.5,r.w-3,r.h-3,R*.6); ctx.stroke();
+    if (m.kiosk){ const kx=r.x+R*.35, kw=R*1.45, ky=r.y+R*.35, kh=r.h-R*.7;
+      ctx.fillStyle='#6b3f1d'; rr(kx,ky,kw,kh,R*.2); ctx.fill();
+      for (let s=0;s<4;s++){ ctx.fillStyle=s%2?'#fff3df':'#e2574c'; ctx.fillRect(kx+s*kw/4,ky,kw/4,R*.42); }
+      ctx.fillStyle='#1d140b'; rr(kx+kw*.2,ky+R*.62,kw*.6,kh*.42,R*.15); ctx.fill();
+      ctx.fillStyle='#ffd27a'; ctx.beginPath(); ctx.arc(kx+kw/2,ky+R*.62+kh*.24,R*.13,0,7); ctx.fill();
+      ctx.font=`800 ${Math.max(9,Math.round(R*.36))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='rgba(40,20,5,.85)';
+      const ly=r.y+r.h-R*.42; ctx.fillText('front',m.holesPos[0].x,ly); if (m.holes>1) ctx.fillText('back',m.holesPos[m.holes-1].x,ly);
+      if (m.holes>2){ ctx.strokeStyle='rgba(40,20,5,.45)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(m.holesPos[0].x+R*.9,ly); ctx.lineTo(m.holesPos[m.holes-1].x-R*.9,ly); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(m.holesPos[0].x+R*.9,ly); ctx.lineTo(m.holesPos[0].x+R*1.15,ly-R*.14); ctx.moveTo(m.holesPos[0].x+R*.9,ly); ctx.lineTo(m.holesPos[0].x+R*1.15,ly+R*.14); ctx.stroke(); } }
+    if (m.type==='nest'){ ctx.strokeStyle='rgba(120,80,20,.45)'; ctx.lineWidth=1.2; for(let i=0;i<9;i++){ const yy=r.y+r.h*(.15+.08*i); ctx.beginPath(); ctx.moveTo(r.x+R*.4,yy+Math.sin(i)*3); ctx.quadraticCurveTo(r.x+r.w/2,yy+(i%2?6:-6),r.x+r.w-R*.4,yy); ctx.stroke(); } }
+    if (m.type==='camp'){ for(let i=0;i<3;i++){ const fx=r.x+r.w*(.3+.2*i), fy=r.y+r.h-R*.2, fh=R*(.35+.12*Math.sin(time*9+i*2));
+      ctx.fillStyle='rgba(255,170,60,.85)'; ctx.beginPath(); ctx.moveTo(fx-R*.14,fy); ctx.quadraticCurveTo(fx,fy-fh*1.6,fx+R*.14,fy); ctx.fill(); } }
+    if (m.type==='lens'){ ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(r.x+R*.5,r.y+r.h-R*.4); ctx.lineTo(r.x+r.w*.45,r.y+R*.4); ctx.stroke(); }
+    if (m.type!=='nest' && m.type!=='camp'){ ctx.fillStyle='rgba(30,20,10,.4)'; [[r.x+R*.4,r.y+R*.4],[r.x+r.w-R*.4,r.y+R*.4],[r.x+R*.4,r.y+r.h-R*.4],[r.x+r.w-R*.4,r.y+r.h-R*.4]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,R*.11,0,7);ctx.fill();}); }
+    if (m.seesaw && m.base){ const pv=m.base[3]; ctx.fillStyle='#3d2c18'; ctx.beginPath(); ctx.arc(pv.x,pv.y,HR*1.12,0,7); ctx.fill(); ctx.restore(); }
+    m.holesPos.forEach((h,i)=>{
+      const hg=ctx.createRadialGradient(h.x,h.y-HR*.3,HR*.2,h.x,h.y,HR); hg.addColorStop(0,'#2a1c40'); hg.addColorStop(1,'#0e0818');
+      ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(h.x,h.y,HR,0,7); ctx.fill(); ctx.strokeStyle='rgba(20,10,0,.7)'; ctx.lineWidth=2; ctx.stroke();
+      ctx.strokeStyle='rgba(255,240,200,.3)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(h.x,h.y+1,HR+1.5,.15*Math.PI,.85*Math.PI); ctx.stroke();
+      const o=m.slots[i];
+      if (!o && gate && m.req[i]){ const gt=rules().ghost(m.req[i]);
+        if (gt){ const ghost={t:gt,sq:0,id:i,lx:0,ly:0,blinkT:-1,trickT:-1,pop:1,baby:false,known:false}; ghost.r=radiusOf(ghost); drawOrb(ghost,h.x,h.y,Math.min(.95,HR*.88/ghost.r),.5,true); }
+        else { ctx.setLineDash([4,5]); ctx.strokeStyle='rgba(255,230,240,.55)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(h.x,h.y,HR*.62,0,7); ctx.stroke(); ctx.setLineDash([]); } }
+      if (sTgt && sTgt.m===m && sTgt.land===i && !sTgt.same){ ctx.strokeStyle=sTgt.ok?'#fff3cf':'#ff7a9c'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(h.x,h.y,HR+3+Math.sin(time*14)*1.5,0,7); ctx.stroke(); }
+      else if (target && target.m===m && target.i===i){ ctx.strokeStyle=target.ok?'#fff3cf':'#ff7a9c'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(h.x,h.y,HR+3+Math.sin(time*14)*1.5,0,7); ctx.stroke(); }
+      else if (held && holeAccepts(m,i,held)){ ctx.strokeStyle='rgba(255,243,207,.25)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(h.x,h.y,HR+3,0,7); ctx.stroke(); }
+      if (o){ const e=1-Math.pow(1-o.snap,3), x=o.locked?h.x:o.sx+(h.x-o.sx)*e, y=o.locked?h.y:o.sy+(h.y-o.sy)*e, jit=m.state==='charging'?2.5:0;
+        drawOrb(o,x+(Math.random()-.5)*jit,y+(Math.random()-.5)*jit,Math.min(1,HR*.92/o.r)*(1+(o.locked?0:(1-e)*.15)));
+        if (o.locked){ ctx.fillStyle='#ffd27a'; ctx.font=`${Math.round(R*.6)}px system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('★',h.x+HR*.72,h.y-HR*.72); } }
+    });
+    if (gate && gateKindNow()==='bench') for (let i=0;i<m.holes-1;i++){ const a=m.holesPos[i], b=m.holesPos[i+1]; const broken=m.bad && m.bad.includes(i) && m.bad.includes(i+1);
+      heart((a.x+b.x)/2, a.y+HR*.15, R*.38*(broken?1.3:1), broken); }
+    if (gate && m.bad && gateKindNow()!=='bench') m.bad.forEach(i=>{ const h=m.holesPos[i]; ctx.strokeStyle='#ff4f6d'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(h.x,h.y,HR+4,0,7); ctx.stroke(); });
+    if (gate && !m.vertical && !m.seesaw) m.holesPos.forEach((h,i)=>{ const isLine=m.kiosk, filled=!!m.slots[i];
+      if((filled && !isLine) || !m.req[i]) return;
+      ctx.font=`800 ${Math.max(10,Math.round(R*.56))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      const label=rules().reqLabel(m.req[i]), bh=Math.max(16,R*.95), dot=isLine?bh*.28:0, lw=ctx.measureText(label).width+R*.7+(isLine?dot*2.6:0), by=r.y-bh*.35;
+      const settled = filled && m.slots[i].snap>=1 && m.state!=='charging' || (filled && m.state==='charging');
+      const match = filled && rules().boothMatch && rules().boothMatch(m.req[i], m.slots[i]);
+      ctx.fillStyle='#1d1433'; rr(h.x-lw/2,by-bh/2,lw,bh,bh/2); ctx.fill();
+      ctx.strokeStyle = isLine && settled ? (match?'#7ee2b8':'#ff7a9c') : '#e6b95c'; ctx.lineWidth = isLine && settled ? 2 : 1.2; ctx.stroke();
+      let tx=h.x;
+      if (isLine){ const gt=rules().ghost(m.req[i]); if (gt){ ctx.fillStyle=lookOf({t:gt}).hex; ctx.beginPath(); ctx.arc(h.x-lw/2+bh*.5,by,dot,0,7); ctx.fill(); } tx=h.x+dot*1.1; }
+      ctx.fillStyle='#ffd27a'; ctx.fillText(label,tx,by+1);
+      if (isLine && settled){ const mx=h.x+lw/2-bh*.1, my=by-bh*.45, mr=bh*.32;
+        ctx.fillStyle=match?'#2f8f67':'#c43d5e'; ctx.beginPath(); ctx.arc(mx,my,mr,0,7); ctx.fill();
+        ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(1.5,mr*.28); ctx.lineCap='round'; ctx.beginPath();
+        if (match){ ctx.moveTo(mx-mr*.45,my); ctx.lineTo(mx-mr*.1,my+mr*.35); ctx.lineTo(mx+mr*.45,my-mr*.35); }
+        else { ctx.moveTo(mx-mr*.35,my-mr*.35); ctx.lineTo(mx+mr*.35,my+mr*.35); ctx.moveTo(mx+mr*.35,my-mr*.35); ctx.lineTo(mx-mr*.35,my+mr*.35); }
+        ctx.stroke(); } });
+    if (m.used){ ctx.fillStyle='rgba(20,14,30,.6)'; rr(r.x,r.y,r.w,r.h,R*.7); ctx.fill();
+      m.holesPos.forEach(h=>{ ctx.fillStyle='#f3ead6'; ctx.beginPath(); ctx.ellipse(h.x,h.y+HR*.15,HR*.42,HR*.55,0,0,7); ctx.fill();
+        ctx.strokeStyle='#b9a98a'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(h.x-HR*.42,h.y); ctx.lineTo(h.x-HR*.15,h.y-HR*.15); ctx.lineTo(h.x+HR*.1,h.y+HR*.05); ctx.lineTo(h.x+HR*.42,h.y-HR*.1); ctx.stroke(); }); }
+    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle=m.used?'#a698c4':'#f5eeff';
+    ctx.font=`${Math.max(12,Math.round(R*.78))}px "Lilita One", system-ui, sans-serif`; ctx.fillText(m.used?`${m.name} · used`:m.name, r.x+r.w/2, r.y+r.h+R*.3);
+    ctx.restore();
+  });
+  orbs.forEach(o=>{ if(o.hole||o.held) return; drawOrb(o,o.x,o.y); });
+  rings.forEach(r=>{ const k=r.t/.45; ctx.strokeStyle=r.c; ctx.globalAlpha=1-k; ctx.lineWidth=3*(1-k)+.5; ctx.beginPath(); ctx.arc(r.x,r.y,R*.6+(r.max-R*.6)*(1-Math.pow(1-k,3)),0,7); ctx.stroke(); });
+  ctx.globalAlpha=1;
+  parts.forEach(p=>{ ctx.globalAlpha=1-p.life/p.max; if(p.heart) heart(p.x,p.y,p.sz,false); else { ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.sz,0,7); ctx.fill(); } });
+  ctx.globalAlpha=1;
+  if (held){ ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(held.x+held.r*.3,held.y+held.r*.95,held.r*.95,held.r*.45,0,0,7); ctx.fill();
+    drawOrb(held,held.x,held.y,1.14);
+    ctx.font=`800 ${Math.max(11,Math.round(R*.62))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const label=famOf(held).label(held.t,held), lw=ctx.measureText(label).width+R*.8, bh=Math.max(18,R*1.05);
+    let ly=held.y-held.r*1.3-bh*.9; if (ly<bh) ly=held.y+held.r*1.4+bh*.6;
+    const lx=Math.min(Math.max(held.x,lw/2+4),W-lw/2-4);
+    ctx.fillStyle='rgba(23,15,40,.88)'; rr(lx-lw/2,ly-bh/2,lw,bh,bh/2); ctx.fill(); ctx.fillStyle='#f5eeff'; ctx.fillText(label,lx,ly+1); }
+  bubbles.forEach(b=>{ const o=b.o; if (o.dx===undefined) return; const k=b.t, sc=k<.15?k/.15:1, al=k>b.life-.3?(b.life-k)/.3:1;
+    ctx.save(); ctx.globalAlpha=al; ctx.font=`800 ${Math.max(11,Math.round(R*.56))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tw=ctx.measureText(b.text).width+R*.7, bh=Math.max(18,R*.95); let bx=Math.min(Math.max(o.dx,tw/2+4),W-tw/2-4), by=o.dy-(o.dr||R)-bh*.75;
+    let below = !!(o.hole && o.hole.m.kiosk) || by<bh*.6;
+    if (below) by = o.hole && o.hole.m.kiosk ? o.hole.m.rect.y+o.hole.m.rect.h+bh*.7 : o.dy+(o.dr||R)+bh*.75;
+    ctx.translate(bx,by); ctx.scale(sc,sc); ctx.fillStyle=b.bad?'#3a1a24':'#fffaf0'; ctx.strokeStyle=b.bad?'#ff7a9c':'#2a1e45'; ctx.lineWidth=1.5;
+    rr(-tw/2,-bh/2,tw,bh,bh/2); ctx.fill(); ctx.stroke(); const tx=Math.max(-tw/2+bh/2,Math.min(tw/2-bh/2,o.dx-bx));
+    ctx.beginPath(); if (below){ ctx.moveTo(tx-5,-bh/2+1); ctx.lineTo(tx,-bh/2-6); ctx.lineTo(tx+5,-bh/2+1); } else { ctx.moveTo(tx-5,bh/2-1); ctx.lineTo(tx,bh/2+6); ctx.lineTo(tx+5,bh/2-1); } ctx.fill();
+    ctx.fillStyle=b.bad?'#ffc2d1':'#2a1e45'; ctx.fillText(b.text,0,1); ctx.restore(); });
+  floats.forEach(f=>{ const k=f.t/1.5; ctx.globalAlpha=k<.7?1:1-(k-.7)/.3; ctx.fillStyle=f.c; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.font=`${Math.max(13,Math.round(R*.8))}px "Lilita One", system-ui, sans-serif`;
+    const tw=ctx.measureText(f.text).width/2; ctx.fillText(f.text,Math.min(Math.max(f.x,tw+6),W-tw-6),Math.max(R,f.y-k*R*2)); });
+  ctx.globalAlpha=1; ctx.restore();
+}
+
+/* ======================= HUD & sheets ======================= */
+const worldOpen = i => i===0 || Object.keys(S.prog[0].best).length>=UNLOCK_AT;
+const levelOpen = (wi,i) => i===0 || !!S.prog[wi].best[i-1];
+function updateHUD(){
+  if (!L) return; const w=world();
+  $('#lvl-w').textContent = L.def.remix ? `${w.short} Remix ${L.idx-MAIN_COUNT+1}/${w.levels.length-MAIN_COUNT} · ${L.def.from.map(i=>WORLDS[i].short).join(' + ')}`
+    : `${w.name} · Level ${L.idx+1} of ${Math.min(MAIN_COUNT,w.levels.length)}`; $('#lvl-name').textContent=L.def.name;
+  $('#moves').textContent=L.moves; $('#par').textContent=L.def.par;
+  $('#undo').disabled=!L.history.length||L.done;
+  const nests=machines.filter(m=>m.type==='nest');
+  $('#hint').innerHTML = (nests.length && nests.every(m=>m.used) && !L.done) ? 'Every Nest is used. <b>Undo</b> or <b>Restart</b> to try a different pairing.'
+    : (L.def.hint || 'Forgot how something works? Check the <b>Notebook</b>.');
+}
+$('#undo').addEventListener('click',()=>{ audio(); undo(); });
+$('#restart').addEventListener('click',()=>{ audio(); startLevel(S.world,L.idx); });
+$('#done-retry').addEventListener('click',()=>{ audio(); startLevel(S.world,L.idx); });
+$('#done-next').addEventListener('click',e=>{ audio(); if(e.currentTarget.dataset.map){ $('#done').hidden=true; openMap(); } else startLevel(S.world,L.idx+1); });
+$('#snd-btn').addEventListener('click',e=>{ audio(); muted=!muted; const b=e.currentTarget; b.setAttribute('aria-pressed',String(!muted)); b.setAttribute('aria-label',muted?'Sound off':'Sound on'); $('#snd-wave').style.display=muted?'none':''; });
+
+function openMap(){
+  $('#map-body').innerHTML=WORLDS.map((w,wi)=>{
+    const best=S.prog[wi].best, stars=Object.values(best).reduce((s,v)=>s+v,0), open=worldOpen(wi);
+    if (!open) return `<div class="box locked"><h3><span class="l">${w.name}</span><small>Locked</small></h3><p>Finish ${UNLOCK_AT} levels of the Hatchery to open this world.</p></div>`;
+    const btn=(d,i)=>{ const st=best[i]||0, ok=levelOpen(wi,i), cur=S.world===wi&&L&&L.idx===i;
+      const lab=d.remix?`R${i-MAIN_COUNT+1}`:i+1, dots=d.remix?`<span class="dots">${d.from.map(f=>`<span style="background:${WORLD_DOT[f]}"></span>`).join('')}</span>`:'';
+      const tip=ok?(d.remix?`${d.name} · ${d.from.map(f=>WORLDS[f].short).join(' + ')}`:d.name):'Locked';
+      return `<button class="lv${cur?' cur':''}${d.remix?' rmx':''}" type="button" data-w="${wi}" data-i="${i}" ${ok?'':'disabled'} title="${tip}" aria-label="${tip}"><b>${lab}</b>${dots}<i>${[1,2,3].map(n=>`<span class="${n<=st?'':'off'}">★</span>`).join('')}</i></button>`; };
+    const main=w.levels.map((d,i)=>[d,i]).filter(([d])=>!d.remix), rmx=w.levels.map((d,i)=>[d,i]).filter(([d])=>d.remix);
+    return `<div class="box"><h3><span class="l"><span class="wdot" style="background:${WORLD_DOT[wi]}"></span>${w.name}</span><small>★ ${stars}/${w.levels.length*3}</small></h3><p>${w.blurb}</p><div class="grid">${main.map(([d,i])=>btn(d,i)).join('')}</div>${
+      rmx.length?`<div class="rmx-head"><b>Remix</b><span>${levelOpen(wi,MAIN_COUNT)?'Mixes in rules from earlier worlds. The dots show which.':'Finish all 7 levels to unlock.'}</span></div><div class="grid">${rmx.map(([d,i])=>btn(d,i)).join('')}</div>`:''}</div>`;
+  }).join('');
+  $('#map-body').insertAdjacentHTML('afterbegin', `<div class="legend">${WORLDS.map((w,i)=>`<span><span class="wdot" style="background:${WORLD_DOT[i]}"></span>${w.short}</span>`).join('')}</div>`);
+  $('#map').hidden=false;
+}
+$('#map-body').addEventListener('click',e=>{ const b=e.target.closest('.lv'); if(!b||b.disabled) return; audio(); $('#map').hidden=true; startLevel(+b.dataset.w,+b.dataset.i); });
+
+let nbTab=0;
+function rulesFor(wid,g){ return Object.keys(RULES).filter(k=>k.startsWith(wid+':') && RULES[k].g===g && S.learned[k]).map(k=>RULES[k].text); }
+function ruleBox(title, chipHtml, list, empty, extra=''){
+  return `<div class="box"><h3><span class="l">${chipHtml}${title}</span></h3>${list.length?`<ul>${list.map(t=>`<li>${t}</li>`).join('')}</ul>`:`<div class="unk">${empty}</div>`}${extra}</div>`; }
+function seenList(prefix, filter, fmt){ return Object.keys(S.seen).filter(k=>k.startsWith(prefix)&&filter(k.slice(prefix.length))).slice(0,12).map(k=>fmt(k.slice(prefix.length),S.seen[k])); }
+function renderNB(){
+  const open=WORLDS.map((_,i)=>i).filter(i=>worldOpen(i)&&(i===0||S.visited[i])); if (S.visited.rx) open.push(9);
+  if (!open.includes(nbTab)) nbTab=open.includes(S.world)?S.world:0;
+  $('#nb-tabs').innerHTML=open.map(i=>`<button class="tab" role="tab" type="button" data-i="${i}" aria-selected="${i===nbTab}">${i===9?'Remix':WORLDS[i].short}</button>`).join('');
+  let html='';
+  if (nbTab===9){
+    html+=ruleBox('Mixed rules','',rulesFor('rx','mix'),'Play a Remix level to discover how the worlds affect each other.');
+    const seen=seenList('rx|',()=>true,(p,v)=>`<span>${p.split(' ').map(x=>chipT(x)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v==='-'?'nothing left':v.split(' ').map(x=>x==='0'?'<span class="x">·</span>':chipT(x)).join('')}</span>`);
+    if (seen.length) html+=`<div class="box"><h3><span class="l">Seen in remixes</span></h3><div class="seen">${seen.join('')}</div></div>`;
+  } else if (nbTab===0){
+    ['pip','tw','sp','vo','wi'].forEach(k=>{
+      if (!S.met[k]){ html+=`<div class="box locked"><h3><span class="l">Unknown orb</span></h3><div class="unk">Shows up in a later level.</div></div>`; return; }
+      const t=k==='pip'?'p1':k;
+      const seen=seenList('w1|', p=>p.split('+').some(x=>kindOf(x)===k), (p,v)=> v==='x' ? `<span>${p.split('+').map(x=>chipT(x,0)).join('')} <span class="x">✕</span></span>`
+        : `<span>${p.split('+').map(x=>chipT(x,0)).join('')} → ${v==='-'?'nothing left':v.split(',').map(x=>chipT(x,0)).join('')}</span>`);
+      html+=ruleBox(W1K[k].name, chipT(t,0), rulesFor('w1',k), 'Not figured out yet. Press it with other orbs.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
+    });
+  } else if (nbTab===1){
+    const cs=['r','y','b'];
+    const grid=`<div class="aff"><span></span>${cs.map(c=>chipT(c+'h',1)).join('')}${cs.map(a=>chipT(a+'h',1)+cs.map(b=>{ const v=S.aff[affKey(a,b)]; return v==='ok'?'<span class="ok">✓</span>':v==='no'?'<span class="no">✕</span>':'<span class="q">?</span>'; }).join('')).join('')}</div>`;
+    html+=`<div class="box"><h3><span class="l">Who gets along</span></h3><p>Filled in as you see them meet or sit together.</p>${grid}</div>`;
+    const seen=seenList('w2|',()=>true,(p,v)=>`<span>${p.split('+').map(x=>chipT(x,1)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v.split(',').map(x=>chipT(x,1)).join('')}</span>`);
+    html+=ruleBox('Meeting spot','',rulesFor('w2','meet'),'Put two orblings in a Meeting spot and see what happens.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
+    html+=ruleBox('Campfire','',rulesFor('w2','camp'),'Not tried yet.');
+    html+=ruleBox('Friendship bench','',rulesFor('w2','bench'),'The bench has its own rules. You’ll find out.');
+  } else if (nbTab===3){
+    const sp=['s','j','g'];
+    const grid=`<div class="aff" style="grid-template-columns:auto repeat(3,1.9em)"><span style="font-size:.7rem;color:var(--muted)">eats →</span>${sp.map(c=>chipT(c+'f',3)).join('')}${sp.map(a=>chipT(a+'h',3)+sp.map(b=>{ const v=S.food[a+b]; return v==='y'?'<span class="ok">✓</span>':v==='n'?'<span class="no">✕</span>':'<span class="q">?</span>'; }).join('')).join('')}</div>`;
+    html+=`<div class="box"><h3><span class="l">Food chain</span></h3><p>Rows are the hungry hunter, columns are its possible food. Filled in as you watch the tides.</p>${grid}</div>`;
+    html+=ruleBox('Who eats whom','',rulesFor('w4','chain'),'Nobody has eaten anyone yet.');
+    const seen=seenList('w4|',()=>true,(p,v)=>`<span>${p.split(',').map(x=>chipT(x,3)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v.split(',').map(x=>x==='0'?'<span class="x">·</span>':chipT(x,3)).join('')}</span>`);
+    html+=ruleBox('Tide pool','',rulesFor('w4','pool'),'Put orblings side by side in a Tide pool.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
+    html+=ruleBox('Calm pool','',rulesFor('w4','calm'),'Not figured out yet.');
+  } else if (nbTab===4){
+    html+=`<div class="box"><h3><span class="l">Who\u2019s who</span></h3><p>Each orbling\u2019s face shows its personality: sleepy Zz, a little heart, bossy brows, or sparkles.</p></div>`;
+    html+=ruleBox('Ticket booth','',rulesFor('wq','persona'),'Add orblings to the Ticket line and watch how each one reacts.');
+    html+=ruleBox('Coffee and Pillow','',rulesFor('wq','cup'),'Not tried yet.');
+  } else if (nbTab===5){
+    html+=ruleBox('Balance','',rulesFor('ws','balance'),'Put someone on the Seesaw and watch which way it tips.');
+  } else if (nbTab===6){
+    const seen=seenList('wl|',()=>true,(p,v)=>`<span>${p.split('+').map(x=>chipT(x,6)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v==='-'?'darkness':v.split(',').map(x=>chipT(x,6)).join('')}</span>`);
+    html+=ruleBox('Light','',rulesFor('wl','light'),'Try the Lamp.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
+    html+=ruleBox('Glass','',rulesFor('wl','glass'),'Shows up in a later level.');
+  } else {
+    const seen=seenList('w3|',()=>true,(p,v)=>`<span>${p.split('+').map(x=>chipT(W3.ghost(x),2)).join(' × ')} → ${v.map(s=>s==='x'?'<span class="x">no babies</span>':s).join(' / ')}</span>`);
+    html+=ruleBox('Nest', '', rulesFor('w3','nest'), 'Put two parents in a Nest and watch the babies’ ears.');
+    html+=ruleBox('Gold family', chipT('G:GG',2), rulesFor('w3','G'), 'Not figured out yet. Try the Nest.');
+    html+=ruleBox('Petal family', chipT('P:RW',2), rulesFor('w3','P'), 'Shows up in a later level.');
+    html+=`<div class="box"><h3><span class="l">Clutches seen</span></h3>${seen.length?`<div class="seen" style="flex-direction:column;gap:6px">${seen.join('')}</div>`:'<div class="unk">No babies yet.</div>'}</div>`;
+  }
+  $('#nb-body').innerHTML=html;
+}
+$('#nb-tabs').addEventListener('click',e=>{ const b=e.target.closest('.tab'); if(!b) return; nbTab=+b.dataset.i; renderNB(); });
+$('#nb-btn').addEventListener('click',()=>{ nbTab=isRemix()?9:S.world; renderNB(); $('#nb').hidden=false; });
+$('#map-btn').addEventListener('click',openMap);
+$('#nb-close').addEventListener('click',()=>$('#nb').hidden=true);
+$('#map-close').addEventListener('click',()=>$('#map').hidden=true);
+['#nb','#map'].forEach(id=>$(id).addEventListener('click',e=>{ if(e.target===$(id)) $(id).hidden=true; }));
+const rb=$('#reset');
+rb.addEventListener('click',()=>{
+  if (!rb.classList.contains('armed')){ rb.classList.add('armed'); rb.textContent='Tap again to erase'; setTimeout(()=>{ rb.classList.remove('armed'); rb.textContent='Reset progress'; },3000); return; }
+  try{ localStorage.removeItem(KEY); localStorage.removeItem(OLD); }catch(e){}
+  S=blank(); rb.classList.remove('armed'); rb.textContent='Reset progress'; $('#nb').hidden=true; startLevel(0,0);
+});
+
+/* ======================= boot ======================= */
+{
+  let wi=S.world||0; if (!worldOpen(wi)) wi=0;
+  let li=S.prog[wi].level||0; while (li>0 && !levelOpen(wi,li)) li--;
+  S.world=wi; buildMachines(world().levels[li]); layout();
+  const cur=S.cur, ok=cur && (cur.w||0)===wi && cur.idx===li && ((Array.isArray(cur.orbs) && (cur.orbs.length || (cur.gate||[]).some(Boolean))) || Array.isArray(cur.stacks));
+  startLevel(wi, li, ok ? cur : null);
+}
+new ResizeObserver(()=>{ layout(); }).observe(cv);
+setInterval(save,3000);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
+window.addEventListener('pagehide',save);
+let last=performance.now();
+function frame(now){ const dt=Math.min(.033,(now-last)/1000); last=now; update(dt); draw(); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
