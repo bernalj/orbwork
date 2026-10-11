@@ -1016,7 +1016,8 @@ function startLevel(wi, i, restore){
 /* ======================= layout ======================= */
 function layout(){
   const b=cv.getBoundingClientRect(); W=Math.max(1,b.width); H=Math.max(1,b.height); dpr=Math.min(dprCap(),window.devicePixelRatio||1);
-  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  const cw=Math.round(W*dpr), ch=Math.round(H*dpr), resized = cv.width!==cw || cv.height!==ch;
+  if (resized){ cv.width=cw; cv.height=ch; }   // assigning a size reallocates the canvas, even when it's the same size
   // Popups appear at the top of the board, so start the machines below the tallest one when there's room;
   // if that would shrink the machines noticeably, try half the strip, then none.
   const fit = top => { TOP=top; let r=Math.max(14,Math.min(34, W*.085, H*.075)); while (r>11 && !tryLayout(r,false)) r-=.5; return r; };
@@ -1024,7 +1025,10 @@ function layout(){
   for (const t of [safe, safe*.5]){ const rt=fit(t); if (rt>=r*.92){ top=t; r=rt; break; } }
   TOP=top; tryLayout(r,true); R=r; floorY=H-4;
   orbs.forEach(o=>{ o.r=radiusOf(o); if(!o.hole){ o.x=Math.min(Math.max(o.x,o.r),W-o.r); o.y=Math.min(o.y,floorY-o.r); } });
-  spriteCache.clear(); glowCache.clear(); makeBg(); makeFrameOverlay();
+  const look=`${R}|${dpr}`, bgKey=`${cw}x${ch}|${S.world}|${R}`;
+  if (layout.look!==look){ spriteCache.clear(); glowCache.clear(); layout.look=look; }   // blob sprites depend on size + resolution
+  if (layout.bg!==bgKey){ makeBg(); layout.bg=bgKey; }                                    // background depends on board size + world
+  if (resized || !frameOverlay) makeFrameOverlay();
 }
 // Height (from the board's top edge) of a popup carrying the longest Notebook text at the current width.
 function popupSafe(){
@@ -1107,7 +1111,8 @@ function makeOrb(spec,x,y,vx=0,vy=0){
 function removeOrb(o){ const i=orbs.indexOf(o); if(i>=0) orbs.splice(i,1); }
 
 /* ======================= fx & ui helpers ======================= */
-function burst(x,y,hex,n=10,speed=220){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=speed*(.4+Math.random()*.8); parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0,max:.35+Math.random()*.35,c:hex,sz:R*(.12+Math.random()*.14)}); } }
+const PART_MAX = matchMedia('(pointer: coarse)').matches ? 120 : 400;
+function burst(x,y,hex,n=10,speed=220){ if (PART_MAX<400) n=Math.ceil(n*.55); n=Math.min(n, PART_MAX-parts.length); for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=speed*(.4+Math.random()*.8); parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0,max:.35+Math.random()*.35,c:hex,sz:R*(.12+Math.random()*.14)}); } }
 function hearts(x,y,n=4){ for(let i=0;i<n;i++) parts.push({x:x+(Math.random()-.5)*R,y,vx:(Math.random()-.5)*80,vy:-120-Math.random()*90,life:0,max:.9,c:'#ff8fb0',sz:R*.28,heart:true,g:-60}); }
 function ring(x,y,hex,max=R*2.2){ rings.push({x,y,c:hex,t:0,max}); }
 function floatText(x,y,text,c='#e6b95c'){ floats.push({x,y,text,c,t:0}); }
@@ -1651,15 +1656,18 @@ function drawHoleBase(h){
   ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(h.x,h.y,HR,0,7); ctx.fill(); ctx.strokeStyle='rgba(20,10,0,.7)'; ctx.lineWidth=2; ctx.stroke();
   ctx.strokeStyle='rgba(255,240,200,.3)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(h.x,h.y+1,HR+1.5,.15*Math.PI,.85*Math.PI); ctx.stroke();
 }
+const LAYERS=new Map();   // pre-rendered machine images, reused by every level with the same machine at the same size
 const layerOK = m => !m.seesaw && m.type!=='camp';   // the Seesaw tilts and the Campfire flickers: drawn live
 function machineLayer(m){
-  const r=m.rect, key=`${dpr}|${R}|${HR}|${r.x},${r.y},${r.w},${r.h}|${boardDark()}|${!!m.used}|${document.fonts.status}`;
+  const r=m.rect, key=`${m.type}|${m.name}|${m.holes}|${m.plate}|${!!m.kiosk}|${!!m.used}|${r.w}x${r.h}|${R}|${HR}|${dpr}|${boardDark()}|${document.fonts.status}|`+m.holesPos.map(h=>`${h.x-r.x},${h.y-r.y}`).join(';');
   if (m.layer && m.layerKey===key) return m.layer;
+  const hit=LAYERS.get(key); if (hit){ Object.assign(m, hit, {layerKey:key}); return m.layer; }
   const pad=Math.ceil(R*.6), below=Math.ceil(R*1.4), lw=Math.max(r.w, R*10), side=Math.ceil((lw-r.w)/2)+pad, c=document.createElement('canvas');   // room for the label underneath
   c.width=Math.ceil((r.w+side*2)*dpr); c.height=Math.ceil((r.h+pad*2+below)*dpr);
   const g=c.getContext('2d'); g.scale(dpr,dpr); g.translate(side-r.x, pad-r.y);
   const sv=ctx; ctx=g; try { drawMachineBody(m); m.holesPos.forEach(drawHoleBase); drawMachineLabel(m); } finally { ctx=sv; }
-  m.layer=c; m.layerKey=key; m.layerPad=pad; m.layerSide=side; return c;
+  m.layer=c; m.layerKey=key; m.layerPad=pad; m.layerSide=side;
+  if (LAYERS.size>48) LAYERS.clear(); LAYERS.set(key, {layer:c, layerPad:pad, layerSide:side}); return c;
 }
 function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0); if(bg) ctx.drawImage(bg,0,0,W,H);
@@ -2115,14 +2123,20 @@ setInterval(save,3000);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
 window.addEventListener('pagehide',save);
 let last=performance.now();
-const perf={ n:0, slow:0, t0:0, frames:0, ms:0, el:null };
+const perf={ win:[], good:0, raised:false, t0:0, frames:0, ms:0, el:null };
 if (/[?&]fps\b/.test(location.search)){ perf.el=document.createElement('div'); perf.el.style.cssText='position:fixed;left:6px;bottom:6px;z-index:9;font:700 12px system-ui;background:#2b2a4ccc;color:#fff;padding:3px 7px;border-radius:6px;pointer-events:none'; document.body.appendChild(perf.el); }
 function watchFrames(now, raw, ms, hidden){
   perf.frames++; perf.ms+=ms;
   if (perf.el && now-perf.t0>500){ perf.el.textContent=`${Math.round(perf.frames*1000/(now-perf.t0))} fps · ${dpr}x · game ${(perf.ms/perf.frames).toFixed(1)} ms`; perf.t0=now; perf.frames=0; perf.ms=0; }
-  if (scene!=='play' || paused || hidden || document.hidden || raw>250 || dprCap()<=1) return;
-  perf.n++; if (raw>24) perf.slow++;                          // under ~40 fps
-  if (perf.n>=90){ if (perf.slow>=60){ PREF.dpr=Math.max(1, dprCap()-.5); savePrefs(); layout(); } perf.n=perf.slow=0; }
+  if (scene!=='play' || paused || hidden || document.hidden || raw>200){ perf.win.length=0; return; }   // skip pauses and one-off hitches
+  perf.win.push(raw); if (perf.win.length<120) return;
+  const med=perf.win.slice().sort((a,b)=>a-b)[60]; perf.win.length=0;          // median frame time over ~2 s of play
+  const cap=dprCap(), top=Math.min(2, window.devicePixelRatio||1, PREF.dprMax||2);
+  if (med>25 && cap>1){                                                          // under ~40 fps: step down
+    if (perf.raised) PREF.dprMax=cap-.5;                                         // the last step up didn't hold: don't retry it
+    PREF.dpr=cap-.5; perf.raised=false; perf.good=0; savePrefs(); layout(); }
+  else if (med<17.5 && cap<top){ if (++perf.good>=3){ PREF.dpr=cap+.5; perf.raised=true; perf.good=0; savePrefs(); layout(); } }   // ~57+ fps for ~6 s: step up
+  else { perf.good=0; if (med<25) perf.raised=false; }
 }
 const COVERS=['#map','#nb','#settings','#credits','#confirm'].map(id=>$(id));
 const covered = () => COVERS.some(e=>!e.hidden);   // a sheet or dialog hides the board: keep simulating, skip drawing
