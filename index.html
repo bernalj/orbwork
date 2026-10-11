@@ -54,6 +54,7 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .ib:disabled{opacity:.35;cursor:default}
 .ib .t{display:none}
 @media (min-width:720px){.ib .t{display:inline}}
+@media (max-width:520px){.hud{flex-wrap:wrap;row-gap:6px}.lvl{flex-basis:100%}.btns{flex:1;justify-content:space-between}}
 .ghost{background:var(--panel);border:2px solid var(--ink);border-radius:999px;padding:7px 14px;font-weight:800;font-size:.85rem;color:var(--ink);box-shadow:var(--hard-sm)}
 .ghost:hover{background:#fff}
 .ghost:active{transform:translate(2px,2px);box-shadow:none}
@@ -1162,7 +1163,7 @@ function startLevel(wi, i, restore){
   else if (!S.visited[wi]){ S.visited[wi]=1; setTimeout(()=>toast(`New world · ${w.name}`, w.blurb, 4500), 300); }
   else if (wi===0){ const fresh=[...new Set(def.orbs.map(kindOf))].filter(k=>k!=='pip'&&!S.met[k]);
     fresh.forEach(k=>S.met[k]=1);
-    if (fresh.length) queue.push({t:.5+def.orbs.length*.16, fn:()=>toast(`New blob · ${W1K[fresh[0]].name}`, `${chipT(fresh[0],0)} Press it with other blobs to learn what it does`)}); }
+    if (fresh.length) queue.push({t:.5+def.orbs.length*.16, fn:()=>toast(`New blob · ${W1K[fresh[0]].name}`, `${chipT(fresh[0],0)} Press it with other blobs to learn what it does.`)}); }
   (def.orbs||[]).forEach(t=>{ if(wi===0) S.met[kindOf(t)]=1; });
   save(); updateHUD();
 }
@@ -1965,7 +1966,7 @@ function renderNB(){
     html+=ruleBox('Calm pool','',rulesFor('w4','calm'),'Not figured out yet.');
   } else if (nbTab===4){
     html+=`<div class="box"><h3><span class="l">Who\u2019s who</span></h3><p>Each blob\u2019s face shows its personality: sleepy Zz, a little heart, bossy brows, or sparkles.</p></div>`;
-    html+=ruleBox('Ticket booth','',rulesFor('wq','persona'),'Add blobs to the Ticket line and watch how each one reacts.');
+    html+=ruleBox('Ticket line','',rulesFor('wq','persona'),'Add blobs to the Ticket line and watch how each one reacts.');
     html+=ruleBox('Coffee and Pillow','',rulesFor('wq','cup'),'Not tried yet.');
   } else if (nbTab===5){
     html+=ruleBox('Balance','',rulesFor('ws','balance'),'Put someone on the Seesaw and watch which way it tips.');
@@ -1990,7 +1991,7 @@ $('#map-close').addEventListener('click',()=>$('#map').hidden=true);
 ['#nb','#map'].forEach(id=>$(id).addEventListener('click',e=>{ if(e.target===$(id)) $(id).hidden=true; }));
 const rb=$('#reset');
 rb.addEventListener('click',()=>{
-  if (!rb.classList.contains('armed')){ rb.classList.add('armed'); rb.textContent='Tap again to erase'; setTimeout(()=>{ rb.classList.remove('armed'); rb.textContent='Reset progress'; },3000); return; }
+  if (!rb.classList.contains('armed')){ rb.classList.add('armed'); rb.textContent=TOUCH?'Tap again to erase':'Click again to erase'; setTimeout(()=>{ rb.classList.remove('armed'); rb.textContent='Reset progress'; },3000); return; }
   try{ localStorage.removeItem(KEY); localStorage.removeItem(OLD); }catch(e){}
   S=blank(); rb.classList.remove('armed'); rb.textContent='Reset progress'; $('#nb').hidden=true; startLevel(0,0);
 });
@@ -2012,6 +2013,7 @@ const uiTick = () => tone(1500,1800,.03,'sine',.07);
 const uiSelect = () => { tone(660,990,.07,'sine',.18); tone(990,1320,.09,'sine',.12,.003,.06); };
 function jingle(){ [0,7,12,16,19,24].forEach((s,k)=>{ const f=noteF(s); tone(f,f,.7,'triangle',.11,.004,k*.07); tone(f/2,f/2,.7,'sine',.05,.004,k*.07); }); }
 
+if (TOUCH) $('#press').textContent='Tap to start';
 $('#logo').innerHTML=[...'Blobbiverse'].map((c,i)=>`<span${i>=6?' class="b"':''} style="animation-delay:${.1+i*.06}s">${c}</span>`).join('');
 if (host && host.version) $('#ver').textContent='v'+host.version;
 
