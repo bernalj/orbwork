@@ -58,7 +58,11 @@ async function run(win) {
         move(x2, y2, 'mouseUp'); await sleep(60); }
     }
     else if ('click' in step) { const [x, y] = step.click; move(x, y, 'mouseMove'); move(x, y, 'mouseDown'); await sleep(40); move(x, y, 'mouseUp'); }
-    else if ('key' in step) { wc.sendInputEvent({ type: 'keyDown', keyCode: step.key }); wc.sendInputEvent({ type: 'keyUp', keyCode: step.key }); await sleep(30); }
+    else if ('key' in step) {
+      wc.sendInputEvent({ type: 'keyDown', keyCode: step.key });
+      if (step.key === 'Return' || step.key === 'Space') wc.sendInputEvent({ type: 'char', keyCode: step.key === 'Return' ? String.fromCharCode(13) : ' ' });  // native button activation needs the char
+      wc.sendInputEvent({ type: 'keyUp', keyCode: step.key }); await sleep(60);
+    }
     else if ('js' in step) console.log('[smoke] js', JSON.stringify(await wc.executeJavaScript(step.js)));
     else console.warn('[smoke] unknown step', JSON.stringify(step));
   }

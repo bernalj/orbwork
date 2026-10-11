@@ -27,7 +27,7 @@ function writeAtomic(file, text) {
   fs.renameSync(tmp, file);
 }
 
-let settings = { fullscreen: true, bounds: null };
+let settings = { fullscreen: false, bounds: null };
 let lastSave = null;
 let win = null;
 
@@ -39,8 +39,15 @@ function boundsVisible(b) {
   });
 }
 
+// First launch: windowed, 1080 wide (or less on small screens), 3:2, centered on the primary display.
+function defaultBounds() {
+  const a = screen.getPrimaryDisplay().workArea;
+  const width = Math.min(1080, a.width - 40), height = Math.min(Math.round(width * 2 / 3), a.height - 40);
+  return { width, height, x: a.x + Math.round((a.width - width) / 2), y: a.y + Math.round((a.height - height) / 2) };
+}
+
 function createWindow() {
-  const b = boundsVisible(settings.bounds) ? settings.bounds : { width: 1280, height: 800 };
+  const b = boundsVisible(settings.bounds) ? settings.bounds : defaultBounds();
   win = new BrowserWindow({
     ...b,
     minWidth: 640,
@@ -86,8 +93,10 @@ function createWindow() {
 }
 
 function toggleFullscreen() {
+  if (win) setFullscreen(!win.isFullScreen());
+}
+function setFullscreen(next) {
   if (!win) return;
-  const next = !win.isFullScreen();
   win.setFullScreen(next);
   if (ON_DECK) return;
   settings.fullscreen = next;
@@ -108,6 +117,9 @@ ipcMain.on('progress', (_e, progress) => {
   for (const id of earned(progress)) steam.unlock(id);
 });
 ipcMain.on('fullscreen:toggle', toggleFullscreen);
+ipcMain.on('fullscreen:set', (_e, on) => setFullscreen(!!on));
+ipcMain.on('fullscreen:get', e => { e.returnValue = !!win && win.isFullScreen(); });
+ipcMain.on('app:version', e => { e.returnValue = require('../package.json').version; });
 ipcMain.on('app:quit', () => app.quit());
 
 /* ---------- lifecycle ---------- */

@@ -32,17 +32,19 @@ Environment switches:
 ## How it behaves on desktop
 
 - **Saves** go to `%APPDATA%\Orbwork\saves\save.json`, mirrored to localStorage. That folder holds only the save, so Steam Auto-Cloud can sync it.
-- **Fullscreen** is the default. F11 or Alt+Enter toggles it, or use the HUD button. The choice is remembered in `%APPDATA%\Orbwork\settings.json`. On Steam Deck (`SteamDeck=1`) the game is always fullscreen.
+- **Window:** the first launch is windowed, 1080 wide (3:2, centered; smaller on small screens). F11, Alt+Enter or *Settings → Display* switches to fullscreen. Size, position and mode are remembered in `%APPDATA%\Orbwork\settings.json`. On Steam Deck (`SteamDeck=1`) the game is always fullscreen.
+- **Front end:** splash card → title screen (orblings from every world fall in; drag and throw them) → main menu (Continue / New Game, Level Select, Settings, Credits, Quit). Esc or the HUD **Menu** button pauses the game: Resume, Restart level, Level Select, Settings, Main Menu, Quit. Menus work with the mouse or the arrow keys plus Enter.
+- **Settings:** volume (saved per machine in localStorage), windowed or fullscreen, and reset progress.
 - **Keyboard:**
   - Z, U, Backspace or Ctrl+Z: Undo
   - R: Restart
   - M: Map
   - N: Notebook
-  - Esc: close sheet
+  - Esc: close a sheet, or pause
   - Enter or Space: Next level after a win
 
   These also work on the web.
-- **Quit** button in the HUD (desktop only).
+- **Quit** is in the main menu and the pause menu (desktop only).
 - **Achievements** are recomputed from the save each time progress changes. Progress made before Steam was connected unlocks retroactively on the next launch.
 
 ## Testing with Steam before you have an App ID

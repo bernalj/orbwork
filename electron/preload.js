@@ -5,6 +5,9 @@ contextBridge.exposeInMainWorld('orbworkHost', {
   loadSave: () => ipcRenderer.sendSync('save:load'),
   writeSave: json => ipcRenderer.sendSync('save:write', json),
   progress: summary => ipcRenderer.send('progress', summary),
+  version: ipcRenderer.sendSync('app:version'),
+  isFullscreen: () => ipcRenderer.sendSync('fullscreen:get'),
+  setFullscreen: on => ipcRenderer.send('fullscreen:set', on),
   toggleFullscreen: () => ipcRenderer.send('fullscreen:toggle'),
   quit: () => ipcRenderer.send('app:quit'),
 });
