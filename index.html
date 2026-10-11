@@ -1085,6 +1085,11 @@ function makeFrameOverlay(){
   g.globalCompositeOperation='destination-out'; g.beginPath(); g.roundRect(0,0,W,H,rad); g.fill();
   g.globalCompositeOperation='source-over'; g.strokeStyle=INK; g.lineWidth=2; g.beginPath(); g.roundRect(1,1,W-2,H-2,rad-1); g.stroke();
 }
+function drawFrameEdges(){   // corners + border strips of the pre-rendered overlay (most of it is transparent)
+  const c=20, e=3, o=frameOverlay, k=dpr, bl=(x,y,w,h)=>ctx.drawImage(o,x*k,y*k,w*k,h*k,x,y,w,h);
+  bl(0,0,c,c); bl(W-c,0,c,c); bl(0,H-c,c,c); bl(W-c,H-c,c,c);
+  bl(c,0,W-2*c,e); bl(c,H-e,W-2*c,e); bl(0,c,e,H-2*c); bl(W-e,c,e,H-2*c);
+}
 function makeBg(){
   const w=world(); bg=document.createElement('canvas'); bg.width=cv.width; bg.height=cv.height; const g=bg.getContext('2d'); g.scale(dpr,dpr);
   const gr=g.createRadialGradient(W/2,H*.25,10,W/2,H*.4,Math.max(W,H)*.8); gr.addColorStop(0,w.bg[0]); gr.addColorStop(1,w.bg[1]); g.fillStyle=gr; g.fillRect(0,0,W,H);
@@ -1637,6 +1642,10 @@ function drawMachineBody(m){
     if (m.type!=='nest' && m.type!=='camp'){ ctx.fillStyle='rgba(30,20,10,.4)'; [[r.x+R*.4,r.y+R*.4],[r.x+r.w-R*.4,r.y+R*.4],[r.x+R*.4,r.y+r.h-R*.4],[r.x+r.w-R*.4,r.y+r.h-R*.4]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,R*.11,0,7);ctx.fill();}); }
     if (m.seesaw && m.rest){ const pv=m.rest[3]; ctx.fillStyle='#3d2c18'; ctx.beginPath(); ctx.arc(pv.x,pv.y,HR*1.12,0,7); ctx.fill(); ctx.restore(); ctx.shadowColor='transparent'; }   // restore() brought back the plate's drop shadow
 }
+function drawMachineLabel(m){
+  const r=m.rect; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle=boardDark()?(m.used?'#a698c4':'#f5eeff'):(m.used?'#8a85a3':INK);
+  ctx.font=`${Math.max(12,Math.round(R*.78))}px "Lilita One", system-ui, sans-serif`; ctx.fillText(m.used?`${m.name} · used`:m.name, r.x+r.w/2, r.y+r.h+R*.3);
+}
 function drawHoleBase(h){
   const hg=ctx.createRadialGradient(h.x,h.y-HR*.3,HR*.2,h.x,h.y,HR); hg.addColorStop(0,'#45436e'); hg.addColorStop(1,'#1f1e38');
   ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(h.x,h.y,HR,0,7); ctx.fill(); ctx.strokeStyle='rgba(20,10,0,.7)'; ctx.lineWidth=2; ctx.stroke();
@@ -1644,13 +1653,13 @@ function drawHoleBase(h){
 }
 const layerOK = m => !m.seesaw && m.type!=='camp';   // the Seesaw tilts and the Campfire flickers: drawn live
 function machineLayer(m){
-  const r=m.rect, key=`${dpr}|${R}|${HR}|${r.x},${r.y},${r.w},${r.h}|${boardDark()}`;
+  const r=m.rect, key=`${dpr}|${R}|${HR}|${r.x},${r.y},${r.w},${r.h}|${boardDark()}|${!!m.used}|${document.fonts.status}`;
   if (m.layer && m.layerKey===key) return m.layer;
-  const pad=Math.ceil(R*.6), c=document.createElement('canvas');
-  c.width=Math.ceil((r.w+pad*2)*dpr); c.height=Math.ceil((r.h+pad*2)*dpr);
-  const g=c.getContext('2d'); g.scale(dpr,dpr); g.translate(pad-r.x, pad-r.y);
-  const sv=ctx; ctx=g; try { drawMachineBody(m); m.holesPos.forEach(drawHoleBase); } finally { ctx=sv; }
-  m.layer=c; m.layerKey=key; m.layerPad=pad; return c;
+  const pad=Math.ceil(R*.6), below=Math.ceil(R*1.4), lw=Math.max(r.w, R*10), side=Math.ceil((lw-r.w)/2)+pad, c=document.createElement('canvas');   // room for the label underneath
+  c.width=Math.ceil((r.w+side*2)*dpr); c.height=Math.ceil((r.h+pad*2+below)*dpr);
+  const g=c.getContext('2d'); g.scale(dpr,dpr); g.translate(side-r.x, pad-r.y);
+  const sv=ctx; ctx=g; try { drawMachineBody(m); m.holesPos.forEach(drawHoleBase); drawMachineLabel(m); } finally { ctx=sv; }
+  m.layer=c; m.layerKey=key; m.layerPad=pad; m.layerSide=side; return c;
 }
 function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0); if(bg) ctx.drawImage(bg,0,0,W,H);
@@ -1661,7 +1670,7 @@ function draw(){
     ctx.save(); ctx.translate(ox,0);
     const ga = m.state==='charging' ? .5+.5*Math.sin(time*30) : m.flash;   // charging glow: a cheap outline instead of a blur
     if (ga>0){ ctx.save(); ctx.globalAlpha=Math.min(1,ga); ctx.strokeStyle=gate?'#2fbf8a':'#ffb627'; ctx.lineWidth=R*.32*ga+2; rr(r.x-R*.18,r.y-R*.18,r.w+R*.36,r.h+R*.36,R*.85); ctx.stroke(); ctx.restore(); }
-    if (layerOK(m)){ const c=machineLayer(m), p=m.layerPad; ctx.drawImage(c, r.x-p, r.y-p, c.width/dpr, c.height/dpr); }
+    if (layerOK(m)){ const c=machineLayer(m); ctx.drawImage(c, r.x-m.layerSide, r.y-m.layerPad, c.width/dpr, c.height/dpr); }
     else drawMachineBody(m);
     m.holesPos.forEach((h,i)=>{
       if (!layerOK(m)) drawHoleBase(h);
@@ -1698,8 +1707,7 @@ function draw(){
     if (m.used){ ctx.fillStyle='rgba(43,42,76,.55)'; rr(r.x,r.y,r.w,r.h,R*.7); ctx.fill();
       m.holesPos.forEach(h=>{ ctx.fillStyle='#f3ead6'; ctx.beginPath(); ctx.ellipse(h.x,h.y+HR*.15,HR*.42,HR*.55,0,0,7); ctx.fill();
         ctx.strokeStyle='#b9a98a'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(h.x-HR*.42,h.y); ctx.lineTo(h.x-HR*.15,h.y-HR*.15); ctx.lineTo(h.x+HR*.1,h.y+HR*.05); ctx.lineTo(h.x+HR*.42,h.y-HR*.1); ctx.stroke(); }); }
-    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle=boardDark()?(m.used?'#a698c4':'#f5eeff'):(m.used?'#8a85a3':INK);
-    ctx.font=`${Math.max(12,Math.round(R*.78))}px "Lilita One", system-ui, sans-serif`; ctx.fillText(m.used?`${m.name} · used`:m.name, r.x+r.w/2, r.y+r.h+R*.3);
+    if (!layerOK(m)) drawMachineLabel(m);
     ctx.restore();
   });
   orbs.forEach(o=>{ if(o.hole||o.held) return; drawOrb(o,o.x,o.y); });
@@ -1728,7 +1736,7 @@ function draw(){
     const tw=ctx.measureText(f.text).width/2, fx=Math.min(Math.max(f.x,tw+6),W-tw-6), fy=Math.max(R,f.y-k*R*2);
     ctx.strokeStyle=INK; ctx.lineWidth=Math.max(3,R*.16); ctx.lineJoin='round'; ctx.strokeText(f.text,fx,fy); ctx.fillText(f.text,fx,fy); });
   ctx.globalAlpha=1; ctx.restore();
-  if (frameOverlay) ctx.drawImage(frameOverlay,0,0,W,H);
+  if (frameOverlay) drawFrameEdges();
 }
 
 /* ======================= HUD & sheets ======================= */
@@ -2107,17 +2115,21 @@ setInterval(save,3000);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
 window.addEventListener('pagehide',save);
 let last=performance.now();
-const perf={ n:0, slow:0, t0:0, frames:0, el:null };
+const perf={ n:0, slow:0, t0:0, frames:0, ms:0, el:null };
 if (/[?&]fps\b/.test(location.search)){ perf.el=document.createElement('div'); perf.el.style.cssText='position:fixed;left:6px;bottom:6px;z-index:9;font:700 12px system-ui;background:#2b2a4ccc;color:#fff;padding:3px 7px;border-radius:6px;pointer-events:none'; document.body.appendChild(perf.el); }
-function watchFrames(now, raw){
-  perf.frames++; if (perf.el && now-perf.t0>500){ perf.el.textContent=`${Math.round(perf.frames*1000/(now-perf.t0))} fps · ${dpr}x`; perf.t0=now; perf.frames=0; }
-  if (scene!=='play' || paused || document.hidden || raw>250 || dprCap()<=1) return;
+function watchFrames(now, raw, ms, hidden){
+  perf.frames++; perf.ms+=ms;
+  if (perf.el && now-perf.t0>500){ perf.el.textContent=`${Math.round(perf.frames*1000/(now-perf.t0))} fps · ${dpr}x · game ${(perf.ms/perf.frames).toFixed(1)} ms`; perf.t0=now; perf.frames=0; perf.ms=0; }
+  if (scene!=='play' || paused || hidden || document.hidden || raw>250 || dprCap()<=1) return;
   perf.n++; if (raw>24) perf.slow++;                          // under ~40 fps
   if (perf.n>=90){ if (perf.slow>=60){ PREF.dpr=Math.max(1, dprCap()-.5); savePrefs(); layout(); } perf.n=perf.slow=0; }
 }
-function frame(now){ const raw=now-last, dt=Math.min(.033,raw/1000); last=now; watchFrames(now, raw);
-  if (scene==='play'){ if (!paused){ update(dt); draw(); } }   // paused: the board stays frozen under the pause card
-  else { time+=dt; titleStep(dt); titleDraw(); }
+const COVERS=['#map','#nb','#settings','#credits','#confirm'].map(id=>$(id));
+const covered = () => COVERS.some(e=>!e.hidden);   // a sheet or dialog hides the board: keep simulating, skip drawing
+function frame(now){ const raw=now-last, dt=Math.min(.033,raw/1000); last=now; const t0=performance.now(), hidden=covered();
+  if (scene==='play'){ if (!paused){ update(dt); if (!hidden) draw(); } }   // paused: the board stays frozen under the pause card
+  else { time+=dt; titleStep(dt); if (!hidden) titleDraw(); }
+  watchFrames(now, raw, performance.now()-t0, hidden);
   requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
 })();
