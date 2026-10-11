@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#170f28">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,8 +21,7 @@ img{max-width:100%}
 </style>
 <title>Orbwork</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Layout: one-screen toy board. Compact HUD (label + icon buttons), hint line, felt tray filling the rest; sheets for Map and Notebook. */
 :root{
@@ -119,6 +119,8 @@ svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
       <button id="map-btn" class="ib" type="button" aria-label="Map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span class="t">Map</span></button>
       <button id="nb-btn" class="ib" type="button" aria-label="Notebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg><span class="t">Notebook</span></button>
       <button id="snd-btn" class="ib" type="button" aria-label="Sound on" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path id="snd-wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+      <button id="fs-btn" class="ib" type="button" aria-label="Fullscreen (F11)" title="Fullscreen (F11)" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button id="quit-btn" class="ib" type="button" aria-label="Quit" title="Quit" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/></svg><span class="t">Quit</span></button>
     </div>
   </header>
   <p class="hint" id="hint"></p>
@@ -894,10 +896,11 @@ const MT = {
 
 /* ======================= save ======================= */
 const KEY='orbwork-v2', OLD='orbwork-levels-v1';
+const host = window.orbworkHost || null;  // set by the desktop (Steam) build's preload; null on the web
 const blank = () => ({v4:1, v5:1, v6:1, world:0, prog:[0,1,2,3,4,5,6].map(()=>({level:0,best:{}})), learned:{}, seen:{}, aff:{}, food:{}, met:{}, visited:{}, cur:null});
 let S=blank();
 try {
-  const raw=localStorage.getItem(KEY);
+  const raw=(host && host.loadSave()) || localStorage.getItem(KEY);
   if (raw){ const parsed=JSON.parse(raw); S=Object.assign(blank(), parsed); S.v4=parsed.v4; S.v5=parsed.v5; S.v6=parsed.v6; while (S.prog.length<7) S.prog.push({level:0,best:{}});
     if (!S.v6){ S.prog[5]={level:0,best:{}}; delete S.visited[5]; delete S.visited.r5; if (S.world===5) S.world=0; if (S.cur&&S.cur.w===5) S.cur=null; S.v6=1; } S.food=S.food||{};
     if (!S.v5){ S.prog[4]={level:0,best:{}}; S.v5=1; if (S.cur&&S.cur.w===4) S.cur=null; }
@@ -914,7 +917,20 @@ try {
 } catch(e){}
 function save(){
   if (L) S.cur = L.done ? null : {w:S.world, idx:L.idx, ...snapshot()};
-  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+  const json=JSON.stringify(S);
+  try{ localStorage.setItem(KEY, json); }catch(e){}
+  if (host) host.writeSave(json);
+}
+/* Desktop build: report progress so the host can unlock Steam achievements. */
+function hostSync(){
+  if (!host) return;
+  host.progress({
+    learned: Object.keys(S.learned).length,
+    worlds: WORLDS.map((w,wi)=>{ const best=S.prog[wi].best, idx=w.levels.map((d,i)=>[d,i]);
+      const main=idx.filter(([d])=>!d.remix), rmx=idx.filter(([d])=>d.remix);
+      return {id:w.id, mainTotal:main.length, mainCleared:main.filter(([,i])=>best[i]>0).length, mainPerfect:main.filter(([,i])=>best[i]>=3).length,
+        remixTotal:rmx.length, remixCleared:rmx.filter(([,i])=>best[i]>0).length, remixPerfect:rmx.filter(([,i])=>best[i]>=3).length}; }),
+  });
 }
 
 /* ======================= world state ======================= */
@@ -1304,7 +1320,7 @@ function resolveMachine(m){
 function learn(rule){
   const key=String(rule).includes(':') ? rule : world().id+':'+rule;
   if (!rule || !RULES[key] || S.learned[key]) return;
-  S.learned[key]=1; sfx.learn(); toast(`Notebook · ${({w1:'Hatchery',w2:'Commons',w3:'Nursery',w4:'Reef',wq:'Queue',wt:'Tower',ws:'Seesaw',wl:'Lighthouse',rx:'Remix'})[key.split(':')[0]]}`, RULES[key].text, 4200);
+  S.learned[key]=1; hostSync(); sfx.learn(); toast(`Notebook · ${({w1:'Hatchery',w2:'Commons',w3:'Nursery',w4:'Reef',wq:'Queue',wt:'Tower',ws:'Seesaw',wl:'Lighthouse',rx:'Remix'})[key.split(':')[0]]}`, RULES[key].text, 4200);
 }
 function resolveGate(m){
   const w=world(), rl=rules();
@@ -1326,7 +1342,7 @@ function resolveGate(m){
   const best=S.prog[S.world].best; best[L.idx]=Math.max(best[L.idx]||0,stars);
   const justUnlocked = S.world===0 && Object.keys(best).length===UNLOCK_AT && !S.unlockNote;
   if (justUnlocked) S.unlockNote=1;
-  save(); updateHUD();
+  save(); updateHUD(); hostSync();
   setTimeout(()=>{
     const last=L.idx===w.levels.length-1;
     const mainDone = L.idx===MAIN_COUNT-1 && w.levels.length>MAIN_COUNT;
@@ -1853,6 +1869,29 @@ rb.addEventListener('click',()=>{
   S=blank(); rb.classList.remove('armed'); rb.textContent='Reset progress'; $('#nb').hidden=true; startLevel(0,0);
 });
 
+/* ======================= keyboard ======================= */
+document.addEventListener('keydown',e=>{
+  if (e.altKey || e.metaKey) return;
+  const k=e.key.toLowerCase(), open=['#nb','#map'].find(id=>!$(id).hidden);
+  if (k==='escape'){ if (open){ $(open).hidden=true; e.preventDefault(); } return; }
+  if (e.ctrlKey){ if (k==='z' && !open){ audio(); undo(); e.preventDefault(); } return; }
+  if (e.repeat || ((k==='enter' || k===' ') && e.target.closest && e.target.closest('button'))) return;
+  if (k==='m'){ if (open==='#map') $('#map').hidden=true; else { $('#nb').hidden=true; openMap(); } }
+  else if (k==='n'){ if (open==='#nb') $('#nb').hidden=true; else { $('#map').hidden=true; $('#nb-btn').click(); } }
+  else if (open) return;
+  else if (k==='z' || k==='u' || k==='backspace'){ audio(); undo(); }
+  else if (k==='r'){ audio(); startLevel(S.world,L.idx); }
+  else if ((k==='enter' || k===' ') && !$('#done').hidden){ $('#done-next').click(); }
+  else return;
+  e.preventDefault();
+});
+if (host){
+  $('#fs-btn').hidden=false; $('#quit-btn').hidden=false;
+  $('#fs-btn').addEventListener('click',()=>host.toggleFullscreen());
+  $('#quit-btn').addEventListener('click',()=>{ save(); host.quit(); });
+  window.addEventListener('beforeunload',save);
+}
+
 /* ======================= boot ======================= */
 {
   let wi=S.world||0; if (!worldOpen(wi)) wi=0;
@@ -1860,6 +1899,7 @@ rb.addEventListener('click',()=>{
   S.world=wi; buildMachines(world().levels[li]); layout();
   const cur=S.cur, ok=cur && (cur.w||0)===wi && cur.idx===li && ((Array.isArray(cur.orbs) && (cur.orbs.length || (cur.gate||[]).some(Boolean))) || Array.isArray(cur.stacks));
   startLevel(wi, li, ok ? cur : null);
+  hostSync();
 }
 new ResizeObserver(()=>{ layout(); }).observe(cv);
 setInterval(save,3000);

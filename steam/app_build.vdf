@@ -1,0 +1,14 @@
+"AppBuild"
+{
+	"AppID" "APPID"
+	"Desc" "Orbwork Windows build"
+	"ContentRoot" "..\dist\win-unpacked\"
+	"BuildOutput" "..\dist\steam-output\"
+	"SetLive" ""
+	"Preview" "0"
+
+	"Depots"
+	{
+		"DEPOTID" "depot_build_windows.vdf"
+	}
+}

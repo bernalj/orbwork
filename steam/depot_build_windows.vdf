@@ -1,0 +1,13 @@
+"DepotBuild"
+{
+	"DepotID" "DEPOTID"
+	"FileMapping"
+	{
+		"LocalPath" "*"
+		"DepotPath" "."
+		"Recursive" "1"
+	}
+	// Dev-only App ID override; Steam supplies the App ID when it launches the game.
+	"FileExclusion" "steam_appid.txt"
+	"FileExclusion" "*.pdb"
+}

@@ -1,0 +1,59 @@
+{
+  "name": "orbwork",
+  "productName": "Orbwork",
+  "version": "1.0.0",
+  "description": "A small puzzle game about googly-eyed orblings.",
+  "author": "bernalj",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win dir",
+    "dist:zip": "electron-builder --win zip"
+  },
+  "dependencies": {
+    "steamworks.js": "0.4.0"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3"
+  },
+  "steamAppId": 480,
+  "build": {
+    "appId": "com.bernalj.orbwork",
+    "productName": "Orbwork",
+    "executableName": "Orbwork",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "index.html",
+      "manifest.webmanifest",
+      "icon.svg",
+      "icon-*.png",
+      "fonts/**",
+      "electron/**",
+      "package.json",
+      "!node_modules/steamworks.js/dist/linux64/**",
+      "!node_modules/steamworks.js/dist/osx/**",
+      "!node_modules/steamworks.js/dist/win64/*.lib"
+    ],
+    "asarUnpack": [
+      "node_modules/steamworks.js/**"
+    ],
+    "extraFiles": [
+      {
+        "from": "node_modules/steamworks.js/dist/win64/steam_api64.dll",
+        "to": "steam_api64.dll"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": "dir"
+    },
+    "electronLanguages": [
+      "en-US"
+    ]
+  }
+}
