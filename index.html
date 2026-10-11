@@ -2123,24 +2123,28 @@ setInterval(save,3000);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
 window.addEventListener('pagehide',save);
 let last=performance.now();
-const perf={ win:[], good:0, raised:false, t0:0, frames:0, ms:0, el:null };
+const perf={ win:[], good:0, upAt:-1e9, relayout:false, t0:0, frames:0, ms:0, el:null };
 if (/[?&]fps\b/.test(location.search)){ perf.el=document.createElement('div'); perf.el.style.cssText='position:fixed;left:6px;bottom:6px;z-index:9;font:700 12px system-ui;background:#2b2a4ccc;color:#fff;padding:3px 7px;border-radius:6px;pointer-events:none'; document.body.appendChild(perf.el); }
 function watchFrames(now, raw, ms, hidden){
   perf.frames++; perf.ms+=ms;
   if (perf.el && now-perf.t0>500){ perf.el.textContent=`${Math.round(perf.frames*1000/(now-perf.t0))} fps · ${dpr}x · game ${(perf.ms/perf.frames).toFixed(1)} ms`; perf.t0=now; perf.frames=0; perf.ms=0; }
   if (scene!=='play' || paused || hidden || document.hidden || raw>200){ perf.win.length=0; return; }   // skip pauses and one-off hitches
+  // Judge steady play only: effects, working machines and the win card are short and shouldn't move the resolution.
+  const calm = !parts.length && !rings.length && !floats.length && !held && !queue.length && $('#done').hidden && machines.every(m=>m.state==='idle');
+  if (!calm) return;
   perf.win.push(raw); if (perf.win.length<120) return;
-  const med=perf.win.slice().sort((a,b)=>a-b)[60]; perf.win.length=0;          // median frame time over ~2 s of play
+  const med=perf.win.slice().sort((a,b)=>a-b)[60]; perf.win.length=0;          // median frame time over ~2 s of calm play
   const cap=dprCap(), top=Math.min(2, window.devicePixelRatio||1, PREF.dprMax||2);
   if (med>25 && cap>1){                                                          // under ~40 fps: step down
-    if (perf.raised) PREF.dprMax=cap-.5;                                         // the last step up didn't hold: don't retry it
-    PREF.dpr=cap-.5; perf.raised=false; perf.good=0; savePrefs(); layout(); }
-  else if (med<17.5 && cap<top){ if (++perf.good>=3){ PREF.dpr=cap+.5; perf.raised=true; perf.good=0; savePrefs(); layout(); } }   // ~57+ fps for ~6 s: step up
-  else { perf.good=0; if (med<25) perf.raised=false; }
+    if (now-perf.upAt<30000) PREF.dprMax=cap-.5;                                 // a step up that didn't last 30 s: don't try it again
+    PREF.dpr=cap-.5; perf.good=0; savePrefs(); perf.relayout=true; }
+  else if (med<17.5 && cap<top){ if (++perf.good>=3){ PREF.dpr=cap+.5; perf.upAt=now; perf.good=0; savePrefs(); perf.relayout=true; } }   // ~57+ fps for ~6 s: step up
+  else perf.good=0;
 }
 const COVERS=['#map','#nb','#settings','#credits','#confirm'].map(id=>$(id));
 const covered = () => COVERS.some(e=>!e.hidden);   // a sheet or dialog hides the board: keep simulating, skip drawing
 function frame(now){ const raw=now-last, dt=Math.min(.033,raw/1000); last=now; const t0=performance.now(), hidden=covered();
+  if (perf.relayout){ perf.relayout=false; layout(); }   // resolution change: resize right before drawing, so no blank frame is shown
   if (scene==='play'){ if (!paused){ update(dt); if (!hidden) draw(); } }   // paused: the board stays frozen under the pause card
   else { time+=dt; titleStep(dt); if (!hidden) titleDraw(); }
   watchFrames(now, raw, performance.now()-t0, hidden);
