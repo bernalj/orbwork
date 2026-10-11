@@ -459,82 +459,6 @@ const W4 = {
   ],
 };
 
-/* ======================= WORLD 5 · THE CHOIR ======================= */
-const CH = {r:{name:'Red',hex:'#ff5a5f'}, b:{name:'Blue',hex:'#4a90ff'}, y:{name:'Yellow',hex:'#ffcf3a'}, g:{name:'Green',hex:'#4fd17a'}, x:{name:'',hex:'#b7b0c8'}};
-const SOLF = ['Do','Re','Mi','Fa','Sol','La','Ti'], SEMI=[0,2,4,5,7,9,11];
-const noteOf = t => +t[1];
-const W5 = {
-  id:'w5', name:'The Choir', short:'Choir', gateName:'Stage', bg:['#f6e9f3','#e3cde0'],
-  blurb:'Every blob sings one note, and they change each other’s notes. Order matters here.',
-  gatePlate:['#c9a0dc','#8e5aa8','#562f6b'],
-  look(o){ return {hex:CH[o.t[0]].hex, face:'critter', mood:'sing', badge:SOLF[noteOf(o.t)-1], bounce:.35, voice:'sing'+noteOf(o.t)}; },
-  radius(){ return R; },
-  label(t){ return `${CH[t[0]].name} · ${SOLF[noteOf(t)-1]}`; },
-  react(mt,ts){
-    const a=ts.map(t=>({c:t[0],n:noteOf(t)})), learn=['right'];
-    for (let i=0;i<a.length-1;i++){ const L=a[i], Rt=a[i+1], before=Rt.n;
-      if (L.c==='b') Rt.n=Math.max(1,Rt.n-1); else if (L.c==='y') Rt.n=Math.min(7,Rt.n+1); else if (L.c==='g') Rt.n=L.n;
-      if (L.c==='r') learn.push('r'); else if (Rt.n!==before) learn.push(L.c);
-      else if ((L.c==='b'&&before===1)||(L.c==='y'&&before===7)) learn.push('clamp'); }
-    if (ts.length>2) learn.push('order');
-    const out=a.map(o=>o.c+o.n);
-    if (out.join()===ts.join()) return {fail:'same', learnFail:learn.filter(k=>k==='r'||k==='clamp')};
-    return {verb:null, transform:out, learn, sing:true};
-  },
-  accepts(req,o){ return req==='any' || o.t[1]===req; },
-  reqLabel(req){ return req==='any' ? 'Anyone' : SOLF[+req-1]; },
-  ghost(req){ return req==='any' ? null : 'x'+req; },
-  seen(ts,res){ S.seen['w5|'+ts.join(',')] = res.fail ? 'x' : res.transform.join(','); },
-  onWin(slots){ slots.forEach((o,k)=>{ const f=noteF(SEMI[noteOf(o.t)-1]); tone(f,f,.5,'triangle',.2,.01,.15+k*.32); tone(f*2,f*2,.4,'sine',.06,.01,.15+k*.32); }); },
-  levels:[
-    {name:'Warm up',          orbs:['y1','r1'],                 machines:['row2'],        gate:['2'],                  par:1, hint:'The <b>Stage</b> wants a Re. Nobody sings it yet. Try the <b>Rehearsal row</b>.'},
-    {name:'Going down',       orbs:['b3','r2','r1'],            machines:['row2'],        gate:['1','1'],              par:1, hint:'Pick a blob up to hear its note.'},
-    {name:'Copycat',          orbs:['g5','r1'],                 machines:['row2'],        gate:['5','5'],              par:1, hint:''},
-    {name:'Order matters',    orbs:['y1','g2','r1'],            machines:['row3'],        gate:['3'],                  par:1, hint:'Three in a row now. Who stands where?'},
-    {name:'Three blind mice', orbs:['b4','b3','r2','r3'],       machines:['row3'],        gate:['3','2','1'],          par:1, hint:'Mi, Re, Do, in one rehearsal.'},
-    {name:'Ladder',           orbs:['y1','y1','y1','r1'],       machines:['row3','row2'], gate:['1','2','3','4'],      par:3, hint:'Climb the scale.'},
-    {name:'Twinkle',          orbs:['g1','r3','y4','r5','r6'],  machines:['row3','row2'], gate:['1','1','5','5','6'],  par:2, hint:'You might know this one.'},
-  ],
-};
-
-const QT = {
-  queue:[
-    {name:'Wait your turn', orbs:['rp','yz'], machines:[], gate:['r','y'], par:0, hint:'The <b>Ticket booth</b> lines everyone up from the front, then they shuffle once.'},
-    {name:'Pushy',          orbs:['rp','yz','bz'], machines:[], gate:['y','r','b'], par:0, hint:'Watch what the one with the bossy brows does.'},
-    {name:'Shy',            orbs:['rs','ys','bz'], machines:[], gate:['b','y','r'], par:0, hint:'Somebody here would rather not be seen.'},
-    {name:'Eager',          orbs:['re','yz','bp','rz'], machines:[], gate:['r','r','b','y'], par:0, hint:'Four in line. One of them can’t wait.'},
-    {name:'Coffee',         orbs:['rs','yz','bp'], machines:['coffee'], gate:['r','b','y'], par:1, hint:'Give someone a <b>Coffee</b>.'},
-    {name:'Pillow',         orbs:['re','ye','bz'], machines:['pillow'], gate:['y','b','r'], par:2, hint:'Too much energy in this line.'},
-    {name:'Big line',       orbs:['re','yp','bs','rz','yz'], machines:['coffee','pillow'], gate:['y','b','r','r','y'], par:1, hint:'Five in line, one change allowed.'},
-  ],
-  queueRemix:[
-    {name:'Sulky line',       orbs:['*c=r,m=g,q=p','*c=y,m=h,q=z','*c=b,m=h,q=z'], machines:[], gateKind:'booth', gate:['*c=y','*c=r','*c=b'], par:0, hint:'Moods from the Commons. Does a grumpy Pushy still push?'},
-    {name:'Make them sulk',   orbs:['*c=r,m=g,q=s','*c=b,m=h,q=e','*c=b,m=h,q=p'], machines:['meet'], gateKind:'booth', gate:['*c=r','*c=b','*c=b'], par:1, hint:'Sometimes a grump is exactly what the line needs.'},
-    {name:'Campfire line',    orbs:['*c=b,m=g,q=z','*c=y,m=h,q=s','*c=r,m=g,q=z','*c=r,m=g,q=s'], machines:['camp'], gateKind:'booth', gate:['*c=b','*c=y','*c=r','*c=r'], par:1, hint:''},
-    {name:'Copy and clash',   orbs:['*k=tw','*c=b,m=g,q=e','*c=b,m=h,q=s','*c=r,m=h,q=s'], machines:['press','meet'], gateKind:'booth', gate:['*c=r','*c=r','*c=b','*c=b'], par:2, hint:'Four seats, three in line.'},
-    {name:'Coffee, then calm', orbs:['*c=r,m=h,q=e','*c=y,m=h,q=e','*c=b,m=g,q=s'], machines:['coffee','meet'], gateKind:'booth', gate:['*c=r','*c=b','*c=y'], par:2, hint:''},
-    {name:'Wake-up call',     orbs:['*c=y,m=h,q=p','*c=b,m=g,q=z','*c=b,m=g,q=e'], machines:['coffee','meet'], gateKind:'booth', gate:['*c=b','*c=b','*c=y'], par:4, hint:'Coffee works on grumps too. Does it help them move?'},
-    {name:'Grand queue',      orbs:['*k=tw','*c=b,m=h,q=e','*c=y,m=h,q=s','*c=r,m=h,q=z','*c=y,m=h,q=e'], machines:['press','meet','coffee'], gateKind:'booth', gate:['*c=y','*c=y','*c=r','*c=b','*c=r'], par:3, hint:'Three worlds, five seats.'},
-  ],
-  tower:[
-    {name:'Two high',      tubes:[[2,'r1'],[2,'b2']], gate:['b','r'], par:2, hint:'Grab the top blob of a tube and drop it on the <b>Summit</b>.'},
-    {name:'Big on bottom', tubes:[[3,'y1','r2'],[3,'b3']], gate:['b','r','y'], par:3, hint:'Who is willing to sit on whom?'},
-    {name:'Three high',    tubes:[[3,'r2','y1'],[3,'b3']], gate:['b','r','y'], par:4, hint:''},
-    {name:'Prickly',       tubes:[[3,'r3','y1x'],[3,'b2']], gate:['r','b','y'], par:5, hint:'Nobody wants to sit on that crown.'},
-    {name:'Sturdy',        tubes:[[2,'y3','b1'],[2,'r1f'],[1]], gate:['r','y','b'], par:4, hint:'A little one with a flat top.'},
-    {name:'Hanoi',         tubes:[[3,'r3','y2','b1'],[3],[3]], gate:['r','y','b'], par:5, hint:'Move the whole tower, one at a time.'},
-    {name:'Peak',          tubes:[[4,'y3','b1','r2f','g1x'],[3,'r3'],[2]], gate:['r','y','r','b','g'], par:8, hint:'Five high. Plan before you grab.'},
-  ],
-  towerRemix:[
-    {name:'No clashing',     tubes:[[3],[3,'*c=r,e=3,m=h','*c=r,e=3,m=h'],[2,'*c=b,e=3,m=h','*c=y,e=3,m=h']], gate:['*c=b','*c=y','*c=r'], par:4, hint:'Commons colors. Will Red sit on Blue?'},
-    {name:'Grumpy base',     tubes:[[3,'*c=r,e=3,m=h'],[3,'*c=y,e=3,m=h','*c=y,e=3,m=g'],[2,'*c=b,e=3,m=h']], gate:['*c=b','*c=y','*c=r'], par:4, hint:'One of the Yellows isn’t in the mood to carry anyone.'},
-    {name:'Twin stack',      tubes:[[3,'*c=b,e=3,m=h'],[3,'*c=b,e=2,m=h'],[2,'*k=tw','*c=b,e=3,m=h']], gate:['*c=b','*c=b','*c=b','*c=b'], par:4, hint:'Drop Twin on someone and see.'},
-    {name:'Wild climb',      tubes:[[3,'*k=wi','*c=r,e=3,m=h','*c=r,e=2,m=h'],[2,'*c=r,e=2,m=h']], gate:['*c=r','*c=r','*c=r'], par:4, hint:''},
-    {name:'Eat your way',    tubes:[[3,'*e=2,s=j,u=h','*e=2,s=s,u=h'],[2,'*e=2,s=s,u=h','*e=3,s=g,u=h']], gate:['*s=g','*s=s','*s=s','*s=j'], par:4, hint:'Reef hunters in a tower. What happens when one lands on its food?'},
-    {name:'Hungry heights',  tubes:[[3,'*e=2,s=g,u=h','*e=1,s=j,u=h'],[3,'*e=3,s=s,u=h'],[2,'*e=2,s=g,u=h']], gate:['*s=s','*s=g','*s=g','*s=j'], par:5, hint:''},
-    {name:'Grand tower',     tubes:[[3,'*k=tw','*c=b,e=1,m=h'],[2,'*c=r,e=1,m=h','*c=y,e=1,m=h']], gate:['*c=r','*c=y','*c=y','*c=b'], par:6, hint:'Three worlds, four floors.'},
-  ],
-};
 const QJ={
  queue:[
   {name:'Cutting in',  orbs:['rp','yz','bz'], machines:[], gate:['y','r','b'], par:3, hint:'Drop blobs near the line. They join at the <b>back</b>, one at a time.'},
@@ -554,7 +478,6 @@ const QJ={
   {name:'Pillow fight',    orbs:['*c=b,m=h,q=e','*c=r,m=g,q=e','*c=r,m=h,q=c','*c=b,m=h,q=p'], machines:['pillow','camp'], gateKind:'line', gate:['*c=r','*c=b','*c=r','*c=b'], par:6, hint:''},
   {name:'Grand queue',     orbs:['*k=tw','*c=r,m=h,q=c','*c=b,m=h,q=p','*c=r,m=g,q=c','*c=y,m=h,q=p'], machines:['press','meet','coffee'], gateKind:'line', gate:['*c=r','*c=r','*c=b','*c=r','*c=y'], par:8, hint:'Three worlds, five spots.'},
  ]};
-QT.queue=QJ.queue; QT.queueRemix=QJ.queueRemix;
 
 
 
@@ -576,18 +499,7 @@ const WQ = {
   reqLabel(req){ return req==='any' ? 'Anyone' : C2[req].name; },
   ghost(req){ return req==='any' ? null : req+'z'; },
   seen(ts,res){ S.seen['wq|'+ts.join(',')] = res.fail ? 'x' : res.transform.join(','); },
-  levels: QT.queue.map(d=>({...d})),
-};
-/* ======================= WORLD 6 · THE TOWER ======================= */
-const towerT = t => { const m=t.match(/^([rybg])(\d)([xf]?)$/); return m ? `*c=${m[1]},e=${m[2]}`+(m[3]?`,h=${m[3]}`:'') : t; };
-const WT = {
-  id:'wt', name:'The Tower', short:'Tower', gateName:'Summit', bg:['#e9eef6','#ccd6e6'],
-  blurb:'No floor here. Grab the top blob of a tube and stack your way to the Summit.',
-  gatePlate:['#e4ebf6','#9fadc6','#5d6a85'],
-  look:o=>RXW.look(o), radius:o=>RXW.radius(o), label:(t,o)=>RXW.label(t,o),
-  accepts(spec,o){ return rxMatch(spec,RXP(o.t)); },
-  reqLabel:s=>RXW.reqLabel(s), ghost:s=>s==='any'?null:s, seen(){},
-  levels: QT.tower.map(d=>({...d, tubes:d.tubes.map(([cap,...it])=>[cap,...it.map(towerT)]), gate:d.gate.map(g=>g==='any'?g:'*c='+g)})),
+  levels: QJ.queue.map(d=>({...d})),
 };
 /* LIGHT: 'L'+channels (lights), 'F'+channels (glass). channels sorted from 'rgb'. */
 const norm=s=>['r','g','b'].filter(c=>s.includes(c)).join('');
@@ -676,8 +588,8 @@ function qJoin(line, o){
 
 
 /* ===== REMIX CORE: trait-based blobs shared by every remix level ===== */
-/* traits: k special (tw sp vo wi) · e eyes 1-6 · c color r y b g · m mood h g · a genes (two of Y R B) · s species s j g p · u hunger h f · n note 1-7 */
-const RXP = t => { const o={}; t.slice(1).split(',').forEach(kv=>{ if(!kv) return; const i=kv.indexOf('='); const k=kv.slice(0,i), v=kv.slice(i+1); o[k]=(k==='e'||k==='n')?+v:v; }); return o; };
+/* traits: k special (tw sp vo wi) · e eyes 1-6 · c color r y b g · m mood h g · a genes (two of Y R B) · s species s j g p · u hunger h f */
+const RXP = t => { const o={}; t.slice(1).split(',').forEach(kv=>{ if(!kv) return; const i=kv.indexOf('='); const k=kv.slice(0,i), v=kv.slice(i+1); o[k]=k==='e'?+v:v; }); return o; };
 const RXF = o => '*'+Object.keys(o).filter(k=>o[k]!==undefined&&k!=='baby').sort().map(k=>k+'='+o[k]).join(',');
 const RX_DOM='YRB';
 const rxGeneColor = a => { for (const x of RX_DOM) if (a.includes(x)) return {Y:'y',R:'r',B:'b'}[x]; };
@@ -742,17 +654,6 @@ function rxReact(mt, ins){            // ins: trait objects. returns {fail, lear
     L.push('w4:full'); if ([...full].some(i=>eaten.has(i))) L.push('w4:together');
     return {transform:ins.map((o,i)=>eaten.has(i)?null:full.has(i)?{...o,u:'f'}:o), learn:L, chomp:true};
   }
-  if (mt.startsWith('row')){
-    if (!ins.every(o=>o.n)) return {fail:'rx:nonote'};
-    const a=ins.map(o=>({...o})); L.push('w5:right');
-    for (let i=0;i<a.length-1;i++){ const Lf=a[i], Rt=a[i+1], before=Rt.n;
-      if (Lf.m==='g'){ L.push('rx:sulkSing'); continue; }
-      if (Lf.c==='b') Rt.n=Math.max(1,Rt.n-1); else if (Lf.c==='y') Rt.n=Math.min(7,Rt.n+1); else if (Lf.c==='g') Rt.n=Lf.n;
-      if (Lf.c==='r') L.push('w5:r'); else if (Rt.n!==before) L.push('w5:'+Lf.c); }
-    if (ins.length>2) L.push('w5:order');
-    if (a.every((o,i)=>o.n===ins[i].n)) return {fail:'same', learnFail:L.filter(k=>k==='rx:sulkSing'||k==='w5:r')};
-    return {transform:a, learn:L, sing:true};
-  }
   if (mt==='coffee' || mt==='pillow'){
     const [a]=ins; if (!a.q) return {fail:'rx:noq'};
     const q=(mt==='coffee'?Q_UP:Q_DOWN)[a.q]; if (q===a.q) return {fail: mt==='coffee'?'wq:maxed':'wq:floored'};
@@ -761,29 +662,6 @@ function rxReact(mt, ins){            // ins: trait objects. returns {fail, lear
   return {fail:'w1:none'};
 }
 
-/* ===== stacking (Tower and Tower Remix). h=x Prickly (carries nobody), h=f Sturdy (carries anyone, any size) ===== */
-/* rxDrop(stack, up, cap) → {stack, learn} or {fail}. stack: bottom→top trait objects. */
-function rxDrop(stack, up, cap){
-  const lo=stack.length ? stack[stack.length-1] : null, s=stack.slice();
-  if (up.k){
-    if (!lo){ if (s.length>=cap) return {fail:'full'}; s.push(up); return {stack:s, learn:[]}; }
-    if (lo.k) return {fail:'wt:tools'};
-    if (up.k==='tw'){ if (s.length>=cap) return {fail:'full'}; s.push({...lo}); return {stack:s, learn:['rx:twinStack']}; }
-    if (up.k==='vo'){ if (!lo.e) return {fail:'w1:voidf'}; if (lo.e>1) s[s.length-1]={...lo,e:lo.e-1}; else s.pop(); return {stack:s, learn:['rx:voidStack']}; }
-    if (up.k==='wi'){ if (!(lo.e&&lo.e<6)) return {fail:'w1:wildf'}; s[s.length-1]={...lo,e:lo.e+1}; return {stack:s, learn:['rx:wildStack']}; }
-    return {fail:'wt:tools'};
-  }
-  if (lo && rxBites(up,lo)){ s[s.length-1]={...up,u:'f'}; return {stack:s, learn:['w4:eat'+up.s,'rx:eatStack']}; }
-  if (s.length>=cap) return {fail:'full'};
-  if (lo){
-    if (lo.k) return {fail:'wt:tools'};
-    if (lo.h==='x') return {fail:'wt:prickly'};
-    if (lo.m==='g') return {fail:'rx:grumpCarry'};
-    const ca=rxColor(lo), cb=rxColor(up); if (ca&&cb&&lo.m&&up.m&&!rxAlong(ca,cb)) return {fail:'rx:clashStack'};
-    if (lo.h!=='f' && lo.e && up.e && up.e>lo.e) return {fail:'wt:size'};
-  }
-  s.push(up); return {stack:s, learn: lo&&lo.h==='f'&&lo.e&&up.e&&up.e>lo.e ? ['wt:sturdy'] : []};
-}
 /* requirement spec: 'any' or '*k=v,...' (partial traits; c compares the shown color) */
 function rxMatch(spec,o){ if (spec==='any') return true; const s=RXP(spec);
   return Object.keys(s).every(k=> k==='c' ? rxColor(o)===s.c : o[k]===s[k]); }
@@ -795,10 +673,8 @@ function rxValidate(kind, seat){            // seat: trait objects in gate order
   if (kind==='calm'){
     for (let i=0;i<seat.length-1;i++) for (const [x,y] of [[i,i+1],[i+1,i]]) if (rxBites(seat[x],seat[y])) return {fail:'w4:calm', bad:[i,i+1], msg:'Someone would get eaten'};
   }
-  if (kind==='booth'){            // seat is the shuffled order here; specs checked by the caller
-  }
-  if (kind==='stage' || kind==='cradle'){
-    for (let i=0;i<seat.length;i++) if (seat[i].m==='g') return {fail: kind==='stage'?'rx:stageMood':'rx:cradleMood', bad:[i], msg: kind==='stage'?'Too grumpy to sing':'Too grumpy for the Cradle'};
+  if (kind==='cradle'){
+    for (let i=0;i<seat.length;i++) if (seat[i].m==='g') return {fail:'rx:cradleMood', bad:[i], msg:'Too grumpy for the Cradle'};
   }
   return {ok:true};
 }
@@ -831,20 +707,19 @@ const RXL = {
     {name:'Feed after you fuse', orbs:['*e=1,s=s,u=h','*e=1,s=j,u=h','*e=1,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*e=1,s=s','*e=2,s=j','*e=2,s=g'], par:2, hint:'Order matters: does a fused blob stay full?'},
     {name:'Grand reef', orbs:['*k=tw','*e=2,s=s,u=h','*e=3,s=j,u=h','*e=1,s=g,u=h','*e=2,s=g,u=h','*s=p'], machines:['press','pool3'], gateKind:'calm', gate:['*s=j','*s=g','*s=s','any','*s=s'], par:2, hint:'Five seats in the Calm pool.'},
   ],
-  4: QT.queueRemix,
-  5: QT.towerRemix.map(d=>({...d, gateKind:'summit', machines:[]})),
+  4: QJ.queueRemix,
 };
 
 /* ======================= REMIX GLUE ======================= */
 const WORLD_DOT=['#e6b95c','#ff8fb0','#9fd86a','#4fd0e0','#f2b45a','#ff9f6b','#9fb4ff'];
 const GK={gate:{name:'Gate',plate:W1.gatePlate,title:'Gate open'}, bench:{name:'Friendship bench',plate:W2.gatePlate,title:'Best friends'},
-  cradle:{name:'Cradle',plate:W3.gatePlate,title:'Welcome, little one'}, calm:{name:'Calm pool',plate:W4.gatePlate,title:'All calm'}, stage:{name:'Stage',plate:W5.gatePlate,title:'Encore!'},
-  booth:{name:'Ticket booth',plate:WQ.gatePlate,title:'Tickets, please!'}, line:{name:'Ticket line',plate:WQ.gatePlate,title:'Tickets, please!'}, summit:{name:'Summit',plate:WT.gatePlate,title:'Top of the world'},
+  cradle:{name:'Cradle',plate:W3.gatePlate,title:'Welcome, little one'}, calm:{name:'Calm pool',plate:W4.gatePlate,title:'All calm'},
+  line:{name:'Ticket line',plate:WQ.gatePlate,title:'Tickets, please!'},
   seesaw:{name:'Seesaw',plate:WS.gatePlate,title:'Perfectly level'}, lantern:{name:'Lantern',plate:WL.gatePlate,title:'Let there be light'}};
 const MOWNER={press:0,meet:1,camp:1,nest:2,pool2:3,pool3:3,pool4:3,coffee:4,pillow:4};
-const KOWNER={gate:0,bench:1,cradle:2,calm:3,booth:4,line:4,summit:5};
+const KOWNER={gate:0,bench:1,cradle:2,calm:3,line:4};
 function rxSources(def){ const s=new Set([KOWNER[def.gateKind]]); (def.machines||[]).forEach(m=>{ if(MOWNER[m]!==undefined) s.add(MOWNER[m]); });
-  (def.orbs||(def.tubes||[]).flatMap(t=>t.slice(1))).forEach(t=>{ const x=RXP(t); if(x.k||x.e) s.add(0); if(x.m) s.add(1); if(x.a) s.add(2); if(x.s) s.add(3); if(x.q) s.add(4); if(x.h) s.add(5); });
+  def.orbs.forEach(t=>{ const x=RXP(t); if(x.k||x.e) s.add(0); if(x.m) s.add(1); if(x.a) s.add(2); if(x.s) s.add(3); if(x.q) s.add(4); });
   return [...s].sort(); }
 const colorName = c => c ? (c==='g' ? 'Green' : C2[c].name) : '';
 const RXW = {
@@ -853,36 +728,35 @@ const RXW = {
     if (x.k){ const d=W1K[x.k]; return {hex:d.hex,hi:d.hi,lo:d.lo,sheen:d.sheen,bounce:d.bounce||.3,face:'glyph',voice:x.k}; }
     if (x.s==='p') return {hex:RF.p.hex, face:'critter', mood:'pebble', bounce:.1, voice:'pebble'};
     const col=rxColor(x);
-    const hex = x.s ? RF[x.s].hex : col ? (col==='g' ? CH.g.hex : C2[col].hex) : x.n ? CH.x.hex : '#ffb02e';
-    const mood = x.u ? (x.u==='h'?'hungry':'full') : x.m==='g' ? 'grumpy' : x.n ? 'sing' : 'happy';
-    return {hex, face:'remix', n:x.e||2, mood, persona:x.q, crown:x.h==='x', cap:x.h==='f', badge:x.n?SOLF[x.n-1]:null, spikes:x.s==='s', tentacles:x.s==='j', antenna:x.s==='g',
+    const hex = x.s ? RF[x.s].hex : col ? (col==='g' ? '#4fd17a' : C2[col].hex) : '#ffb02e';
+    const mood = x.u ? (x.u==='h'?'hungry':'full') : x.m==='g' ? 'grumpy' : 'happy';
+    return {hex, face:'remix', n:x.e||2, mood, persona:x.q, spikes:x.s==='s', tentacles:x.s==='j', antenna:x.s==='g',
       species:x.s, prey:x.s?RX_EATS[x.s]:null, line:x.a?'G':null, al:x.a, baby:!!o.baby, bounce:o.baby?.45:x.s==='j'?.5:x.m==='h'?.4:.25,
-      voice: x.q ? 'q'+x.q : x.n ? 'sing'+x.n : x.s ? 'reef'+x.s : x.e ? 'pip'+x.e : x.m==='g' ? 'grumpy' : o.baby ? 'baby' : 'happy'}; },
+      voice: x.q ? 'q'+x.q : x.s ? 'reef'+x.s : x.e ? 'pip'+x.e : x.m==='g' ? 'grumpy' : o.baby ? 'baby' : 'happy'}; },
   radius(o){ const x=RXP(o.t); if (o.baby) return R*.8; if (x.s==='p') return R*.85; return x.e ? R*(.8+.1*x.e) : R; },
   label(t,o){ const x=RXP(t); if (x.k) return W1K[x.k].name; if (x.s==='p') return 'Pebble';
     const p=[]; const col=rxColor(x);
     if (x.s) p.push(RF[x.s].name); else if (col) p.push(colorName(col)+(x.a?` (${x.a})`:''));
     if (o&&o.baby) p[p.length-1]=(p[p.length-1]||'')+' baby';
-    if (x.e) p.push(`${x.e} eye${x.e>1?'s':''}`); if (x.n) p.push(SOLF[x.n-1]); if (x.q) p.push(QP[x.q]); if (x.h) p.push(x.h==='x'?'Prickly':'Sturdy');
+    if (x.e) p.push(`${x.e} eye${x.e>1?'s':''}`); if (x.q) p.push(QP[x.q]);
     if (x.u) p.push(x.u==='h'?'hungry':'full'); else if (x.m) p.push(x.m==='h'?'happy':'grumpy');
     return p.join(' · '); },
   react(mt,ts){ const r=rxReact(mt, ts.map(RXP));
     if (r.fail) return {fail:r.fail, learnFail:r.learnFail};
     if (r.aff) S.aff[affKey(r.aff[0],r.aff[1])]=r.aff[2];
-    const out={learn:r.learn, consume:r.consume, hearts:r.hearts, chomp:r.chomp, sing:r.sing, grow:r.grow};
+    const out={learn:r.learn, consume:r.consume, hearts:r.hearts, chomp:r.chomp, grow:r.grow};
     if (r.transform) out.transform=r.transform.map(x=>x?RXF(x):null);
     if (r.spawn) out.spawn=r.spawn.map(x=>({t:RXF(x), baby:!!x.baby}));
     return out; },
-  accepts(spec,o){ return (L && (L.def.gateKind==='booth'||L.def.gateKind==='line')) ? true : rxMatch(spec, RXP(o.t)); },
+  accepts(spec,o){ return (L && L.def.gateKind==='line') ? true : rxMatch(spec, RXP(o.t)); },
   boothMatch(spec,o){ return rxMatch(spec, RXP(o.t)); },
   qobj(o){ return RXP(o.t); },
   reqLabel(spec){ if (spec==='any') return 'Anyone'; const x=RXP(spec), p=[];
-    if (x.c) p.push(colorName(x.c)); if (x.s) p.push(x.s==='p'?'Pebble':RF[x.s].name); if (x.e) p.push(`${x.e} eye${x.e>1?'s':''}`); if (x.n) p.push(SOLF[x.n-1]);
+    if (x.c) p.push(colorName(x.c)); if (x.s) p.push(x.s==='p'?'Pebble':RF[x.s].name); if (x.e) p.push(`${x.e} eye${x.e>1?'s':''}`);
     return p.join(' · ') || 'Anyone'; },
   ghost(spec){ return spec==='any' ? null : spec; },
   validate(slots){ return rxValidate(L.def.gateKind, slots.map(o=>RXP(o.t))); },
   seen(ts,res){ S.seen['rx|'+ts.join(' ')] = res.fail ? 'x' : (res.transform ? res.transform.map(t=>t||'0') : (res.spawn||[]).map(s=>s.t)).join(' ') || '-'; },
-  onWin(slots){ if (L.def.gateKind==='stage') W5.onWin(slots.map(o=>({t:'x'+RXP(o.t).n}))); else sfx.win(); },
 };
 [W2,W3,W4,WQ].forEach((w,i)=>RXL[i+1].forEach(d=>w.levels.push({...d, remix:true, from:rxSources(d)})));
 const isRemix = () => !!(L && L.def.remix);
@@ -890,7 +764,6 @@ const famOf = o => o && o.t && o.t[0]==='*' ? RXW : world();
 const rules = () => isRemix() ? RXW : world();
 const radiusOf = o => famOf(o).radius(o);
 const gateKindNow = () => isRemix() ? L.def.gateKind : ['gate','bench','cradle','calm','line','seesaw','lantern'][S.world];
-const stackMode = () => !!(L && L.def.tubes);
 const mainCount = w => w.levels.filter(d=>!d.remix).length;   // main levels per world (Hatchery 14, others 7); remixes follow them
 
 const UNLOCK_AT=6;
@@ -927,13 +800,6 @@ const RULES = {
   'w4:allfull':{g:'pool', text:'Full blobs just float there. Nothing happens.'},
   'w4:calm':{g:'calm', text:'The Calm pool only stays calm if no hungry blob sits next to its food.'},
   'w4:pebble':{g:'calm', text:'Pebbles never eat and never get eaten. They keep neighbors apart.'},
-  'w5:right':{g:'row', text:'In the Rehearsal row, each singer changes the note of the singer on its right.'},
-  'w5:order':{g:'row', text:'The row sings from left to right, so a changed singer passes on its new note.'},
-  'w5:b':{g:'voice', text:'Blue lowers its neighbor by one note.'},
-  'w5:y':{g:'voice', text:'Yellow raises its neighbor by one note.'},
-  'w5:g':{g:'voice', text:'Green makes its neighbor sing Green’s own note.'},
-  'w5:r':{g:'voice', text:'Red never changes anyone. It just sings.'},
-  'w5:clamp':{g:'voice', text:'Notes stop at Do on the way down and at Ti on the way up.'},
   'ws:level':{g:'balance', text:'The same weight at the same distance on each side keeps the Seesaw level.'},
   'ws:reach':{g:'balance', text:'Distance counts as much as weight: farther from the middle pushes harder.'},
   'ws:trade':{g:'balance', text:'Weight times distance is what matters: 2 eyes three steps out balances 3 eyes two steps out.'},
@@ -957,17 +823,7 @@ const RULES = {
   'wq:pillow':{g:'cup', text:'A Pillow calms a blob down one step, back toward Sleepy.'},
   'wq:maxed':{g:'cup', text:'Eager can\u2019t get any more awake.'},
   'wq:floored':{g:'cup', text:'Sleepy can\u2019t get any sleepier.'},
-  'wt:size':{g:'stack', text:'Nobody will sit on someone smaller than themselves.'},
-  'wt:prickly':{g:'stack', text:'Prickly blobs won\u2019t carry anyone.'},
-  'wt:sturdy':{g:'stack', text:'Sturdy blobs carry anyone, whatever their size.'},
-  'wt:tools':{g:'stack', text:'Hatchery tools only work on blobs, not on each other.'},
   'rx:sulkQueue':{g:'mix', text:'Grumpy blobs sulk when they join the line. They don\u2019t react at all.'},
-  'rx:grumpCarry':{g:'mix', text:'A grumpy blob refuses to carry anyone.'},
-  'rx:clashStack':{g:'mix', text:'Blobs whose colors clash won\u2019t stack on each other.'},
-  'rx:twinStack':{g:'mix', text:'Twin dropped on someone turns into a copy of them, on top.'},
-  'rx:voidStack':{g:'mix', text:'Void dropped on someone takes away one of their eyes.'},
-  'rx:wildStack':{g:'mix', text:'Wild dropped on someone gives them an extra eye.'},
-  'rx:eatStack':{g:'mix', text:'A hungry hunter dropped onto its food eats it and takes its place.'},
   'rx:twinAny':{g:'mix', text:'Twin copies any blob, from any world, traits and all.'},
   'rx:keep':{g:'mix', text:'Split, Void and Wild only change eyes. Color, mood and species stay the same.'},
   'rx:pressKind':{g:'mix', text:'The Press only fuses blobs of the same color (or the same species) with the same eyes.'},
@@ -979,9 +835,6 @@ const RULES = {
   'rx:cradleMood':{g:'mix', text:'The Cradle won\u2019t take a grumpy baby.'},
   'rx:bigFish':{g:'mix', text:'A hunter can only eat prey with no more eyes than itself.'},
   'rx:green':{g:'mix', text:'Green gets along with everyone.'},
-  'rx:sulkSing':{g:'mix', text:'Grumpy singers sulk and don\u2019t change anyone\u2019s note.'},
-  'rx:stageMood':{g:'mix', text:'Grumpy singers won\u2019t go on stage.'},
-  'rx:nonote':{g:'mix', text:'Only singers can rehearse.'},
   'w3:blend':{g:'P', text:'Red and White blend: their babies are Pink.'},
   'w3:unblend':{g:'P', text:'Two Pinks can have Red, Pink and White babies.'},
 };
@@ -993,8 +846,6 @@ const MT = {
   pool2:{name:'Tide pool',    holes:2, base:3, plate:['#7fc4d8','#3f8aa3','#20546a']},
   pool3:{name:'Tide pool',    holes:3, base:3, plate:['#7fc4d8','#3f8aa3','#20546a']},
   pool4:{name:'Tide pool',    holes:4, base:3, plate:['#7fc4d8','#3f8aa3','#20546a']},
-  row2: {name:'Rehearsal row',holes:2, base:0, plate:['#e8c6a0','#b88a5c','#7a5532']},
-  row3: {name:'Rehearsal row',holes:3, base:0, plate:['#e8c6a0','#b88a5c','#7a5532']},
   lamp:  {name:'Lamp',       holes:2, base:4, plate:['#f3e3b0','#c9a85a','#8a6a2a']},
   prism: {name:'Prism',      holes:1, base:9, plate:['#e2f2ff','#9fc3e6','#5e86ad']},
   filter:{name:'Filter',     holes:2, base:6, plate:['#cfd6e4','#8d97ad','#555f75']},
@@ -1088,7 +939,6 @@ function voice(o,q=1){
   else if (v==='qs'){ tone(1500*j,1900*j,.05,'sine',.22*q); }
   else if (v==='qp'){ tone(520*j,380*j,.07,'square',.1*q); tone(700*j,520*j,.06,'sine',.35*q,.003,.05); }
   else if (v==='qe'){ tone(800*j,1500*j,.07,'sine',.38*q); tone(1000*j,2000*j,.07,'sine',.3*q,.003,.08); }
-  else if (v.startsWith('sing')){ const f=noteF(SEMI[+v.slice(4)-1]); tone(f,f,.38,'triangle',.3*q,.02); tone(f*2,f*2.01,.3,'sine',.06*q,.02); }
   else if (v==='reefs'){ tone(900*j,500*j,.06,'square',.12*q); noise(.04,.25*q,5000,4); }
   else if (v==='reefj'){ tone(500*j,300*j,.18,'sine',.45*q); tone(520*j,700*j,.12,'sine',.2*q,.01,.08); }
   else if (v==='reefg'){ tone(1800*j,2600*j,.08,'sine',.25*q); tone(2600,2600,.3,'sine',.07*q,.01,.06); }
@@ -1124,9 +974,6 @@ function buildMachines(def){
   const gkind = def.remix ? def.gateKind : ['gate','bench','cradle','calm','line','seesaw','lantern'][S.world];
   gate.kiosk = gkind==='line'; gate.seesaw = gkind==='seesaw'; gate.ang=0;
   machines=[gate];
-  if (def.tubes){ gate.vertical=true;
-    def.tubes.forEach(([cap,...items])=>{ const m=newMachine('tube',{name:'', holes:cap, base:3, plate:['#c9d3e6','#8794ae','#4f5a75'], vertical:true, init:items}); m.slots=new Array(cap).fill(null); machines.push(m); });
-    return; }
   (def.machines||['press']).forEach(t=>{ const m=newMachine(t, {...MT[t]}); m.slots=new Array(MT[t].holes).fill(null); machines.push(m); });
 }
 function seatGuests(){
@@ -1139,12 +986,7 @@ function hatchList(list, gap){
     const o=makeOrb(spec, x, floorY-R*1.6, (Math.random()-.5)*120, -260-Math.random()*160); o.pop=0; o.phase=true; voice(o); burst(x,o.y,lookOf(o).hex,8);
   }}));
 }
-function fillTubes(){ let k=0;
-  machines.forEach(m=>(m.init||[]).forEach((t,i)=>{ const o=makeOrb(dec(t),0,0); o.hole={m,i}; m.slots[i]=o; o.pop=0; const kk=k++; queue.push({t:.12+kk*.07, fn:()=>voice(o,.55)}); })); }
 function loadState(s){
-  if (s.stacks){ orbs=[]; queue=[]; held=null;
-    machines.forEach((m,mi)=>{ m.state='idle'; m.slots=m.slots.map(()=>null); (s.stacks[mi]||[]).forEach((e,i)=>{ if(!e) return; const o=makeOrb(dec(e),0,0); o.pop=1; o.hole={m,i}; m.slots[i]=o; }); });
-    L.moves=s.moves||0; return; }
   orbs=orbs.filter(o=>o.locked); queue=[]; held=null;
   machines.forEach((m,i)=>{ m.state='idle'; m.slots=m.slots.map(o=>o&&o.locked?o:null); m.used=!!(s.used&&s.used[i]); });
   const g=machines[0];
@@ -1158,7 +1000,7 @@ function startLevel(wi, i, restore){
   buildMachines(def); layout(); seatGuests();
   $('#done').hidden=true; clearTimeout(toastTimer); $('#toast').hidden=true;
   if (restore){ loadState(restore); updateHUD(); return; }
-  if (def.tubes) fillTubes(); else hatchList(def.orbs, .16);
+  hatchList(def.orbs, .16);
   if (def.remix){ if (!S.visited['r'+wi]){ S.visited['r'+wi]=1; S.visited.rx=1; setTimeout(()=>toast(`${w.short} Remix`, `These levels mix in rules from ${def.from.filter(f=>f!==wi).map(f=>WORLDS[f].name).join(' and ')}. Old rules still hold, plus a few new twists.`, 5200), 300); } }
   else if (!S.visited[wi]){ S.visited[wi]=1; setTimeout(()=>toast(`New world · ${w.name}`, w.blurb, 4500), 300); }
   else if (wi===0){ const fresh=[...new Set(def.orbs.map(kindOf))].filter(k=>k!=='pip'&&!S.met[k]);
@@ -1265,7 +1107,6 @@ function chipT(t, wi=S.world, opts={}){
 
 /* ======================= machines ======================= */
 function holeAccepts(m,i,o){
-  if (stackMode()) return false;
   if (m.slots[i] || m.state!=='idle' || m.used || (L&&L.done)) return false;
   if (m.type==='gate' && gateKindNow()==='line') return i===m.slots.filter(Boolean).length;
   if (m.type==='gate' && m.seesaw) return true;
@@ -1288,7 +1129,7 @@ function placeInHole(o,m,i){
   if (lineDrop){ lineArrive(m,o); return; }
   if (seatDrop){ updateHUD(); return; }
   if (m.slots.every(Boolean)){ m.state='charging'; m.t=m.type==='gate'?.6:.5; sfx.charge(m.base);
-    if (m.type!=='gate' || rules().validate || gateKindNow()==='booth') L.history.push(snapshot()); }
+    if (m.type!=='gate' || rules().validate) L.history.push(snapshot()); }
 }
 /* ---- Queue: the newcomer reacts as it joins ---- */
 function lineArrive(m,o){
@@ -1356,47 +1197,7 @@ function angerFx(o,r){
 /* ---- speech bubbles ---- */
 let bubbles=[];
 function say(o, text, kind){ bubbles=bubbles.filter(b=>b.o!==o); bubbles.push({o, text, t:0, life:1.9, bad:kind==='sulk'||kind==='bumped'}); }
-/* ---- Tower: stacks ---- */
-const stackOf = m => m.slots.filter(Boolean);
-function topIndex(m){ let t=-1; m.slots.forEach((o,i)=>{ if(o) t=i; }); return t; }
-function stackTarget(o, px, py){
-  let best=null, bd=Infinity;
-  machines.forEach(m=>{ const r=m.rect, cx=Math.max(r.x,Math.min(px,r.x+r.w)), cy=Math.max(r.y,Math.min(py,r.y+r.h)), d=Math.hypot(px-cx,py-cy); if (d<HR*1.4 && d<bd){ bd=d; best=m; } });
-  if (!best) return null;
-  const m=best, objs=stackOf(m).map(x=>RXP(x.t)), up=RXP(o.t), res=rxDrop(objs, up, m.holes);
-  let ok=!res.fail, why=res.fail;
-  if (ok && m.type==='gate' && !res.stack.every((x,i)=>rxMatch(m.req[i],x))){ ok=false; why='summitSpec'; }
-  const n=objs.length; let land=n;
-  if (ok && (up.k==='vo'||up.k==='wi'||(!up.k&&n&&rxBites(up,objs[n-1])))) land=n-1;
-  land=Math.max(0,Math.min(m.holes-1,land));
-  return {m, ok, res, land, why, same: !!(o.origin && o.origin.m===m)};
-}
-const WHY={'wt:size':'Too big to sit there','wt:prickly':'Prickly! Nobody sits on that','rx:grumpCarry':'Too grumpy to carry anyone','rx:clashStack':'They clash','wt:tools':'Tools only work on blobs','full':'No room','w1:voidf':'Void only bites blobs with eyes','w1:wildf':'Wild can\u2019t add an eye there'};
-function returnHome(o){ const g=o.origin; o.origin=null; if(!g) return; g.m.slots[g.i]=o; o.hole={m:g.m,i:g.i}; o.snap=0; o.sx=o.x; o.sy=o.y; tone(500,300,.05,'sine',.15); }
-function dropOnStack(o, st){
-  const m=st.m, up=RXP(o.t), n=stackOf(m).length, lo=n?m.slots[n-1]:null;
-  L.history.push(L.pending||snapshot()); L.moves++; o.origin=null;
-  const newTop=st.res.stack[st.res.stack.length-1];
-  if (up.k==='vo' || up.k==='wi'){
-    const h=m.holesPos[n-1]; burst(h.x,h.y,lookOf(o).hex,16,260); ring(h.x,h.y,lookOf(o).hex,HR*2); removeOrb(o);
-    if (st.res.stack.length<n){ burst(h.x,h.y,lookOf(lo).hex,16,260); removeOrb(lo); m.slots[n-1]=null; floatText(h.x,m.rect.y-4,'Gone','#b9a2ff'); }
-    else { lo.t=RXF(newTop); lo.r=radiusOf(lo); lo.blinkT=0; lo.sq=.3; floatText(h.x,m.rect.y-4,up.k==='wi'?'+1 eye':'\u22121 eye','#ffd27a'); }
-    sfx.fire(m.base);
-  } else if (!up.k && lo && rxBites(up,RXP(lo.t))){
-    const h=m.holesPos[n-1]; burst(h.x,h.y,lookOf(lo).hex,18,320); removeOrb(lo); sfx.chomp(1); floatText(h.x,m.rect.y-4,'Chomp!','#ffd27a');
-    o.t=RXF(newTop); o.r=radiusOf(o); m.slots[n-1]=o; o.hole={m,i:n-1}; o.snap=0; o.sx=o.x; o.sy=o.y;
-  } else {
-    if (up.k==='tw'){ o.t=RXF(newTop); o.r=radiusOf(o); burst(o.x,o.y,lookOf(o).hex,14,240); floatText(o.x,m.rect.y-4,'Copy!','#ffd27a'); }
-    m.slots[n]=o; o.hole={m,i:n}; o.snap=0; o.sx=o.x; o.sy=o.y;
-    const h=m.holesPos[n]; sfx.socket(n,m.base); ring(h.x,h.y,lookOf(o).hex,HR*1.8); burst(h.x,h.y,lookOf(o).hex,7,160);
-  }
-  (st.res.learn||[]).forEach(learn);
-  const g=machines[0];
-  if (g.slots.every(Boolean) && g.slots.every((x,i)=>rxMatch(g.req[i],RXP(x.t)))){ g.state='charging'; g.t=.6; sfx.charge(g.base); }
-  updateHUD();
-}
 function snapshot(){
-  if (stackMode()) return {stacks:machines.map(m=>m.slots.map(o=>o?enc(o):null)), moves:L.moves};
   const g=machines[0];
   return { orbs:[...orbs.filter(o=>!o.locked && !(o.hole&&o.hole.m===g)).map(enc), ...queue.filter(q=>q.orb).map(q=>q.orb)],
            gate:g.slots.map(o=>o&&!o.locked?enc(o):null), used:machines.map(m=>m.used?1:0), moves:L?L.moves:0 }; }
@@ -1428,8 +1229,7 @@ function resolveMachine(m){
       ejectFrom(m, alive);
       alive.forEach(o=>{ o.trickT=0; });
       if (m.type==='coffee'||m.type==='pillow') alive.forEach(o=>queue.push({t:.15, fn:()=>say(o, m.type==='coffee'?'Wide awake!':'Yaaawn\u2026')}));
-      const gap=res.sing?260:70;
-      queue.push({t:.05, fn:()=>alive.forEach((o,k)=>setTimeout(()=>voice(o,.8),k*gap))});
+      queue.push({t:.05, fn:()=>alive.forEach((o,k)=>setTimeout(()=>voice(o,.8),k*70))});
     }
     if (res.hearts) hearts(cx,m.rect.y,6);
     (res.spawn||[]).forEach((s,k,arr)=>queue.push({t:.12+k*.11, orb:enc(s), fn:()=>{
@@ -1445,7 +1245,7 @@ function resolveMachine(m){
 function learn(rule){
   const key=String(rule).includes(':') ? rule : world().id+':'+rule;
   if (!rule || !RULES[key] || S.learned[key]) return;
-  S.learned[key]=1; hostSync(); sfx.learn(); toast(`Notebook · ${({w1:'Hatchery',w2:'Commons',w3:'Nursery',w4:'Reef',wq:'Queue',wt:'Tower',ws:'Seesaw',wl:'Lighthouse',rx:'Remix'})[key.split(':')[0]]}`, RULES[key].text, 4200);
+  S.learned[key]=1; hostSync(); sfx.learn(); toast(`Notebook · ${({w1:'Hatchery',w2:'Commons',w3:'Nursery',w4:'Reef',wq:'Queue',ws:'Seesaw',wl:'Lighthouse',rx:'Remix'})[key.split(':')[0]]}`, RULES[key].text, 4200);
 }
 function resolveGate(m){
   const w=world(), rl=rules();
@@ -1488,12 +1288,6 @@ function undo(){
 function pt(e){ const b=cv.getBoundingClientRect(); return {x:e.clientX-b.left, y:e.clientY-b.top}; }
 cv.addEventListener('pointerdown',e=>{
   audio(); if(!L||L.done) return; const p=pt(e); ptr=p;
-  if (stackMode()){ let pk=null;
-    machines.forEach(m=>{ if(m.state!=='idle') return; const ti=topIndex(m); if(ti<0) return; const h=m.holesPos[ti]; if (Math.hypot(h.x-p.x,h.y-p.y)<HR*1.25) pk={m,i:ti}; });
-    if (!pk) return; L.pending=snapshot();
-    const o=pk.m.slots[pk.i]; pk.m.slots[pk.i]=null; o.hole=null; o.x=pk.m.holesPos[pk.i].x; o.y=pk.m.holesPos[pk.i].y; o.origin=pk; o.snap=1;
-    held=o; o.held=true; o.vx=o.vy=0; hist=[{x:p.x,y:p.y,t:performance.now()}]; sfx.pickup(o); ring(o.x,o.y,lookOf(o).hex,o.r*1.8);
-    try{ cv.setPointerCapture(e.pointerId); }catch(_){} return; }
   let pick=null, pd=Infinity;
   for (const o of orbs){ if(o.hole) continue; const d=Math.hypot(o.x-p.x,o.y-p.y); if(d<Math.max(o.r*1.5,22) && d<pd){ pd=d; pick=o; } }
   if (!pick) machines.forEach(m=>{ if(m.state!=='idle') return; m.slots.forEach((o,i)=>{ if(!o||o.locked||(m.type==='gate'&&gateKindNow()==='line')) return; const h=m.holesPos[i];
@@ -1504,13 +1298,6 @@ cv.addEventListener('pointerdown',e=>{
 cv.addEventListener('pointermove',e=>{ ptr=pt(e); if(held){ hist.push({x:ptr.x,y:ptr.y,t:performance.now()}); if(hist.length>8) hist.shift(); } });
 function release(){
   if (!held) return; const o=held; held=null; o.held=false;
-  if (stackMode()){ const st=stackTarget(o, ptr.x, ptr.y);
-    if (st && st.ok && !st.same) dropOnStack(o, st);
-    else { if (st && !st.ok && !st.same){ sfx.denied(); st.m.shake=.35; learn(st.why);
-        const msg = st.why==='summitSpec' ? `The Summit wants ${rules().reqLabel(st.m.req[Math.min(st.m.holes-1,stackOf(st.m).length)])}` : (WHY[st.why]||'Won\u2019t fit there');
-        floatText(st.m.rect.x+st.m.rect.w/2, st.m.rect.y-R*.4, msg, '#ff9db4'); }
-      returnHome(o); }
-    save(); return; }
   const t=findHole(o,true);
   if (t && t.ok){ placeInHole(o,t.m,t.i); }
   else {
@@ -1600,8 +1387,7 @@ function update(dt){
   time+=dt;
   for (let i=queue.length-1;i>=0;i--){ queue[i].t-=dt; if(queue[i].t<=0){ const q=queue[i]; queue.splice(i,1); q.fn(); } }
   if (held){ let tx=ptr.x, ty=ptr.y;
-    if (stackMode()){ const st=stackTarget(held,ptr.x,ptr.y); if (st&&st.ok&&!st.same){ const h=st.m.holesPos[st.land]; tx+=(h.x-tx)*.3; ty+=(h.y-ty)*.3; } }
-    else { const h=findHole({...held,x:ptr.x,y:ptr.y},false); if(h){ tx+=(h.h.x-tx)*.35; ty+=(h.h.y-ty)*.35; } }
+    const h=findHole({...held,x:ptr.x,y:ptr.y},false); if(h){ tx+=(h.h.x-tx)*.35; ty+=(h.h.y-ty)*.35; }
     const k=1-Math.exp(-dt*28); held.x+=(tx-held.x)*k; held.y+=(ty-held.y)*k; }
   for (let s=0;s<2;s++) physics(dt/2);
   glareTick();
@@ -1791,7 +1577,7 @@ function heart(x,y,s,broken){
 function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H); if(bg) ctx.drawImage(bg,0,0,W,H);
   const sh=shake*shake*6; ctx.save(); if(sh>0) ctx.translate((Math.random()-.5)*sh,(Math.random()-.5)*sh);
-  const target = held && !stackMode() ? findHole(held,true) : null, w=world(), sTgt = held && stackMode() ? stackTarget(held,held.x,held.y) : null;
+  const target = held ? findHole(held,true) : null, w=world();
   machines.forEach(m=>{
     const r=m.rect, ox=m.shake>0?Math.sin(time*70)*m.shake*5:0, gate=m.type==='gate';
     ctx.save(); ctx.translate(ox,0);
@@ -1828,8 +1614,7 @@ function draw(){
       if (!o && gate && m.req[i]){ const gt=rules().ghost(m.req[i]);
         if (gt){ const ghost={t:gt,sq:0,id:i,lx:0,ly:0,blinkT:-1,trickT:-1,pop:1,baby:false,known:false}; ghost.r=radiusOf(ghost); drawOrb(ghost,h.x,h.y,Math.min(.95,HR*.88/ghost.r),.5,true); }
         else { ctx.setLineDash([4,5]); ctx.strokeStyle='rgba(255,230,240,.55)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(h.x,h.y,HR*.62,0,7); ctx.stroke(); ctx.setLineDash([]); } }
-      if (sTgt && sTgt.m===m && sTgt.land===i && !sTgt.same){ ctx.strokeStyle=sTgt.ok?'#fff3cf':'#ff7a9c'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(h.x,h.y,HR+3+Math.sin(time*14)*1.5,0,7); ctx.stroke(); }
-      else if (target && target.m===m && target.i===i){ ctx.strokeStyle=target.ok?'#fff3cf':'#ff7a9c'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(h.x,h.y,HR+3+Math.sin(time*14)*1.5,0,7); ctx.stroke(); }
+      if (target && target.m===m && target.i===i){ ctx.strokeStyle=target.ok?'#fff3cf':'#ff7a9c'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(h.x,h.y,HR+3+Math.sin(time*14)*1.5,0,7); ctx.stroke(); }
       else if (held && holeAccepts(m,i,held)){ ctx.strokeStyle='rgba(255,243,207,.25)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(h.x,h.y,HR+3,0,7); ctx.stroke(); }
       if (o){ const e=1-Math.pow(1-o.snap,3), x=o.locked?h.x:o.sx+(h.x-o.sx)*e, y=o.locked?h.y:o.sy+(h.y-o.sy)*e, jit=m.state==='charging'?2.5:0;
         drawOrb(o,x+(Math.random()-.5)*jit,y+(Math.random()-.5)*jit,Math.min(1,HR*.92/o.r)*(1+(o.locked?0:(1-e)*.15)));
