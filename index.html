@@ -890,7 +890,7 @@ const rules = () => isRemix() ? RXW : world();
 const radiusOf = o => famOf(o).radius(o);
 const gateKindNow = () => isRemix() ? L.def.gateKind : ['gate','bench','cradle','calm','line','seesaw','lantern'][S.world];
 const stackMode = () => !!(L && L.def.tubes);
-const MAIN_COUNT = 7;
+const mainCount = w => w.levels.filter(d=>!d.remix).length;   // main levels per world (Hatchery 14, others 7); remixes follow them
 
 const UNLOCK_AT=6;
 const RULES = {
@@ -1469,7 +1469,7 @@ function resolveGate(m){
   save(); updateHUD(); hostSync();
   setTimeout(()=>{
     const last=L.idx===w.levels.length-1;
-    const mainDone = L.idx===MAIN_COUNT-1 && w.levels.length>MAIN_COUNT;
+    const mainDone = !L.def.remix && L.idx===mainCount(w)-1 && w.levels.length>mainCount(w);
     $('#done-title').textContent = last ? `${w.name}: all done` : mainDone ? `${w.name} complete` : GK[gateKindNow()].title;
     $('#done-stars').innerHTML = [1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">★</span>`).join('');
     $('#done-text').textContent = `${mv} move${mv===1?'':'s'} · par ${par}` + (stars<3?' · Replay to beat par':'') + (justUnlocked?' · New worlds opened on the Map':'') + (mainDone?' · Remix levels unlocked':'');
@@ -1894,8 +1894,8 @@ const worldOpen = i => i===0 || Object.keys(S.prog[0].best).length>=UNLOCK_AT;
 const levelOpen = (wi,i) => i===0 || !!S.prog[wi].best[i-1];
 function updateHUD(){
   if (!L) return; const w=world();
-  $('#lvl-w').textContent = L.def.remix ? `${w.short} Remix ${L.idx-MAIN_COUNT+1}/${w.levels.length-MAIN_COUNT} · ${L.def.from.map(i=>WORLDS[i].short).join(' + ')}`
-    : `${w.name} · Level ${L.idx+1} of ${Math.min(MAIN_COUNT,w.levels.length)}`; $('#lvl-name').textContent=L.def.name;
+  $('#lvl-w').textContent = L.def.remix ? `${w.short} Remix ${L.idx-mainCount(w)+1}/${w.levels.length-mainCount(w)} · ${L.def.from.map(i=>WORLDS[i].short).join(' + ')}`
+    : `${w.name} · Level ${L.idx+1} of ${mainCount(w)}`; $('#lvl-name').textContent=L.def.name;
   $('#moves').textContent=L.moves; $('#par').textContent=L.def.par;
   $('#undo').disabled=!L.history.length||L.done;
   const nests=machines.filter(m=>m.type==='nest');
@@ -1913,12 +1913,12 @@ function openMap(){
     const best=S.prog[wi].best, stars=Object.values(best).reduce((s,v)=>s+v,0), open=worldOpen(wi);
     if (!open) return `<div class="box locked"><h3><span class="l">${w.name}</span><small>Locked</small></h3><p>Finish ${UNLOCK_AT} levels of the Hatchery to open this world.</p></div>`;
     const btn=(d,i)=>{ const st=best[i]||0, ok=levelOpen(wi,i), cur=S.world===wi&&L&&L.idx===i;
-      const lab=d.remix?`R${i-MAIN_COUNT+1}`:i+1, dots=d.remix?`<span class="dots">${d.from.map(f=>`<span style="background:${WORLD_DOT[f]}"></span>`).join('')}</span>`:'';
+      const lab=d.remix?`R${i-mainCount(w)+1}`:i+1, dots=d.remix?`<span class="dots">${d.from.map(f=>`<span style="background:${WORLD_DOT[f]}"></span>`).join('')}</span>`:'';
       const tip=ok?(d.remix?`${d.name} · ${d.from.map(f=>WORLDS[f].short).join(' + ')}`:d.name):'Locked';
       return `<button class="lv${cur?' cur':''}${d.remix?' rmx':''}" type="button" data-w="${wi}" data-i="${i}" ${ok?'':'disabled'} title="${tip}" aria-label="${tip}"><b>${lab}</b>${dots}<i>${[1,2,3].map(n=>`<span class="${n<=st?'':'off'}">★</span>`).join('')}</i></button>`; };
     const main=w.levels.map((d,i)=>[d,i]).filter(([d])=>!d.remix), rmx=w.levels.map((d,i)=>[d,i]).filter(([d])=>d.remix);
     return `<div class="box"><h3><span class="l"><span class="wdot" style="background:${WORLD_DOT[wi]}"></span>${w.name}</span><small>★ ${stars}/${w.levels.length*3}</small></h3><p>${w.blurb}</p><div class="grid">${main.map(([d,i])=>btn(d,i)).join('')}</div>${
-      rmx.length?`<div class="rmx-head"><b>Remix</b><span>${levelOpen(wi,MAIN_COUNT)?'Mixes in rules from earlier worlds. The dots show which.':'Finish all 7 levels to unlock.'}</span></div><div class="grid">${rmx.map(([d,i])=>btn(d,i)).join('')}</div>`:''}</div>`;
+      rmx.length?`<div class="rmx-head"><b>Remix</b><span>${levelOpen(wi,mainCount(w))?'Mixes in rules from earlier worlds. The dots show which.':`Finish all ${mainCount(w)} levels to unlock.`}</span></div><div class="grid">${rmx.map(([d,i])=>btn(d,i)).join('')}</div>`:''}</div>`;
   }).join('');
   $('#map-body').insertAdjacentHTML('afterbegin', `<div class="legend">${WORLDS.map((w,i)=>`<span><span class="wdot" style="background:${WORLD_DOT[i]}"></span>${w.short}</span>`).join('')}</div>`);
   $('#map').hidden=false;
