@@ -63,7 +63,8 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .hint{margin:0;font-size:.86rem;color:var(--muted);min-height:1.2em;font-weight:700;line-height:1.3}
 .hint b{color:var(--pink-ink)}
 .stage{flex:1;min-height:0;position:relative}
-#field{display:block;width:100%;height:100%;border-radius:18px;touch-action:none;background:var(--paper-2);border:2px solid var(--ink);box-sizing:border-box;box-shadow:var(--hard)}
+#field{display:block;width:100%;height:100%;touch-action:none;background:var(--paper)}
+.stage{border-radius:18px;box-shadow:var(--hard)}   /* the drop shadow lives on the wrapper; the canvas itself is a plain opaque rectangle */
 .toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:var(--panel);border:2px solid var(--ink);border-radius:14px;padding:9px 40px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:var(--hard);touch-action:none;cursor:grab;transition:transform .2s ease,opacity .2s ease;animation:drop .3s ease-out;width:max-content;max-width:calc(100% - 24px);text-align:center;z-index:2}
 .toast .k{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--pink-ink);font-weight:800}
 .toast.leaving{transform:translate(-50%,-140%)!important;opacity:0!important}
@@ -263,7 +264,7 @@ svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
 <script>
 (() => {
 const $ = s => document.querySelector(s);
-const cv = $('#field'); let ctx = cv.getContext('2d');  // let: the title screen borrows the orb renderer
+const cv = $('#field'); let ctx = cv.getContext('2d', {alpha:false});  // let: the title screen borrows the orb renderer
 const INK='#2b2a4c';   // theme ink: outlines, hard shadows, labels
 const isDarkHex = h => { const n=parseInt(h.slice(1),16); return (.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255 < .45; };
 const boardDark = () => isDarkHex(world().bg[1]);   // the Lighthouse is the one night-time board
@@ -1014,7 +1015,7 @@ function startLevel(wi, i, restore){
 
 /* ======================= layout ======================= */
 function layout(){
-  const b=cv.getBoundingClientRect(); W=Math.max(1,b.width); H=Math.max(1,b.height); dpr=Math.min(2,window.devicePixelRatio||1);
+  const b=cv.getBoundingClientRect(); W=Math.max(1,b.width); H=Math.max(1,b.height); dpr=Math.min(dprCap(),window.devicePixelRatio||1);
   cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
   // Popups appear at the top of the board, so start the machines below the tallest one when there's room;
   // if that would shrink the machines noticeably, try half the strip, then none.
@@ -1023,7 +1024,7 @@ function layout(){
   for (const t of [safe, safe*.5]){ const rt=fit(t); if (rt>=r*.92){ top=t; r=rt; break; } }
   TOP=top; tryLayout(r,true); R=r; floorY=H-4;
   orbs.forEach(o=>{ o.r=radiusOf(o); if(!o.hole){ o.x=Math.min(Math.max(o.x,o.r),W-o.r); o.y=Math.min(o.y,floorY-o.r); } });
-  spriteCache.clear(); makeBg();
+  spriteCache.clear(); glowCache.clear(); makeBg(); makeFrameOverlay();
 }
 // Height (from the board's top edge) of a popup carrying the longest Notebook text at the current width.
 function popupSafe(){
@@ -1054,6 +1055,13 @@ function tryLayout(r, apply){
   return true;
 }
 const SPR=1.45;
+const glowCache=new Map();
+function glowSprite(hex){
+  if (glowCache.has(hex)) return glowCache.get(hex);
+  const n=64, c=document.createElement('canvas'); c.width=c.height=n*2; const g=c.getContext('2d');
+  const gg=g.createRadialGradient(n,n,n*.4/2.1,n,n,n); gg.addColorStop(0,hex+'66'); gg.addColorStop(1,hex+'00'); g.fillStyle=gg; g.fillRect(0,0,n*2,n*2);
+  glowCache.set(hex,c); return c;
+}
 function spriteFor(l){
   const key=l.hex+(l.sheen?'s':''); if (spriteCache.has(key)) return spriteCache.get(key);
   const rad=R*SPR, pad=3, s=Math.ceil((rad*2+pad*2)*dpr), c=document.createElement('canvas'); c.width=c.height=s;
@@ -1065,6 +1073,17 @@ function spriteFor(l){
   g.fillStyle='rgba(255,255,255,.8)'; g.beginPath(); g.ellipse(m-rad*.4,m-rad*.46,rad*.2,rad*.12,-.6,0,7); g.fill();
   g.strokeStyle=INK; g.lineWidth=Math.max(1.5,rad*.075); g.beginPath(); g.arc(m,m,rad-g.lineWidth/2,0,7); g.stroke();
   spriteCache.set(key,c); return c;
+}
+// Rendering resolution cap. Starts at 2x; the frame loop lowers it (saved per device) if frames run long.
+const dprCap = () => (typeof PREF==='object' && PREF.dpr) || 2;
+// Rounded board edge drawn by the game: page-colored corners plus the ink border, pasted on top every frame.
+let frameOverlay=null;
+function makeFrameOverlay(){
+  frameOverlay=document.createElement('canvas'); frameOverlay.width=cv.width; frameOverlay.height=cv.height;
+  const g=frameOverlay.getContext('2d'); g.scale(dpr,dpr); const rad=18;
+  g.fillStyle=getComputedStyle(document.body).backgroundColor; g.fillRect(0,0,W,H);
+  g.globalCompositeOperation='destination-out'; g.beginPath(); g.roundRect(0,0,W,H,rad); g.fill();
+  g.globalCompositeOperation='source-over'; g.strokeStyle=INK; g.lineWidth=2; g.beginPath(); g.roundRect(1,1,W-2,H-2,rad-1); g.stroke();
 }
 function makeBg(){
   const w=world(); bg=document.createElement('canvas'); bg.width=cv.width; bg.height=cv.height; const g=bg.getContext('2d'); g.scale(dpr,dpr);
@@ -1568,7 +1587,7 @@ function drawOrb(o,x,y,scale=1,alpha=1,ghost=false){
   ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x+shk,y); ctx.scale(1+o.sq,1-o.sq);
   if (l.baby && o.trickT>=0) ctx.rotate(Math.sin(o.trickT*14)*.15*(1-o.trickT/1.4));
   appendages(l,r,ghost);
-  if (l.glow && !ghost){ ctx.save(); ctx.globalCompositeOperation='lighter'; const gg=ctx.createRadialGradient(0,0,r*.4,0,0,r*2.1); gg.addColorStop(0,l.hex+'66'); gg.addColorStop(1,l.hex+'00'); ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(0,0,r*2.1,0,7); ctx.fill(); ctx.restore(); }
+  if (l.glow && !ghost){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.drawImage(glowSprite(l.hex), -r*2.1, -r*2.1, r*4.2, r*4.2); ctx.restore(); }
   if (l.glass){ ctx.save(); ctx.globalAlpha*=.5; ctx.drawImage(sp,-s,-s,s*2,s*2); ctx.restore(); ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=Math.max(1.5,r*.08); ctx.beginPath(); ctx.arc(0,0,r*.96,0,7); ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=Math.max(1.2,r*.07); ctx.beginPath(); ctx.arc(0,0,r*.72,-2.4,-1.5); ctx.stroke(); }
   else ctx.drawImage(sp,-s,-s,s*2,s*2);
@@ -1590,15 +1609,10 @@ function heart(x,y,s,broken){
   if (broken){ ctx.strokeStyle='#2a0f18'; ctx.lineWidth=.12; ctx.beginPath(); ctx.moveTo(0,-.45); ctx.lineTo(-.12,-.1); ctx.lineTo(.1,.05); ctx.lineTo(0,.35); ctx.stroke(); }
   ctx.restore();
 }
-function draw(){
-  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H); if(bg) ctx.drawImage(bg,0,0,W,H);
-  const sh=shake*shake*6; ctx.save(); if(sh>0) ctx.translate((Math.random()-.5)*sh,(Math.random()-.5)*sh);
-  const target = held ? findHole(held,true) : null, w=world();
-  machines.forEach(m=>{
-    const r=m.rect, ox=m.shake>0?Math.sin(time*70)*m.shake*5:0, gate=m.type==='gate';
-    ctx.save(); ctx.translate(ox,0);
-    if (m.state==='charging'||m.flash>0){ const a=m.state==='charging'?.5+.5*Math.sin(time*30):m.flash; ctx.shadowColor=gate?'#7ee2b8':'#ffd27a'; ctx.shadowBlur=R*1.8*a; }
-    else { ctx.shadowColor=boardDark()?'rgba(0,0,0,.6)':INK; ctx.shadowBlur=0; ctx.shadowOffsetX=R*.14; ctx.shadowOffsetY=R*.16; }
+/* ---- machine bodies: plate, details and empty sockets. Static ones are pre-rendered once per layout. ---- */
+function drawMachineBody(m){
+  const r=m.rect;
+    ctx.shadowColor=boardDark()?'rgba(0,0,0,.6)':INK; ctx.shadowBlur=0; ctx.shadowOffsetX=R*.14; ctx.shadowOffsetY=R*.16;
     if (m.seesaw && m.rest){ const pv=m.rest[3]; ctx.save(); ctx.shadowColor='transparent'; ctx.fillStyle='#5b4326'; ctx.beginPath();
         ctx.moveTo(pv.x,pv.y+R*.2); ctx.lineTo(pv.x-R*1.4,pv.y+r.h*.5+R*2.1); ctx.lineTo(pv.x+R*1.4,pv.y+r.h*.5+R*2.1); ctx.closePath(); ctx.fill();
         ctx.fillStyle='#3d2c18'; rr(pv.x-R*1.9,pv.y+r.h*.5+R*2.0,R*3.8,R*.35,R*.15); ctx.fill(); ctx.restore();
@@ -1622,10 +1636,35 @@ function draw(){
     if (m.type==='lens'){ ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(r.x+R*.5,r.y+r.h-R*.4); ctx.lineTo(r.x+r.w*.45,r.y+R*.4); ctx.stroke(); }
     if (m.type!=='nest' && m.type!=='camp'){ ctx.fillStyle='rgba(30,20,10,.4)'; [[r.x+R*.4,r.y+R*.4],[r.x+r.w-R*.4,r.y+R*.4],[r.x+R*.4,r.y+r.h-R*.4],[r.x+r.w-R*.4,r.y+r.h-R*.4]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,R*.11,0,7);ctx.fill();}); }
     if (m.seesaw && m.rest){ const pv=m.rest[3]; ctx.fillStyle='#3d2c18'; ctx.beginPath(); ctx.arc(pv.x,pv.y,HR*1.12,0,7); ctx.fill(); ctx.restore(); ctx.shadowColor='transparent'; }   // restore() brought back the plate's drop shadow
+}
+function drawHoleBase(h){
+  const hg=ctx.createRadialGradient(h.x,h.y-HR*.3,HR*.2,h.x,h.y,HR); hg.addColorStop(0,'#45436e'); hg.addColorStop(1,'#1f1e38');
+  ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(h.x,h.y,HR,0,7); ctx.fill(); ctx.strokeStyle='rgba(20,10,0,.7)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.strokeStyle='rgba(255,240,200,.3)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(h.x,h.y+1,HR+1.5,.15*Math.PI,.85*Math.PI); ctx.stroke();
+}
+const layerOK = m => !m.seesaw && m.type!=='camp';   // the Seesaw tilts and the Campfire flickers: drawn live
+function machineLayer(m){
+  const r=m.rect, key=`${dpr}|${R}|${HR}|${r.x},${r.y},${r.w},${r.h}|${boardDark()}`;
+  if (m.layer && m.layerKey===key) return m.layer;
+  const pad=Math.ceil(R*.6), c=document.createElement('canvas');
+  c.width=Math.ceil((r.w+pad*2)*dpr); c.height=Math.ceil((r.h+pad*2)*dpr);
+  const g=c.getContext('2d'); g.scale(dpr,dpr); g.translate(pad-r.x, pad-r.y);
+  const sv=ctx; ctx=g; try { drawMachineBody(m); m.holesPos.forEach(drawHoleBase); } finally { ctx=sv; }
+  m.layer=c; m.layerKey=key; m.layerPad=pad; return c;
+}
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0); if(bg) ctx.drawImage(bg,0,0,W,H);
+  const sh=shake*shake*6; ctx.save(); if(sh>0) ctx.translate((Math.random()-.5)*sh,(Math.random()-.5)*sh);
+  const target = held ? findHole(held,true) : null, w=world();
+  machines.forEach(m=>{
+    const r=m.rect, ox=m.shake>0?Math.sin(time*70)*m.shake*5:0, gate=m.type==='gate';
+    ctx.save(); ctx.translate(ox,0);
+    const ga = m.state==='charging' ? .5+.5*Math.sin(time*30) : m.flash;   // charging glow: a cheap outline instead of a blur
+    if (ga>0){ ctx.save(); ctx.globalAlpha=Math.min(1,ga); ctx.strokeStyle=gate?'#2fbf8a':'#ffb627'; ctx.lineWidth=R*.32*ga+2; rr(r.x-R*.18,r.y-R*.18,r.w+R*.36,r.h+R*.36,R*.85); ctx.stroke(); ctx.restore(); }
+    if (layerOK(m)){ const c=machineLayer(m), p=m.layerPad; ctx.drawImage(c, r.x-p, r.y-p, c.width/dpr, c.height/dpr); }
+    else drawMachineBody(m);
     m.holesPos.forEach((h,i)=>{
-      const hg=ctx.createRadialGradient(h.x,h.y-HR*.3,HR*.2,h.x,h.y,HR); hg.addColorStop(0,'#45436e'); hg.addColorStop(1,'#1f1e38');
-      ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(h.x,h.y,HR,0,7); ctx.fill(); ctx.strokeStyle='rgba(20,10,0,.7)'; ctx.lineWidth=2; ctx.stroke();
-      ctx.strokeStyle='rgba(255,240,200,.3)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(h.x,h.y+1,HR+1.5,.15*Math.PI,.85*Math.PI); ctx.stroke();
+      if (!layerOK(m)) drawHoleBase(h);
       const o=m.slots[i];
       if (!o && gate && m.req[i]){ const gt=rules().ghost(m.req[i]);
         if (gt){ const ghost={t:gt,sq:0,id:i,lx:0,ly:0,blinkT:-1,trickT:-1,pop:1,baby:false,known:false}; ghost.r=radiusOf(ghost); drawOrb(ghost,h.x,h.y,Math.min(.95,HR*.88/ghost.r),.5,true); }
@@ -1689,6 +1728,7 @@ function draw(){
     const tw=ctx.measureText(f.text).width/2, fx=Math.min(Math.max(f.x,tw+6),W-tw-6), fy=Math.max(R,f.y-k*R*2);
     ctx.strokeStyle=INK; ctx.lineWidth=Math.max(3,R*.16); ctx.lineJoin='round'; ctx.strokeText(f.text,fx,fy); ctx.fillText(f.text,fx,fy); });
   ctx.globalAlpha=1; ctx.restore();
+  if (frameOverlay) ctx.drawImage(frameOverlay,0,0,W,H);
 }
 
 /* ======================= HUD & sheets ======================= */
@@ -1972,7 +2012,7 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- title screen: real blobs from every world, physics toy behind the menu ---------- */
-const tcv=$('#tcv'), tctx=tcv.getContext('2d');
+const tcv=$('#tcv'), tctx=tcv.getContext('2d', {alpha:false});
 let TW=1, TH=1, tOrbs=[], tHeld=null, tPtr={x:-1e4,y:-1e4,on:false}, tCache=new Map(), tSpawnAt=1e9, tBg=null, tHopAt=0;
 const tR = () => Math.max(24, Math.min(46, Math.min(TW,TH)*.055));
 const tTarget = () => Math.round(Math.max(8, Math.min(20, TW/70)));
@@ -1983,7 +2023,7 @@ const TPOOL=(()=>{ const pool=[], sw=S.world;
   S.world=sw; return pool; })();
 const SPARKS=Array.from({length:40},(_,i)=>({x:Math.random(), y:Math.random(), s:1+Math.random()*2, v:.008+Math.random()*.02, p:Math.random()*7, c:i%2?'#ff5c8a':'#3d5afe'}));
 function titleLayout(){
-  const b=tcv.getBoundingClientRect(); TW=Math.max(1,b.width); TH=Math.max(1,b.height); const d=Math.min(2,window.devicePixelRatio||1);
+  const b=tcv.getBoundingClientRect(); TW=Math.max(1,b.width); TH=Math.max(1,b.height); const d=Math.min(dprCap(),window.devicePixelRatio||1);
   tcv.width=Math.round(TW*d); tcv.height=Math.round(TH*d); tBg=null; tCache.clear();
   tOrbs.forEach(o=>{ o.r=tR()*o.k; o.x=Math.min(Math.max(o.x,o.r),TW-o.r); o.y=Math.min(o.y,TH-6-o.r); });
 }
@@ -2067,7 +2107,15 @@ setInterval(save,3000);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
 window.addEventListener('pagehide',save);
 let last=performance.now();
-function frame(now){ const dt=Math.min(.033,(now-last)/1000); last=now;
+const perf={ n:0, slow:0, t0:0, frames:0, el:null };
+if (/[?&]fps\b/.test(location.search)){ perf.el=document.createElement('div'); perf.el.style.cssText='position:fixed;left:6px;bottom:6px;z-index:9;font:700 12px system-ui;background:#2b2a4ccc;color:#fff;padding:3px 7px;border-radius:6px;pointer-events:none'; document.body.appendChild(perf.el); }
+function watchFrames(now, raw){
+  perf.frames++; if (perf.el && now-perf.t0>500){ perf.el.textContent=`${Math.round(perf.frames*1000/(now-perf.t0))} fps · ${dpr}x`; perf.t0=now; perf.frames=0; }
+  if (scene!=='play' || paused || document.hidden || raw>250 || dprCap()<=1) return;
+  perf.n++; if (raw>24) perf.slow++;                          // under ~40 fps
+  if (perf.n>=90){ if (perf.slow>=60){ PREF.dpr=Math.max(1, dprCap()-.5); savePrefs(); layout(); } perf.n=perf.slow=0; }
+}
+function frame(now){ const raw=now-last, dt=Math.min(.033,raw/1000); last=now; watchFrames(now, raw);
   if (scene==='play'){ if (!paused){ update(dt); draw(); } }   // paused: the board stays frozen under the pause card
   else { time+=dt; titleStep(dt); titleDraw(); }
   requestAnimationFrame(frame); }
