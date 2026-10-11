@@ -1020,7 +1020,7 @@ function layout(){
   if (resized){ cv.width=cw; cv.height=ch; }   // assigning a size reallocates the canvas, even when it's the same size
   // Popups appear at the top of the board, so start the machines below the tallest one when there's room;
   // if that would shrink the machines noticeably, try half the strip, then none.
-  const fit = top => { TOP=top; let r=Math.max(14,Math.min(34, W*.085, H*.075)); while (r>11 && !tryLayout(r,false)) r-=.5; return r; };
+  const fit = top => { TOP=top; let r=Math.max(14,Math.min(34, W*.085, H*.075)); while (r>8 && !tryLayout(r,false)) r-=.5; return r; };   // 8: the 7-seat Seesaw needs ~25r of width (320px phones)
   let r=fit(0), top=0; const safe=popupSafe();
   for (const t of [safe, safe*.5]){ const rt=fit(t); if (rt>=r*.92){ top=t; r=rt; break; } }
   TOP=top; tryLayout(r,true); R=r; floorY=H-4;
@@ -1043,7 +1043,7 @@ function popupSafe(){
 function tryLayout(r, apply){
   const hr=r*1.45, gap=r*.55, pad=r*.7, labelH=r*1.3, badge=r*1.1, colGap=r*1.3, rowGap=r*.45, avail=W-20;
   const kw=r*1.9, sizes=machines.map(m=>m.vertical ? {w:pad*2+hr*2, h:pad*1.5+m.holes*hr*2+(m.holes-1)*gap} : {w:pad*2+m.holes*hr*2+(m.holes-1)*gap+(m.kiosk?kw:0), h:hr*2+pad*1.5+(m.kiosk?r*.45:0)});
-  if (sizes.some(s=>s.w>avail)) return false;
+  if (!apply && sizes.some(s=>s.w>avail)) return false;   // when applying, always place every socket (even if it overflows) so nothing is left unpositioned
   const rows=[], total=sizes.reduce((s,z)=>s+z.w,0)+colGap*(machines.length-1);
   if (total<=avail) rows.push(machines.map((_,i)=>i));
   else { rows.push([0]); let row=[], rw=0;
