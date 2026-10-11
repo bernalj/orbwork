@@ -72,6 +72,8 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 @media (pointer:coarse){.toast .tx{width:38px;height:38px;top:0;right:0}.toast::after{content:'';width:30px;height:4px;border-radius:2px;background:var(--soft);margin-top:3px}}
 .toast .v{font-weight:800;font-size:.92rem;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;text-wrap:balance}
 @keyframes drop{from{transform:translate(-50%,-12px);opacity:0}}
+/* Phones, tablets and short screens: popups dock over the top bar so they never cover the board */
+@media (max-width:520px),(max-height:500px),(pointer:coarse){.toast{position:fixed;top:calc(6px + env(safe-area-inset-top,0px));z-index:3}}
 svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
 .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(246,237,220,.55);border-radius:18px;z-index:3}
 .card{background:var(--panel);border:2px solid var(--ink);border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:340px;width:100%;box-sizing:border-box;box-shadow:5px 5px 0 var(--ink);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
@@ -894,7 +896,7 @@ function hostSync(){
 }
 
 /* ======================= world state ======================= */
-let W=0,H=0,dpr=1,R=20,HR=29,GAP=11,PAD=14,floorY=0;
+let W=0,H=0,dpr=1,R=20,HR=29,GAP=11,PAD=14,floorY=0,TOP=0;   // TOP: strip kept clear for popups
 let orbs=[], parts=[], rings=[], floats=[], queue=[], uid=0, time=0, shake=0;
 let held=null, hist=[], ptr={x:0,y:0}, spriteCache=new Map(), bg=null, machines=[], L=null;
 const world = () => WORLDS[S.world];
@@ -1014,11 +1016,24 @@ function startLevel(wi, i, restore){
 function layout(){
   const b=cv.getBoundingClientRect(); W=Math.max(1,b.width); H=Math.max(1,b.height); dpr=Math.min(2,window.devicePixelRatio||1);
   cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
-  let r=Math.max(14,Math.min(34, W*.085, H*.075));
-  while (r>11 && !tryLayout(r,false)) r-=.5;
-  tryLayout(r,true); R=r; floorY=H-4;
+  // Popups appear at the top of the board, so start the machines below the tallest one when there's room;
+  // if that would shrink the machines noticeably, try half the strip, then none.
+  const fit = top => { TOP=top; let r=Math.max(14,Math.min(34, W*.085, H*.075)); while (r>11 && !tryLayout(r,false)) r-=.5; return r; };
+  let r=fit(0), top=0; const safe=popupSafe();
+  for (const t of [safe, safe*.5]){ const rt=fit(t); if (rt>=r*.92){ top=t; r=rt; break; } }
+  TOP=top; tryLayout(r,true); R=r; floorY=H-4;
   orbs.forEach(o=>{ o.r=radiusOf(o); if(!o.hole){ o.x=Math.min(Math.max(o.x,o.r),W-o.r); o.y=Math.min(o.y,floorY-o.r); } });
   spriteCache.clear(); makeBg();
+}
+// Height (from the board's top edge) of a popup carrying the longest Notebook text at the current width.
+function popupSafe(){
+  if (getComputedStyle($('#toast')).position==='fixed') return 0;   // docked over the top bar instead
+  if (popupSafe.w===W) return popupSafe.h;
+  const t=$('#toast'), c=t.cloneNode(false), longest=Object.values(RULES).reduce((a,r)=>r.text.length>a.length?r.text:a,'');
+  c.removeAttribute('id'); c.hidden=false; c.style.cssText='visibility:hidden;animation:none';
+  c.innerHTML=`<span class="k">Notebook · Lighthouse</span><span class="v">${longest}</span><button class="tx" type="button">×</button>`;
+  t.parentNode.appendChild(c); const h=c.offsetTop+c.offsetHeight; c.remove();
+  popupSafe.w=W; popupSafe.h=h; return h;
 }
 function tryLayout(r, apply){
   const hr=r*1.45, gap=r*.55, pad=r*.7, labelH=r*1.3, badge=r*1.1, colGap=r*1.3, rowGap=r*.45, avail=W-20;
@@ -1029,12 +1044,13 @@ function tryLayout(r, apply){
   else { rows.push([0]); let row=[], rw=0;
     for (let i=1;i<machines.length;i++){ const w=sizes[i].w; if(row.length && rw+colGap+w>avail){ rows.push(row); row=[]; rw=0; } if(row.length) rw+=colGap; rw+=w; row.push(i); }
     if (row.length) rows.push(row); }
-  let y=badge+r*.2; const pos=[];
+  const rise=machines.some(m=>m.seesaw) ? sizes[0].w*Math.sin(.34)/2 : 0;   // room for the Seesaw's raised end at full tilt
+  let y=TOP+badge+r*.2+rise; const pos=[];
   rows.forEach(row=>{ const tot=row.reduce((s,i)=>s+sizes[i].w,0)+colGap*(row.length-1), rh=Math.max(...row.map(i=>sizes[i].h)); let x=(W-tot)/2;
     row.forEach(i=>{ pos[i]={x, y:y+(rh-sizes[i].h)/2}; x+=sizes[i].w+colGap; }); y+=rh+labelH+rowGap; });
   if (!apply) return y<=H*(machines.some(m=>m.vertical)?.97:.6);
   HR=hr; GAP=gap; PAD=pad;
-  machines.forEach((m,i)=>{ const s=sizes[i]; m.rect={x:pos[i].x,y:pos[i].y,w:s.w,h:s.h}; m.holesPos=[]; for(let k=0;k<m.holes;k++) m.holesPos.push(m.vertical ? {x:pos[i].x+pad+hr, y:pos[i].y+s.h-pad*.75-hr-k*(hr*2+gap)} : {x:pos[i].x+pad+hr+k*(hr*2+gap)+(m.kiosk?kw:0), y:pos[i].y+(s.h-(m.kiosk?r*.45:0))/2}); if (m.seesaw){ m.base=m.holesPos.map(p=>({...p})); applyTilt(m); } });
+  machines.forEach((m,i)=>{ const s=sizes[i]; m.rect={x:pos[i].x,y:pos[i].y,w:s.w,h:s.h}; m.holesPos=[]; for(let k=0;k<m.holes;k++) m.holesPos.push(m.vertical ? {x:pos[i].x+pad+hr, y:pos[i].y+s.h-pad*.75-hr-k*(hr*2+gap)} : {x:pos[i].x+pad+hr+k*(hr*2+gap)+(m.kiosk?kw:0), y:pos[i].y+(s.h-(m.kiosk?r*.45:0))/2}); if (m.seesaw){ /* Seesaw: seat positions on a level plank (m.base stays its note) */ m.rest=m.holesPos.map(p=>({...p})); applyTilt(m); } });
   return true;
 }
 const SPR=1.45;
@@ -1153,15 +1169,15 @@ function lineArrive(m,o){
 }
 /* ---- Seesaw: weight x distance ---- */
 function torque(m){ let t=0; m.slots.forEach((o,i)=>{ if(o) t+=(+o.t[1])*(i-3); }); return t; }
-function applyTilt(m){ if (!m.base) return; const pv=m.base[3], c=Math.cos(m.ang||0), s=Math.sin(m.ang||0);
-  m.holesPos=m.base.map(p=>({x:pv.x+(p.x-pv.x)*c-(p.y-pv.y)*s, y:pv.y+(p.x-pv.x)*s+(p.y-pv.y)*c})); }
+function applyTilt(m){ if (!m.rest) return; const pv=m.rest[3], c=Math.cos(m.ang||0), s=Math.sin(m.ang||0);
+  m.holesPos=m.rest.map(p=>({x:pv.x+(p.x-pv.x)*c-(p.y-pv.y)*s, y:pv.y+(p.x-pv.x)*s+(p.y-pv.y)*c})); }
 function seesawTick(m,dt){
   const tq=torque(m), target=Math.max(-.34,Math.min(.34,tq*.09)); const was=m.ang||0;
   m.ang=was+(target-was)*Math.min(1,dt*5); applyTilt(m);
   if (Math.abs(target-was)>.01 && Math.abs(m.ang-target)<.004 && !m.creaked){ m.creaked=true; tone(140,110,.18,'triangle',.12); noise(.12,.06,600,2); }
   if (Math.abs(target-m.ang)>.02) m.creaked=false;
   const aboard = !orbs.some(o=>!o.hole) && !held && !queue.some(q=>q.orb);
-  if (m.state==='idle' && !L.done && aboard && tq===0 && Math.abs(m.ang)<.02){ m.state='charging'; m.t=.8; sfx.charge(m.base?7:0); seesawLearn(m); }
+  if (m.state==='idle' && !L.done && aboard && tq===0 && Math.abs(m.ang)<.02){ m.state='charging'; m.t=.8; sfx.charge(m.base); seesawLearn(m); }
   if (m.state==='idle' && aboard && tq!==0 && !m.toldTip){ m.toldTip=true; floatText(m.rect.x+m.rect.w/2, m.rect.y-R*.8, 'Everyone\u2019s aboard, but it\u2019s tipping', '#ffd27a'); }
   if (!aboard) m.toldTip=false;
 }
@@ -1583,7 +1599,7 @@ function draw(){
     ctx.save(); ctx.translate(ox,0);
     if (m.state==='charging'||m.flash>0){ const a=m.state==='charging'?.5+.5*Math.sin(time*30):m.flash; ctx.shadowColor=gate?'#7ee2b8':'#ffd27a'; ctx.shadowBlur=R*1.8*a; }
     else { ctx.shadowColor=boardDark()?'rgba(0,0,0,.6)':INK; ctx.shadowBlur=0; ctx.shadowOffsetX=R*.14; ctx.shadowOffsetY=R*.16; }
-    if (m.seesaw && m.base){ const pv=m.base[3]; ctx.save(); ctx.shadowColor='transparent'; ctx.fillStyle='#5b4326'; ctx.beginPath();
+    if (m.seesaw && m.rest){ const pv=m.rest[3]; ctx.save(); ctx.shadowColor='transparent'; ctx.fillStyle='#5b4326'; ctx.beginPath();
         ctx.moveTo(pv.x,pv.y+R*.2); ctx.lineTo(pv.x-R*1.4,pv.y+r.h*.5+R*2.1); ctx.lineTo(pv.x+R*1.4,pv.y+r.h*.5+R*2.1); ctx.closePath(); ctx.fill();
         ctx.fillStyle='#3d2c18'; rr(pv.x-R*1.9,pv.y+r.h*.5+R*2.0,R*3.8,R*.35,R*.15); ctx.fill(); ctx.restore();
       ctx.save(); ctx.translate(pv.x,pv.y); ctx.rotate(m.ang||0); ctx.translate(-pv.x,-pv.y); }
@@ -1605,7 +1621,7 @@ function draw(){
       ctx.fillStyle='rgba(255,170,60,.85)'; ctx.beginPath(); ctx.moveTo(fx-R*.14,fy); ctx.quadraticCurveTo(fx,fy-fh*1.6,fx+R*.14,fy); ctx.fill(); } }
     if (m.type==='lens'){ ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(r.x+R*.5,r.y+r.h-R*.4); ctx.lineTo(r.x+r.w*.45,r.y+R*.4); ctx.stroke(); }
     if (m.type!=='nest' && m.type!=='camp'){ ctx.fillStyle='rgba(30,20,10,.4)'; [[r.x+R*.4,r.y+R*.4],[r.x+r.w-R*.4,r.y+R*.4],[r.x+R*.4,r.y+r.h-R*.4],[r.x+r.w-R*.4,r.y+r.h-R*.4]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,R*.11,0,7);ctx.fill();}); }
-    if (m.seesaw && m.base){ const pv=m.base[3]; ctx.fillStyle='#3d2c18'; ctx.beginPath(); ctx.arc(pv.x,pv.y,HR*1.12,0,7); ctx.fill(); ctx.restore(); }
+    if (m.seesaw && m.rest){ const pv=m.rest[3]; ctx.fillStyle='#3d2c18'; ctx.beginPath(); ctx.arc(pv.x,pv.y,HR*1.12,0,7); ctx.fill(); ctx.restore(); ctx.shadowColor='transparent'; }   // restore() brought back the plate's drop shadow
     m.holesPos.forEach((h,i)=>{
       const hg=ctx.createRadialGradient(h.x,h.y-HR*.3,HR*.2,h.x,h.y,HR); hg.addColorStop(0,'#45436e'); hg.addColorStop(1,'#1f1e38');
       ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(h.x,h.y,HR,0,7); ctx.fill(); ctx.strokeStyle='rgba(20,10,0,.7)'; ctx.lineWidth=2; ctx.stroke();
