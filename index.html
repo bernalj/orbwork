@@ -1086,11 +1086,12 @@ function makeFrameOverlay(){
   frameOverlay=document.createElement('canvas'); frameOverlay.width=cv.width; frameOverlay.height=cv.height;
   const g=frameOverlay.getContext('2d'); g.scale(dpr,dpr); const rad=18;
   g.fillStyle=getComputedStyle(document.body).backgroundColor; g.fillRect(0,0,W,H);
+  g.fillStyle=INK; g.beginPath(); g.roundRect(3,3,W,H,rad); g.fill();   // the board's hard shadow (same 3px offset as .stage), curving round the corners
   g.globalCompositeOperation='destination-out'; g.beginPath(); g.roundRect(0,0,W,H,rad); g.fill();
   g.globalCompositeOperation='source-over'; g.strokeStyle=INK; g.lineWidth=2; g.beginPath(); g.roundRect(1,1,W-2,H-2,rad-1); g.stroke();
 }
 function drawFrameEdges(){   // corners + border strips of the pre-rendered overlay (most of it is transparent)
-  const c=20, e=3, o=frameOverlay, k=dpr, bl=(x,y,w,h)=>ctx.drawImage(o,x*k,y*k,w*k,h*k,x,y,w,h);
+  const c=24, e=3, o=frameOverlay, k=dpr, bl=(x,y,w,h)=>ctx.drawImage(o,x*k,y*k,w*k,h*k,x,y,w,h);
   bl(0,0,c,c); bl(W-c,0,c,c); bl(0,H-c,c,c); bl(W-c,H-c,c,c);
   bl(c,0,W-2*c,e); bl(c,H-e,W-2*c,e); bl(0,c,e,H-2*c); bl(W-e,c,e,H-2*c);
 }
