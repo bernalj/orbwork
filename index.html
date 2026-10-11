@@ -378,7 +378,7 @@ const W3 = {
   blurb:'Two families of blobs. Parents pass on hidden halves to their babies.',
   gatePlate:['#f2e2c4','#cdb08a','#937652'],
   look(o){ return {hex:PH[phen(o.t)].hex, face:'critter', mood:'happy', line:o.t[0], al:alle(o.t), baby:!!o.baby, known:!!o.known, bounce:o.baby?.45:.3, voice:o.baby?'baby':'adult'}; },
-  radius(o){ return o.baby ? R*.8 : R; },
+  radius(){ return R; },   // babies are full size: smaller ones next to their parents read badly
   label(t,o){ return PH[phen(t)].name + (o&&o.known?` (${alle(t)})`:'') + (o&&o.baby?' baby':''); },
   react(mt,ts){
     if (mt==='lens') return {verb:'lens', reveal:true};
@@ -736,7 +736,7 @@ const RXW = {
     return {hex, face:'remix', n:x.e||2, mood, persona:x.q, spikes:x.s==='s', tentacles:x.s==='j', antenna:x.s==='g',
       species:x.s, prey:x.s?RX_EATS[x.s]:null, line:x.a?'G':null, al:x.a, baby:!!o.baby, bounce:o.baby?.45:x.s==='j'?.5:x.m==='h'?.4:.25,
       voice: x.q ? 'q'+x.q : x.s ? 'reef'+x.s : x.e ? 'pip'+x.e : x.m==='g' ? 'grumpy' : o.baby ? 'baby' : 'happy'}; },
-  radius(o){ const x=RXP(o.t); if (o.baby) return R*.8; if (x.s==='p') return R*.85; return x.e ? R*(.8+.1*x.e) : R; },
+  radius(o){ const x=RXP(o.t); if (x.s==='p') return R*.85; return x.e ? R*(.8+.1*x.e) : R; },
   label(t,o){ const x=RXP(t); if (x.k) return W1K[x.k].name; if (x.s==='p') return 'Pebble';
     const p=[]; const col=rxColor(x);
     if (x.s) p.push(RF[x.s].name); else if (col) p.push(colorName(col)+(x.a?` (${x.a})`:''));
