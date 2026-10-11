@@ -56,8 +56,12 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .hint b{color:var(--brass)}
 .stage{flex:1;min-height:0;position:relative}
 #field{display:block;width:100%;height:100%;border-radius:18px;touch-action:none;background:var(--felt);box-shadow:inset 0 0 0 1px var(--line)}
-.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--brass-dim);border-radius:14px;padding:9px 14px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 10px 30px rgba(0,0,0,.45);pointer-events:none;animation:drop .3s ease-out;width:max-content;max-width:calc(100% - 24px);text-align:center;z-index:2}
+.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--brass-dim);border-radius:14px;padding:9px 40px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 10px 30px rgba(0,0,0,.45);touch-action:none;cursor:grab;transition:transform .2s ease,opacity .2s ease;animation:drop .3s ease-out;width:max-content;max-width:calc(100% - 24px);text-align:center;z-index:2}
 .toast .k{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--brass);font-weight:800}
+.toast.leaving{transform:translate(-50%,-140%)!important;opacity:0!important}
+.toast .tx{position:absolute;top:4px;right:4px;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);font-size:1.3rem;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.toast .tx:hover{color:var(--ink);background:rgba(255,255,255,.08)}
+@media (pointer:coarse){.toast .tx{width:38px;height:38px;top:0;right:0}.toast::after{content:'';width:30px;height:4px;border-radius:2px;background:var(--line);margin-top:3px}}
 .toast .v{font-weight:800;font-size:.92rem;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;text-wrap:balance}
 @keyframes drop{from{transform:translate(-50%,-12px);opacity:0}}
 svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
@@ -109,6 +113,7 @@ svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
 /* Front end: splash card, title screen, main/pause menus, settings. */
 .scene{position:fixed;inset:0;z-index:4;background:var(--felt-deep);overflow:hidden;transition:opacity .45s ease}
 .scene.out{opacity:0;pointer-events:none}
+.scene.out *{pointer-events:none!important}
 #tcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .splash{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#0b0714;transition:opacity .7s ease}
 .splash.gone{opacity:0;pointer-events:none}
@@ -1137,7 +1142,7 @@ function startLevel(wi, i, restore){
   const def=w.levels[i]; L={idx:i, def, moves:0, history:[], done:false}; S.prog[wi].level=i;
   orbs=[]; queue=[]; parts=[]; floats=[]; rings=[]; bubbles=[]; held=null;
   buildMachines(def); layout(); seatGuests();
-  $('#done').hidden=true;
+  $('#done').hidden=true; clearTimeout(toastTimer); $('#toast').hidden=true;
   if (restore){ loadState(restore); updateHUD(); return; }
   if (def.tubes) fillTubes(); else hatchList(def.orbs, .16);
   if (def.remix){ if (!S.visited['r'+wi]){ S.visited['r'+wi]=1; S.visited.rx=1; setTimeout(()=>toast(`${w.short} Remix`, `These levels mix in rules from ${def.from.filter(f=>f!==wi).map(f=>WORLDS[f].name).join(' and ')}. Old rules still hold, plus a few new twists.`, 5200), 300); } }
@@ -1211,7 +1216,23 @@ function hearts(x,y,n=4){ for(let i=0;i<n;i++) parts.push({x:x+(Math.random()-.5
 function ring(x,y,hex,max=R*2.2){ rings.push({x,y,c:hex,t:0,max}); }
 function floatText(x,y,text,c='#e6b95c'){ floats.push({x,y,text,c,t:0}); }
 let toastTimer=0;
-function toast(kind,html,ms=3400){ const t=$('#toast'); t.innerHTML=`<span class="k">${kind}</span><span class="v">${html}</span>`; t.hidden=false; t.style.animation='none'; void t.offsetWidth; t.style.animation=''; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,ms); }
+// Touch screens: the popup stays until closed (X or swipe up). Mouse: it also auto-hides after a reading-length delay, paused while hovered.
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+const toastDelay = (ms=3400) => Math.max(ms, 2500 + $('#toast').textContent.length*55);
+function armToast(ms){ clearTimeout(toastTimer); if (!TOUCH) toastTimer=setTimeout(closeToast, ms); }
+function toast(kind,html,ms=3400){ const t=$('#toast'); t.innerHTML=`<span class="k">${kind}</span><span class="v">${html}</span><button class="tx" type="button" aria-label="Close">×</button>`;
+  t.classList.remove('leaving'); t.style.transform=''; t.style.opacity=''; t.hidden=false; t.style.animation='none'; void t.offsetWidth; t.style.animation=''; armToast(toastDelay(ms)); }
+function closeToast(){ const t=$('#toast'); clearTimeout(toastTimer); if (t.hidden || t.classList.contains('leaving')) return;
+  t.style.transform=''; t.style.opacity=''; t.classList.add('leaving'); setTimeout(()=>{ if (t.classList.contains('leaving')){ t.hidden=true; t.classList.remove('leaving'); } }, 220); }
+{ const t=$('#toast'); let sy=null, dy=0, st=0;
+  t.addEventListener('pointerdown',e=>{ if (e.target.closest('.tx')) return; sy=e.clientY; dy=0; st=performance.now(); clearTimeout(toastTimer); t.style.transition='none'; t.style.animation='none'; try{ t.setPointerCapture(e.pointerId); }catch(_){} });
+  t.addEventListener('pointermove',e=>{ if (sy===null) return; dy=e.clientY-sy; t.style.transform=`translate(-50%,${dy<0?dy:dy*.25}px)`; t.style.opacity=String(Math.max(.25,1+Math.min(0,dy)/110)); });
+  const end=()=>{ if (sy===null) return; sy=null; t.style.transition=''; const v=dy/Math.max(1,performance.now()-st);
+    if (dy<-32 || v<-.45) closeToast(); else { t.style.transform=''; t.style.opacity=''; armToast(2500); } };
+  t.addEventListener('pointerup',end); t.addEventListener('pointercancel',end);
+  t.addEventListener('click',e=>{ if (e.target.closest('.tx')) closeToast(); });
+  t.addEventListener('mouseenter',()=>clearTimeout(toastTimer));
+  t.addEventListener('mouseleave',()=>{ if (sy===null && !t.hidden) armToast(2500); }); }
 function chipT(t, wi=S.world, opts={}){
   const w=t[0]==='*' ? RXW : WORLDS[wi], l=w.look({t, baby:opts.baby, known:false}), hi=mix(l.hex,'#ffffff',.45);
   let inner='';
@@ -2049,6 +2070,8 @@ function showMenu(){
 document.addEventListener('keyup',e=>{ if (!wakeKey) return; wakeKey=false; e.preventDefault(); if (scene==='menu') focusFirst($('#menu')); });
 function enterPlay(){
   scene='play'; paused=false; $('#pause').hidden=true; sceneEl.classList.add('out'); tHeld=null;
+  if (sceneEl.contains(document.activeElement)) document.activeElement.blur();   // a focused menu button would eat Enter/Space in game
+  setTimeout(()=>{ if (scene==='play') sceneEl.hidden=true; }, 460);             // after the fade, take the title scene out entirely
   layout(); last=performance.now();
 }
 function continueGame(){
@@ -2068,7 +2091,7 @@ function pauseGame(){
 function resumeGame(){ paused=false; $('#pause').hidden=true; last=performance.now(); }
 function toMainMenu(){
   save(); paused=false; $('#pause').hidden=true; ['#nb','#map'].forEach(id=>$(id).hidden=true);
-  sceneEl.classList.remove('out'); titleLayout(); showMenu();
+  sceneEl.hidden=false; sceneEl.classList.remove('out'); titleLayout(); showMenu();
 }
 function quitGame(){ save(); if (host) host.quit(); }
 

@@ -1,6 +1,6 @@
 // Dev smoke test: runs the real app with a throwaway profile, replays scripted input, saves screenshots.
 //   npx electron test/smoke.js plan.json
-// plan.json: { "seed": "save.json"?, "size": [1280, 800]?, "steps": [...] }
+// plan.json: { "seed": "save.json"?, "size": [1280, 800]?, "touch": true?, "steps": [...] }
 // Steps run in order: {"wait":ms} {"shot":"file.png"} {"drag":[x1,y1,x2,y2]} {"click":[x,y]} {"key":"KeyName"} {"js":"expression"}
 //   {"dragColor":[r,g,b], "region":[x0,y0,x1,y1], "to":[x,y]}  drags the first blob of that color found in region (orb spawns are random)
 const { app } = require('electron');
@@ -57,6 +57,13 @@ async function run(win) {
         for (let t = 1; t <= 12; t++) { move(x1 + (x2 - x1) * t / 12, y1 + (y2 - y1) * t / 12, 'mouseMove', { modifiers: ['leftButtonDown'] }); await sleep(16); }
         move(x2, y2, 'mouseUp'); await sleep(60); }
     }
+    else if ('clickSel' in step || 'swipeSel' in step) {   // mouse click / upward drag on the center of a selector's element
+      const r = await wc.executeJavaScript(`(()=>{ const e=document.querySelector(${JSON.stringify(step.clickSel || step.swipeSel)}); if(!e||e.hidden) return null; const b=e.getBoundingClientRect(); return [b.left+b.width/2, b.top+b.height/2]; })()`);
+      if (!r) { console.log('[smoke] not found', step.clickSel || step.swipeSel); continue; }
+      const [x, y] = r; move(x, y, 'mouseMove'); move(x, y, 'mouseDown'); await sleep(40);
+      if (step.swipeSel) for (let t = 1; t <= 8; t++) { move(x, y - t * 9, 'mouseMove', { modifiers: ['leftButtonDown'] }); await sleep(16); }
+      move(x, step.swipeSel ? y - 72 : y, 'mouseUp');
+    }
     else if ('click' in step) { const [x, y] = step.click; move(x, y, 'mouseMove'); move(x, y, 'mouseDown'); await sleep(40); move(x, y, 'mouseUp'); }
     else if ('key' in step) {
       wc.sendInputEvent({ type: 'keyDown', keyCode: step.key });
@@ -70,7 +77,17 @@ async function run(win) {
   app.quit();
 }
 
+let touchReady = false;
 app.on('browser-window-created', (_e, win) => {
+  if (plan.touch) {   // emulate a phone: (pointer: coarse) + mouse input delivered as touch, then reload so the page sees it
+    const dbg = win.webContents.debugger; dbg.attach('1.3');
+    win.webContents.once('did-finish-load', async () => {
+      await dbg.sendCommand('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+      await dbg.sendCommand('Emulation.setEmitTouchEventsForMouse', { enabled: true, configuration: 'mobile' });
+      touchReady = true; win.webContents.reload();
+    });
+  }
   win.webContents.on('console-message', e => { if (e.level === 'warning' || e.level === 'error') console.log(`[smoke] console ${e.level}: ${e.message.slice(0, 200)}`); });
-  win.webContents.once('did-finish-load', () => sleep(1500).then(() => run(win)).catch(e => { console.error(e); app.exit(1); }));
+  const go = () => sleep(1500).then(() => run(win)).catch(e => { console.error(e); app.exit(1); });
+  win.webContents.on('did-finish-load', () => { if (!plan.touch || touchReady) { touchReady = false; plan.touch = false; go(); } });
 });
