@@ -1,4 +1,4 @@
-# Orbwork on Steam
+# Blobbiverse on Steam
 
 The desktop build wraps the same `index.html` that GitHub Pages serves, using [Electron](https://www.electronjs.org/) and [steamworks.js](https://github.com/ceifa/steamworks.js). The web version doesn't change: the desktop-only features switch on only when `window.orbworkHost` exists.
 
@@ -31,9 +31,9 @@ Environment switches:
 
 ## How it behaves on desktop
 
-- **Saves** go to `%APPDATA%\Orbwork\saves\save.json`, mirrored to localStorage. That folder holds only the save, so Steam Auto-Cloud can sync it.
-- **Window:** the first launch is windowed, 1080 wide (3:2, centered; smaller on small screens). F11, Alt+Enter or *Settings → Display* switches to fullscreen. Size, position and mode are remembered in `%APPDATA%\Orbwork\settings.json`. On Steam Deck (`SteamDeck=1`) the game is always fullscreen.
-- **Front end:** splash card → title screen (orblings from every world fall in; drag and throw them) → main menu (Continue / New Game, Level Select, Settings, Credits, Quit). Esc or the HUD **Menu** button pauses the game: Resume, Restart level, Level Select, Settings, Main Menu, Quit. Menus work with the mouse or the arrow keys plus Enter.
+- **Saves** go to `%APPDATA%\Blobbiverse\saves\save.json`, mirrored to localStorage. That folder holds only the save, so Steam Auto-Cloud can sync it.
+- **Window:** the first launch is windowed, 1080 wide (3:2, centered; smaller on small screens). F11, Alt+Enter or *Settings → Display* switches to fullscreen. Size, position and mode are remembered in `%APPDATA%\Blobbiverse\settings.json`. On Steam Deck (`SteamDeck=1`) the game is always fullscreen.
+- **Front end:** splash card → title screen (blobs from every world fall in; drag and throw them) → main menu (Continue / New Game, Level Select, Settings, Credits, Quit). Esc or the HUD **Menu** button pauses the game: Resume, Restart level, Level Select, Settings, Main Menu, Quit. Menus work with the mouse or the arrow keys plus Enter.
 - **Settings:** volume (saved per machine in localStorage), windowed or fullscreen, and reset progress.
 - **Keyboard:**
   - Z, U, Backspace or Ctrl+Z: Undo
@@ -51,7 +51,7 @@ Environment switches:
 
 With no App ID configured, the game uses **Spacewar (480)**, Valve's public test app. Spacewar has only five sample achievements, so three of ours are mapped onto them (`SPACEWAR_TEST_MAP` in `electron/achievements.js`):
 
-| Orbwork | Spacewar achievement it unlocks |
+| Blobbiverse | Spacewar achievement it unlocks |
 |---|---|
 | `FIRST_NOTE` (learn your first rule) | `NEW_ACHIEVEMENT_0_4` |
 | `FIRST_POP` (open your first Gate) | `ACH_WIN_ONE_GAME` |
@@ -60,9 +60,9 @@ With no App ID configured, the game uses **Spacewar (480)**, Valve's public test
 To try it:
 
 1. Start the Steam client.
-2. Run `dist\win-unpacked\Orbwork.exe`. Steam should show you as playing "Spacewar".
+2. Run `dist\win-unpacked\Blobbiverse.exe`. Steam should show you as playing "Spacewar".
 3. Solve level 1. The two achievements unlock, and you can see them on Spacewar's achievements page in Steam.
-4. For the overlay and pop-ups, add `Orbwork.exe` as a **Non-Steam Game** in your library and launch it from there. Shift+Tab opens the overlay.
+4. For the overlay and pop-ups, add `Blobbiverse.exe` as a **Non-Steam Game** in your library and launch it from there. Shift+Tab opens the overlay.
 
 ## Shipping checklist
 
@@ -84,14 +84,14 @@ To try it:
    | `FIRST_REMIX` | Mixed company | Finish a Remix level. |
    | `ALL_REMIX` | Remixed | Finish every Remix level. |
    | `PAR_WORLD` | Under par | Earn three stars on every main level of any world. |
-   | `ALL_LEVELS` | Orbwork | Finish every level in the game. |
+   | `ALL_LEVELS` | Blobbiverse | Finish every level in the game. |
    | `ALL_STARS` | Every star | Earn three stars on every level in the game. |
 
 4. **Steam Cloud.** Under *Steam Cloud* → *Auto-Cloud*, set the byte and file quotas (e.g. 1 MB, 10 files), then add a Root Path:
    - Root: `WinAppDataRoaming`
-   - Subdirectory: `Orbwork/saves`
+   - Subdirectory: `Blobbiverse/saves`
    - Pattern: `save.json`
-5. **Launch option.** Under *Installation* → *General*, set the executable to `Orbwork.exe` with OS Windows.
+5. **Launch option.** Under *Installation* → *General*, set the executable to `Blobbiverse.exe` with OS Windows.
 6. **Build and upload.**
    - Run `npm run dist`.
    - Replace `APPID` and `DEPOTID` in `steam/app_build.vdf` and `steam/depot_build_windows.vdf`.

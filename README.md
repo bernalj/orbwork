@@ -1,6 +1,6 @@
-# Orbwork
+# Blobbiverse
 
-A small puzzle game about googly-eyed orblings. Pick them up, drop them into sockets, and figure out the rules of each world by playing.
+A small puzzle game about googly-eyed blobs. Pick them up, drop them into sockets, and figure out the rules of each world by playing.
 
 **Play:** https://bernalj.github.io/orbwork/
 

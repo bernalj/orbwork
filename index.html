@@ -4,88 +4,95 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#170f28">
+<meta name="theme-color" content="#f6eddc">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Orbwork">
+<meta name="apple-mobile-web-app-title" content="Blobbiverse">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
 *,*::before,*::after{box-sizing:border-box}
-:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%}
 body{margin:0;font:14px system-ui,sans-serif}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<title>Orbwork</title>
+<title>Blobbiverse</title>
 
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
-/* Layout: one-screen toy board. Compact HUD (label + icon buttons), hint line, felt tray filling the rest; sheets for Map and Notebook. */
+/* Layout: one-screen toy board. Compact HUD (label + icon buttons), hint line, paper tray filling the rest; sheets for Map and Notebook.
+   Theme "Paper and ink": cream paper, ink outlines, hard offset shadows, riso pink + blue. */
 :root{
-  --felt:#2a1e45; --felt-deep:#170f28;
-  --brass:#e6b95c; --brass-dim:#8a672b; --ink:#f5eeff; --muted:#a698c4; --panel:#2c2049; --line:#43345f; --good:#7ee2b8; --bad:#ff7a9c;
+  --paper:#f6eddc; --paper-2:#fbf5e8; --panel:#fffaf0;
+  --ink:#2b2a4c; --muted:#6e6888; --line:#2b2a4c; --soft:#d9ccb2;
+  --pink:#ff5c8a; --pink-ink:#c2275a; --blue:#3d5afe; --sun:#f5b301;
+  --good:#1f9e6e; --bad:#e5484d;
+  --hard:3px 3px 0 var(--ink); --hard-sm:2px 2px 0 var(--ink);
   --font-display:'Lilita One','Arial Rounded MT Bold',system-ui,sans-serif;
   --font-body:'Nunito',ui-rounded,system-ui,sans-serif;
-  color-scheme:dark;
+  color-scheme:light;
 }
 html,body{height:100%}
-body{background:var(--felt-deep);color:var(--ink);font-family:var(--font-body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 .app{height:100%;display:flex;flex-direction:column;gap:6px;padding-inline:16px;padding-block:8px;box-sizing:border-box}
 .hud{display:flex;align-items:center;gap:8px}
 .lvl{display:flex;flex-direction:column;line-height:1.15;min-width:0;flex:1}
-.lvl .w{font-size:.7rem;color:var(--brass);font-weight:800;text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvl .w{font-size:.7rem;color:var(--pink-ink);font-weight:800;text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lvl b{font-family:var(--font-display);font-weight:400;font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lvl .mv{font-size:.75rem;color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums}
 .lvl .mv b{font-family:var(--font-body);font-size:.75rem;color:var(--ink)}
-.btns{display:flex;gap:5px;flex:none}
+.btns{display:flex;gap:6px;flex:none}
 button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
-.ib{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;min-width:40px;padding:0 10px;box-sizing:border-box;background:transparent;border:1px solid var(--line);border-radius:999px;font-weight:800;font-size:.82rem;color:var(--ink)}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.ib{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;min-width:40px;padding:0 10px;box-sizing:border-box;background:var(--panel);border:2px solid var(--ink);border-radius:999px;font-weight:800;font-size:.82rem;color:var(--ink);box-shadow:var(--hard-sm);transition:transform .08s,box-shadow .08s}
 .ib svg{width:18px;height:18px;flex:none}
-.ib:hover:not(:disabled){border-color:var(--brass)}
+.ib:hover:not(:disabled){background:#fff}
+.ib:active:not(:disabled){transform:translate(2px,2px);box-shadow:none}
 .ib:disabled{opacity:.35;cursor:default}
 .ib .t{display:none}
 @media (min-width:720px){.ib .t{display:inline}}
-.ghost{background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-weight:800;font-size:.85rem;color:var(--ink)}
-.ghost:hover{border-color:var(--brass)}
-.solid{background:var(--brass);border:0;border-radius:999px;padding:10px 20px;font-weight:800;color:#2a1a05}
+.ghost{background:var(--panel);border:2px solid var(--ink);border-radius:999px;padding:7px 14px;font-weight:800;font-size:.85rem;color:var(--ink);box-shadow:var(--hard-sm)}
+.ghost:hover{background:#fff}
+.ghost:active{transform:translate(2px,2px);box-shadow:none}
+.solid{background:var(--pink);border:2px solid var(--ink);border-radius:999px;padding:10px 20px;font-weight:800;color:var(--ink);box-shadow:var(--hard-sm)}
+.solid:active{transform:translate(2px,2px);box-shadow:none}
 .hint{margin:0;font-size:.86rem;color:var(--muted);min-height:1.2em;font-weight:700;line-height:1.3}
-.hint b{color:var(--brass)}
+.hint b{color:var(--pink-ink)}
 .stage{flex:1;min-height:0;position:relative}
-#field{display:block;width:100%;height:100%;border-radius:18px;touch-action:none;background:var(--felt);box-shadow:inset 0 0 0 1px var(--line)}
-.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--brass-dim);border-radius:14px;padding:9px 40px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 10px 30px rgba(0,0,0,.45);touch-action:none;cursor:grab;transition:transform .2s ease,opacity .2s ease;animation:drop .3s ease-out;width:max-content;max-width:calc(100% - 24px);text-align:center;z-index:2}
-.toast .k{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--brass);font-weight:800}
+#field{display:block;width:100%;height:100%;border-radius:18px;touch-action:none;background:var(--paper-2);border:2px solid var(--ink);box-sizing:border-box;box-shadow:var(--hard)}
+.toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:var(--panel);border:2px solid var(--ink);border-radius:14px;padding:9px 40px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:var(--hard);touch-action:none;cursor:grab;transition:transform .2s ease,opacity .2s ease;animation:drop .3s ease-out;width:max-content;max-width:calc(100% - 24px);text-align:center;z-index:2}
+.toast .k{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--pink-ink);font-weight:800}
 .toast.leaving{transform:translate(-50%,-140%)!important;opacity:0!important}
 .toast .tx{position:absolute;top:4px;right:4px;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted);font-size:1.3rem;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.toast .tx:hover{color:var(--ink);background:rgba(255,255,255,.08)}
-@media (pointer:coarse){.toast .tx{width:38px;height:38px;top:0;right:0}.toast::after{content:'';width:30px;height:4px;border-radius:2px;background:var(--line);margin-top:3px}}
+.toast .tx:hover{color:var(--ink);background:rgba(43,42,76,.08)}
+@media (pointer:coarse){.toast .tx{width:38px;height:38px;top:0;right:0}.toast::after{content:'';width:30px;height:4px;border-radius:2px;background:var(--soft);margin-top:3px}}
 .toast .v{font-weight:800;font-size:.92rem;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;text-wrap:balance}
 @keyframes drop{from{transform:translate(-50%,-12px);opacity:0}}
 svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
-.ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(14,8,26,.55);border-radius:18px;z-index:3}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:340px;width:100%;box-sizing:border-box;box-shadow:0 20px 50px rgba(0,0,0,.5);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+.ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(246,237,220,.55);border-radius:18px;z-index:3}
+.card{background:var(--panel);border:2px solid var(--ink);border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:340px;width:100%;box-sizing:border-box;box-shadow:5px 5px 0 var(--ink);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pop{from{transform:scale(.85);opacity:0}}
-.card h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:1.6rem;color:var(--brass);text-wrap:balance}
+.card h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:1.6rem;color:var(--pink-ink);text-wrap:balance}
 .card p{margin:0;color:var(--muted);font-weight:700}
-.stars{font-size:2rem;letter-spacing:.15em;color:var(--brass)}
-.off{color:var(--line)}
-.row2{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.sheet{position:fixed;inset:0;background:rgba(10,6,20,.7);display:flex;align-items:center;justify-content:center;padding:12px;z-index:5}
-.sheet-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;overflow:hidden}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
-.sheet-head h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:1.4rem;color:var(--brass)}
+.stars{font-size:2rem;letter-spacing:.15em;color:var(--sun);-webkit-text-stroke:1.5px var(--ink);paint-order:stroke fill}
+.off{color:var(--soft)}
+.row2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.sheet{position:fixed;inset:0;background:rgba(43,42,76,.35);display:flex;align-items:center;justify-content:center;padding:12px;z-index:5}
+.sheet-card{background:var(--panel);border:2px solid var(--ink);border-radius:18px;width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:5px 5px 0 var(--ink)}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:2px solid var(--ink)}
+.sheet-head h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:1.4rem;color:var(--pink-ink)}
 .sheet-body{overflow:auto;padding:10px 16px 16px;display:flex;flex-direction:column;gap:10px;min-height:0}
 .tabs{display:flex;gap:6px;flex-wrap:wrap}
-.tab{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:800;font-size:.8rem;color:var(--muted)}
-.tab[aria-selected="true"]{border-color:var(--brass);color:var(--ink)}
-.box{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:7px}
+.tab{background:transparent;border:2px solid var(--soft);border-radius:999px;padding:5px 12px;font-weight:800;font-size:.8rem;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--ink);background:var(--pink);color:var(--ink)}
+.box{border:2px solid var(--soft);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;background:#fff}
 .box h3{margin:0;font-family:var(--font-display);font-weight:400;font-size:1.15rem;display:flex;align-items:center;gap:8px;justify-content:space-between}
 .box h3 .l{display:flex;align-items:center;gap:8px}
 .box h3 small{font-family:var(--font-body);font-size:.78rem;color:var(--muted);font-weight:800}
-.box.locked{opacity:.5}
+.box.locked{opacity:.55;background:transparent}
 .box p{margin:0;color:var(--muted);font-weight:700;font-size:.88rem}
 .box ul{margin:0;padding-left:1.1em;font-weight:700;font-size:.9rem;line-height:1.45}
 .unk{font-size:.86rem;color:var(--muted);font-weight:700;font-style:italic}
@@ -93,74 +100,77 @@ svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
 .seen span{display:inline-flex;align-items:center;gap:3px}
 .seen .x{color:var(--bad)}
 .aff{display:grid;grid-template-columns:auto repeat(3,1.9em);gap:4px;align-items:center;justify-items:center;font-weight:800;font-size:.9rem;width:max-content}
-.aff .ok{color:var(--good)} .aff .no{color:var(--bad)} .aff .q{color:var(--line)}
-.sheet-foot{padding:10px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.8rem;color:var(--muted);font-weight:700}
-.danger{background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.8rem;font-weight:800;color:var(--muted)}
+.aff .ok{color:var(--good)} .aff .no{color:var(--bad)} .aff .q{color:var(--soft)}
+.sheet-foot{padding:10px 16px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.8rem;color:var(--muted);font-weight:700}
+.danger{background:transparent;border:2px solid var(--soft);border-radius:999px;padding:6px 12px;font-size:.8rem;font-weight:800;color:var(--muted)}
 .danger.armed{border-color:var(--bad);color:var(--bad)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
-.lv{background:transparent;border:1px solid var(--line);border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;gap:2px;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.lv{background:var(--panel);border:2px solid var(--ink);border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;gap:2px;align-items:center;box-shadow:var(--hard-sm)}
+.lv:hover:not(:disabled){background:#fff}
 .lv b{font-family:var(--font-display);font-weight:400;font-size:1.15rem}
-.lv i{font-style:normal;color:var(--brass);font-size:.72rem;letter-spacing:.06em}
-.lv.cur{border-color:var(--brass)}
+.lv i{font-style:normal;color:var(--sun);font-size:.72rem;letter-spacing:.06em;-webkit-text-stroke:.6px var(--ink)}
+.lv i .off{-webkit-text-stroke:0}
+.lv.cur{background:var(--pink)}
 .lv.rmx{border-style:dashed}
-.dots{display:flex;gap:2px;height:6px}.dots span{width:6px;height:6px;border-radius:50%}
-.wdot{display:inline-block;width:.6em;height:.6em;border-radius:50%;flex:none}
-.rmx-head{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin-top:6px}.rmx-head b{font-family:var(--font-display);font-weight:400;color:var(--brass);font-size:1.05rem}.rmx-head span{font-size:.8rem;color:var(--muted);font-weight:700}
+.dots{display:flex;gap:2px;height:6px}.dots span{width:6px;height:6px;border-radius:50%;box-shadow:0 0 0 1px var(--ink)}
+.wdot{display:inline-block;width:.6em;height:.6em;border-radius:50%;flex:none;box-shadow:0 0 0 1.5px var(--ink)}
+.rmx-head{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin-top:6px}.rmx-head b{font-family:var(--font-display);font-weight:400;color:var(--blue);font-size:1.05rem}.rmx-head span{font-size:.8rem;color:var(--muted);font-weight:700}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;font-weight:800;color:var(--muted)}.legend>span{display:inline-flex;align-items:center;gap:5px}
-.lv:disabled{opacity:.35;cursor:default}
+.lv:disabled{opacity:.35;cursor:default;box-shadow:none}
 @media (max-height:480px) and (orientation:landscape){.hint{display:none}.lvl .w{display:none}.app{padding-block:6px}}
 @media (prefers-reduced-motion:reduce){.toast,.card{animation:none}}
 /* Front end: splash card, title screen, main/pause menus, settings. */
-.scene{position:fixed;inset:0;z-index:4;background:var(--felt-deep);overflow:hidden;transition:opacity .45s ease}
+.scene{position:fixed;inset:0;z-index:4;background:var(--paper);overflow:hidden;transition:opacity .45s ease}
 .scene.out{opacity:0;pointer-events:none}
 .scene.out *{pointer-events:none!important}
 #tcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-.splash{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#0b0714;transition:opacity .7s ease}
+.splash{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:var(--paper);transition:opacity .7s ease}
 .splash.gone{opacity:0;pointer-events:none}
-.splash small{font-size:.78rem;font-weight:800;letter-spacing:.38em;text-transform:uppercase;color:var(--brass);opacity:0;animation:splashIn 2.6s .1s ease forwards}
+.splash small{font-size:.78rem;font-weight:800;letter-spacing:.38em;text-transform:uppercase;color:var(--pink-ink);opacity:0;animation:splashIn 2.6s .1s ease forwards}
 .splash b{font-family:var(--font-display);font-weight:400;font-size:clamp(30px,5vw,48px);color:var(--ink);letter-spacing:.04em;opacity:0;animation:splashIn 2.6s .3s ease forwards}
 @keyframes splashIn{0%{opacity:0;transform:translateY(10px)}25%,75%{opacity:1;transform:none}100%{opacity:0}}
 .front{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:clamp(20px,7vh,72px) 16px 20px;gap:clamp(6px,1.6vh,14px);pointer-events:none;visibility:hidden}
 .front.go{visibility:visible}
 .front>*{pointer-events:auto}
-.logo{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(54px,11vw,128px);line-height:1.05;letter-spacing:.02em;display:flex;transition:transform .6s cubic-bezier(.2,.8,.2,1);transform-origin:50% 0}
-.logo span{display:inline-block;background:linear-gradient(#fff4cf 0%,#f2c96a 48%,#c88a2c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:2px #3a2207;filter:drop-shadow(0 6px 0 #2a1a05) drop-shadow(0 16px 26px rgba(0,0,0,.5))}
+.logo{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(46px,9.5vw,116px);line-height:1.08;letter-spacing:.01em;display:flex;transition:transform .6s cubic-bezier(.2,.8,.2,1);transform-origin:50% 0}
+.logo span{display:inline-block;color:var(--pink);-webkit-text-stroke:.06em var(--ink);paint-order:stroke fill;text-shadow:.05em .06em 0 var(--ink)}
+.logo span.b{color:var(--blue)}
 .front.go .logo span{animation:letterDrop .75s cubic-bezier(.3,1.55,.5,1) both}
 @keyframes letterDrop{from{transform:translateY(-140%) scale(.6);opacity:0}}
 .tag{margin:0;color:var(--muted);font-weight:800;font-size:clamp(.85rem,1.6vw,1.05rem);letter-spacing:.04em;opacity:0;text-align:center}
 .front.go .tag{animation:fadeIn .6s 1.1s forwards}
 @keyframes fadeIn{to{opacity:1}}
-.press{margin:auto 0 9vh;font-family:var(--font-display);font-size:clamp(1.1rem,2.4vw,1.5rem);color:var(--ink);opacity:0;text-shadow:0 2px 0 rgba(0,0,0,.45);text-align:center}
+.press{margin:auto 0 max(22vh,170px);padding:8px 22px;background:var(--panel);border:2.5px solid var(--ink);border-radius:999px;box-shadow:4px 4px 0 var(--ink);font-family:var(--font-display);font-size:clamp(1.05rem,2.2vw,1.4rem);color:var(--ink);opacity:0;text-align:center}
 .front.go .press{animation:fadeIn .5s 1.5s forwards,pulse 1.6s 2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.35}}
 .front.menu-on .logo{transform:scale(.8)}
 .front.menu-on .press{display:none}
-.menu{display:flex;flex-direction:column;gap:10px;width:min(320px,100%)}
+.menu{display:flex;flex-direction:column;gap:12px;width:min(320px,100%)}
 .front .menu{margin:clamp(0px,1vh,12px) 0 auto}
-.mbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50px;padding:7px 18px;border-radius:16px;border:2px solid var(--line);background:rgba(44,32,73,.86);color:var(--ink);font-family:var(--font-display);font-size:1.22rem;letter-spacing:.02em;line-height:1.15;box-shadow:0 4px 0 #120b20;transition:transform .12s,border-color .12s;animation:menuIn .45s cubic-bezier(.2,.9,.3,1.2) both}
+.mbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50px;padding:7px 18px;border-radius:16px;border:2.5px solid var(--ink);background:var(--panel);color:var(--ink);font-family:var(--font-display);font-size:1.22rem;letter-spacing:.02em;line-height:1.15;box-shadow:4px 4px 0 var(--ink);transition:transform .1s,box-shadow .1s,background .1s;animation:menuIn .45s cubic-bezier(.2,.9,.3,1.2) both}
 .mbtn small{font-family:var(--font-body);font-size:.74rem;font-weight:800;color:var(--muted);letter-spacing:.01em}
-.mbtn:hover,.mbtn:focus{border-color:var(--brass);transform:translateY(-2px);outline:none}
-.mbtn:active{transform:translateY(2px);box-shadow:0 2px 0 #120b20}
-.mbtn.primary{background:linear-gradient(#f6d382,#d9a23f);border-color:#fbe3a6;color:#2a1a05;box-shadow:0 4px 0 #7a5418}
-.mbtn.primary small{color:#5e3f0e}
-.mbtn.primary:hover,.mbtn.primary:focus{border-color:#fff}
-.mbtn.primary:active{box-shadow:0 2px 0 #7a5418}
+.mbtn:hover,.mbtn:focus{background:#fff;transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink);outline:none}
+.mbtn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.mbtn.primary{background:var(--pink)}
+.mbtn.primary small{color:var(--ink);opacity:.75}
+.mbtn.primary:hover,.mbtn.primary:focus{background:#ff7ba0}
 @keyframes menuIn{from{opacity:0;transform:translateY(16px)}}
-.ver{position:absolute;right:14px;bottom:10px;font-size:.72rem;font-weight:800;color:rgba(166,152,196,.55);pointer-events:none}
-.modal{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,6,20,.72)}
+.ver{position:absolute;right:14px;bottom:10px;font-size:.72rem;font-weight:800;color:var(--muted);pointer-events:none}
+.modal{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(43,42,76,.35)}
 .modal.under{z-index:4}
 .modal .card{max-width:360px;gap:14px}
 .modal .card .menu{width:100%}
 .modal .card.wide{max-width:440px;align-items:stretch;text-align:left}
 .modal .card.wide h2{text-align:center}
 .setrow{display:flex;align-items:center;justify-content:space-between;gap:14px;font-weight:800;min-height:40px}
-.setrow input[type=range]{flex:1;accent-color:var(--brass);min-width:0}
+.setrow input[type=range]{flex:1;accent-color:var(--pink);min-width:0}
 .setrow .val{width:2.6em;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-.seg button{background:transparent;border:0;padding:7px 14px;font-weight:800;font-size:.85rem;color:var(--muted)}
-.seg button[aria-pressed=true]{background:var(--brass);color:#2a1a05}
+.seg{display:flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;box-shadow:var(--hard-sm)}
+.seg button{background:var(--panel);border:0;padding:6px 14px;font-weight:800;font-size:.85rem;color:var(--muted)}
+.seg button+button{border-left:2px solid var(--ink)}
+.seg button[aria-pressed=true]{background:var(--blue);color:#fff}
 .credits{display:flex;flex-direction:column;gap:12px;text-align:center}
-.credits h3{margin:0;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+.credits h3{margin:0;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--pink-ink)}
 .credits p{margin:2px 0 0;color:var(--ink);font-weight:700}
 .credits small{color:var(--muted);font-weight:700}
 </style>
@@ -181,7 +191,7 @@ svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
   </header>
   <p class="hint" id="hint"></p>
   <main class="stage">
-    <canvas id="field" aria-label="Orbwork play field"></canvas>
+    <canvas id="field" aria-label="Blobbiverse play field"></canvas>
     <div class="toast" id="toast" hidden></div>
     <div class="ov" id="done" hidden>
       <div class="card">
@@ -204,8 +214,8 @@ svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
 <div class="scene" id="scene">
   <canvas id="tcv" aria-hidden="true"></canvas>
   <div class="front" id="front">
-    <h1 class="logo" id="logo" aria-label="Orbwork"></h1>
-    <p class="tag">A puzzle game about googly-eyed orblings</p>
+    <h1 class="logo" id="logo" aria-label="Blobbiverse"></h1>
+    <p class="tag">A puzzle game about googly-eyed blobs</p>
     <nav class="menu" id="menu" hidden aria-label="Main menu"></nav>
     <p class="press" id="press">Click or press any key</p>
   </div>
@@ -251,6 +261,9 @@ svg.chip{width:1.4em;height:1.4em;vertical-align:-.35em;flex:none}
 (() => {
 const $ = s => document.querySelector(s);
 const cv = $('#field'); let ctx = cv.getContext('2d');  // let: the title screen borrows the orb renderer
+const INK='#2b2a4c';   // theme ink: outlines, hard shadows, labels
+const isDarkHex = h => { const n=parseInt(h.slice(1),16); return (.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255 < .45; };
+const boardDark = () => isDarkHex(world().bg[1]);   // the Lighthouse is the one night-time board
 function mix(a,b,t){ const pa=parseInt(a.slice(1),16), pb=parseInt(b.slice(1),16);
   const c=s=>Math.round(((pa>>s)&255)*(1-t)+((pb>>s)&255)*t); return '#'+((1<<24)|(c(16)<<16)|(c(8)<<8)|c(0)).toString(16).slice(1); }
 
@@ -276,8 +289,8 @@ function react1(a,b){
 }
 const name1 = t => kindOf(t)==='pip' ? `${tier(t)} eye${tier(t)>1?'s':''}` : W1K[t].name;
 const W1 = {
-  id:'w1', name:'The Hatchery', short:'Hatchery', gateName:'Gate', bg:['#3a2a60','#1d1433'],
-  blurb:'Where every orbling starts out. Learn how the five kinds behave.',
+  id:'w1', name:'The Hatchery', short:'Hatchery', gateName:'Gate', bg:['#fff6e6','#f4e2c4'],
+  blurb:'Where every blob starts out. Learn how the five kinds behave.',
   gatePlate:['#7c8db0','#56658a','#353f5c'],
   look(o){ const k=kindOf(o.t), d=W1K[k];
     return {hex:d.hex, hi:d.hi, lo:d.lo, sheen:d.sheen, bounce:d.bounce||.3, face:k==='pip'?'pip':'glyph', n:tier(o.t), voice:k==='pip'?'pip'+tier(o.t):k}; },
@@ -289,10 +302,10 @@ const W1 = {
   ghost(req){ return req; },
   seen(ts,res){ const key=ts.slice().sort().join('+'); S.seen['w1|'+key] = res.fail ? 'x' : (res.spawn.map(s=>s.t).join(',')||'-'); },
   levels:[
-    {name:'First pop',     orbs:['p1','p1'],             gate:['p2'],           par:1, hint:'Drag both orbs into the <b>Press</b>.'},
+    {name:'First pop',     orbs:['p1','p1'],             gate:['p2'],           par:1, hint:'Drag both blobs into the <b>Press</b>.'},
     {name:'Climb',         orbs:['p1','p1','p1','p1'],   gate:['p3'],           par:3, hint:'The <b>Gate</b> shows what it wants. Build up to it.'},
     {name:'Odd one out',   orbs:['p1','p1','p2'],        gate:['p3'],           par:2, hint:'Not every pair gets along.'},
-    {name:'Meet Twin',     orbs:['tw','p2'],             gate:['p3'],           par:2, hint:'A new orb. Press it with something and watch.'},
+    {name:'Meet Twin',     orbs:['tw','p2'],             gate:['p3'],           par:2, hint:'A new blob. Press it with something and watch.'},
     {name:'Echoes',        orbs:['tw','tw','p1'],        gate:['p3'],           par:4, hint:''},
     {name:'Meet Split',    orbs:['sp','p3'],             gate:['p2','p2'],      par:1, hint:'Another stranger. What does it do?'},
     {name:'Spare parts',   orbs:['p3','sp','tw','p1'],   gate:['p2','p2','p2'], par:2, hint:'You won’t need everything.'},
@@ -300,7 +313,7 @@ const W1 = {
     {name:'Bite and copy', orbs:['vo','tw','p3'],        gate:['p2','p2'],      par:2, hint:''},
     {name:'Meet Wild',     orbs:['wi','p2'],             gate:['p3'],           par:1, hint:'Shiny. What does it match?'},
     {name:'Wild card',     orbs:['wi','tw','p1'],        gate:['p3'],           par:3, hint:''},
-    {name:'Four',          orbs:['p1','tw','tw','wi'],   gate:['p4'],           par:5, hint:'Scarce orbs. Plan before you press.'},
+    {name:'Four',          orbs:['p1','tw','tw','wi'],   gate:['p4'],           par:5, hint:'Scarce blobs. Plan before you press.'},
     {name:'Scarcity',      orbs:['p3','sp','vo','tw'],   gate:['p1','p1','p2'], par:3, hint:''},
     {name:'Six',           orbs:['p3','tw','tw','wi'],   gate:['p6'],           par:5, hint:'The biggest pip there is.'},
   ],
@@ -312,8 +325,8 @@ const along = (a,b) => !((a==='r'&&b==='b')||(a==='b'&&b==='r'));
 const affKey = (a,b) => [a,b].sort().join('');
 const name2 = t => `${C2[t[0]].name} · ${t[1]==='h'?'happy':'grumpy'}`;
 const W2 = {
-  id:'w2', name:'The Commons', short:'Commons', gateName:'Friendship bench', bg:['#1f4a4f','#0f2427'],
-  blurb:'Orblings in three colors, with moods. Who gets along with whom?',
+  id:'w2', name:'The Commons', short:'Commons', gateName:'Friendship bench', bg:['#eaf6ee','#cfe8d8'],
+  blurb:'Blobs in three colors, with moods. Who gets along with whom?',
   gatePlate:['#e48aa0','#b5566f','#7a2f45'],
   look(o){ const happy=o.t[1]==='h'; return {hex:C2[o.t[0]].hex, face:'critter', mood:happy?'happy':'grumpy', tuft:true, bounce:happy?.42:.15, voice:happy?'happy':'grumpy'}; },
   radius(){ return R; },
@@ -357,8 +370,8 @@ const norm3 = (line,s) => line==='G' ? (s==='gG'?'Gg':s) : (s==='WR'?'RW':s);
 function summary(kids){ const c={}; kids.forEach(t=>{ const p=phen(t); c[p]=(c[p]||0)+1; });
   return Object.keys(PH).filter(p=>c[p]).map(p=>`${c[p]} ${PH[p].name}`).join(' · '); }
 const W3 = {
-  id:'w3', name:'The Nursery', short:'Nursery', gateName:'Cradle', bg:['#36472a','#161f10'],
-  blurb:'Two families of orblings. Parents pass on hidden halves to their babies.',
+  id:'w3', name:'The Nursery', short:'Nursery', gateName:'Cradle', bg:['#f3f6dc','#dfe8b9'],
+  blurb:'Two families of blobs. Parents pass on hidden halves to their babies.',
   gatePlate:['#f2e2c4','#cdb08a','#937652'],
   look(o){ return {hex:PH[phen(o.t)].hex, face:'critter', mood:'happy', line:o.t[0], al:alle(o.t), baby:!!o.baby, known:!!o.known, bounce:o.baby?.45:.3, voice:o.baby?'baby':'adult'}; },
   radius(o){ return o.baby ? R*.8 : R; },
@@ -404,8 +417,8 @@ const hungry = t => t!=='pe' && t[1]==='h';
 const bites = (a,b) => hungry(a) && b!=='pe' && EATS[a[0]]===b[0];
 const name4 = t => t==='pe' ? 'Pebble' : `${RF[t[0]].name} · ${t[1]==='h'?'hungry':'full'}`;
 const W4 = {
-  id:'w4', name:'The Reef', short:'Reef', gateName:'Calm pool', bg:['#134a63','#081e2b'],
-  blurb:'Tide pools full of orblings, and some of them eat each other. Who eats whom?',
+  id:'w4', name:'The Reef', short:'Reef', gateName:'Calm pool', bg:['#e4f3f7','#c3e1ea'],
+  blurb:'Tide pools full of blobs, and some of them eat each other. Who eats whom?',
   gatePlate:['#9fd8d0','#5aa49e','#2f6763'],
   look(o){ const t=o.t;
     if (t==='pe') return {hex:RF.p.hex, face:'critter', mood:'pebble', bounce:.1, voice:'pebble'};
@@ -450,8 +463,8 @@ const CH = {r:{name:'Red',hex:'#ff5a5f'}, b:{name:'Blue',hex:'#4a90ff'}, y:{name
 const SOLF = ['Do','Re','Mi','Fa','Sol','La','Ti'], SEMI=[0,2,4,5,7,9,11];
 const noteOf = t => +t[1];
 const W5 = {
-  id:'w5', name:'The Choir', short:'Choir', gateName:'Stage', bg:['#4a2347','#1c0c1e'],
-  blurb:'Every orbling sings one note, and they change each other’s notes. Order matters here.',
+  id:'w5', name:'The Choir', short:'Choir', gateName:'Stage', bg:['#f6e9f3','#e3cde0'],
+  blurb:'Every blob sings one note, and they change each other’s notes. Order matters here.',
   gatePlate:['#c9a0dc','#8e5aa8','#562f6b'],
   look(o){ return {hex:CH[o.t[0]].hex, face:'critter', mood:'sing', badge:SOLF[noteOf(o.t)-1], bounce:.35, voice:'sing'+noteOf(o.t)}; },
   radius(){ return R; },
@@ -474,7 +487,7 @@ const W5 = {
   onWin(slots){ slots.forEach((o,k)=>{ const f=noteF(SEMI[noteOf(o.t)-1]); tone(f,f,.5,'triangle',.2,.01,.15+k*.32); tone(f*2,f*2,.4,'sine',.06,.01,.15+k*.32); }); },
   levels:[
     {name:'Warm up',          orbs:['y1','r1'],                 machines:['row2'],        gate:['2'],                  par:1, hint:'The <b>Stage</b> wants a Re. Nobody sings it yet. Try the <b>Rehearsal row</b>.'},
-    {name:'Going down',       orbs:['b3','r2','r1'],            machines:['row2'],        gate:['1','1'],              par:1, hint:'Pick an orbling up to hear its note.'},
+    {name:'Going down',       orbs:['b3','r2','r1'],            machines:['row2'],        gate:['1','1'],              par:1, hint:'Pick a blob up to hear its note.'},
     {name:'Copycat',          orbs:['g5','r1'],                 machines:['row2'],        gate:['5','5'],              par:1, hint:''},
     {name:'Order matters',    orbs:['y1','g2','r1'],            machines:['row3'],        gate:['3'],                  par:1, hint:'Three in a row now. Who stands where?'},
     {name:'Three blind mice', orbs:['b4','b3','r2','r3'],       machines:['row3'],        gate:['3','2','1'],          par:1, hint:'Mi, Re, Do, in one rehearsal.'},
@@ -503,7 +516,7 @@ const QT = {
     {name:'Grand queue',      orbs:['*k=tw','*c=b,m=h,q=e','*c=y,m=h,q=s','*c=r,m=h,q=z','*c=y,m=h,q=e'], machines:['press','meet','coffee'], gateKind:'booth', gate:['*c=y','*c=y','*c=r','*c=b','*c=r'], par:3, hint:'Three worlds, five seats.'},
   ],
   tower:[
-    {name:'Two high',      tubes:[[2,'r1'],[2,'b2']], gate:['b','r'], par:2, hint:'Grab the top orbling of a tube and drop it on the <b>Summit</b>.'},
+    {name:'Two high',      tubes:[[2,'r1'],[2,'b2']], gate:['b','r'], par:2, hint:'Grab the top blob of a tube and drop it on the <b>Summit</b>.'},
     {name:'Big on bottom', tubes:[[3,'y1','r2'],[3,'b3']], gate:['b','r','y'], par:3, hint:'Who is willing to sit on whom?'},
     {name:'Three high',    tubes:[[3,'r2','y1'],[3,'b3']], gate:['b','r','y'], par:4, hint:''},
     {name:'Prickly',       tubes:[[3,'r3','y1x'],[3,'b2']], gate:['r','b','y'], par:5, hint:'Nobody wants to sit on that crown.'},
@@ -523,7 +536,7 @@ const QT = {
 };
 const QJ={
  queue:[
-  {name:'Cutting in',  orbs:['rp','yz','bz'], machines:[], gate:['y','r','b'], par:3, hint:'Drop orblings near the line. They join at the <b>back</b>, one at a time.'},
+  {name:'Cutting in',  orbs:['rp','yz','bz'], machines:[], gate:['y','r','b'], par:3, hint:'Drop blobs near the line. They join at the <b>back</b>, one at a time.'},
   {name:'Me first',    orbs:['re','yp','bz'], machines:[], gate:['y','r','b'], par:3, hint:''},
   {name:'Wait for me', orbs:['rz','yz','rc'], machines:[], gate:['r','y','r'], par:3, hint:''},
   {name:'Wake up',     orbs:['bc','rc','bc'], machines:['coffee'], gate:['b','r','b'], par:4, hint:'Someone could use a <b>Coffee</b>.'},
@@ -535,7 +548,7 @@ const QJ={
   {name:'Cheer up, Eager', orbs:['*c=b,m=g,q=e','*c=r,m=h,q=e','*c=y,m=h,q=p'], machines:['meet'], gateKind:'line', gate:['*c=b','*c=r','*c=y'], par:4, hint:'Moods from the Commons. Does a grumpy Eager still rush ahead?'},
   {name:'Make them sulk',  orbs:['*c=r,m=g,q=e','*c=b,m=h,q=e','*c=b,m=g,q=c'], machines:['meet'], gateKind:'line', gate:['*c=r','*c=b','*c=b'], par:4, hint:'Sometimes a grump is exactly what the line needs.'},
   {name:'Campfire line',   orbs:['*c=r,m=h,q=c','*c=r,m=h,q=c','*c=r,m=h,q=e','*c=y,m=g,q=e'], machines:['camp'], gateKind:'line', gate:['*c=y','*c=r','*c=r','*c=r'], par:5, hint:''},
-  {name:'Copy and cheer',  orbs:['*k=tw','*c=b,m=h,q=e','*c=y,m=g,q=e','*c=y,m=h,q=c'], machines:['press','meet'], gateKind:'line', gate:['*c=y','*c=b','*c=y','*c=y'], par:6, hint:'Four spots, three orblings.'},
+  {name:'Copy and cheer',  orbs:['*k=tw','*c=b,m=h,q=e','*c=y,m=g,q=e','*c=y,m=h,q=c'], machines:['press','meet'], gateKind:'line', gate:['*c=y','*c=b','*c=y','*c=y'], par:6, hint:'Four spots, three blobs.'},
   {name:'Coffee for a grump', orbs:['*c=y,m=h,q=p','*c=y,m=h,q=p','*c=b,m=g,q=z'], machines:['coffee','meet'], gateKind:'line', gate:['*c=b','*c=y','*c=y'], par:6, hint:''},
   {name:'Pillow fight',    orbs:['*c=b,m=h,q=e','*c=r,m=g,q=e','*c=r,m=h,q=c','*c=b,m=h,q=p'], machines:['pillow','camp'], gateKind:'line', gate:['*c=r','*c=b','*c=r','*c=b'], par:6, hint:''},
   {name:'Grand queue',     orbs:['*k=tw','*c=r,m=h,q=c','*c=b,m=h,q=p','*c=r,m=g,q=c','*c=y,m=h,q=p'], machines:['press','meet','coffee'], gateKind:'line', gate:['*c=r','*c=r','*c=b','*c=r','*c=y'], par:8, hint:'Three worlds, five spots.'},
@@ -547,8 +560,8 @@ QT.queue=QJ.queue; QT.queueRemix=QJ.queueRemix;
 /* ======================= WORLD 5 · THE QUEUE ======================= */
 const QP={z:'Sleepy', c:'Clingy', p:'Pushy', e:'Eager'};
 const WQ = {
-  id:'wq', name:'The Queue', short:'Queue', gateName:'Ticket line', bg:['#4b3b22','#1d150a'],
-  blurb:'Everyone wants a ticket, and every orbling has its own idea about where to stand.',
+  id:'wq', name:'The Queue', short:'Queue', gateName:'Ticket line', bg:['#fbefd9','#ecd6ae'],
+  blurb:'Everyone wants a ticket, and every blob has its own idea about where to stand.',
   gatePlate:['#f2c97e','#c48c3e','#7c5220'],
   look(o){ return {hex:C2[o.t[0]].hex, face:'critter', mood:'happy', persona:o.t[1], bounce:o.t[1]==='e'?.5:o.t[1]==='z'?.15:.32, voice:'q'+o.t[1]}; },
   radius(){ return R; },
@@ -567,8 +580,8 @@ const WQ = {
 /* ======================= WORLD 6 · THE TOWER ======================= */
 const towerT = t => { const m=t.match(/^([rybg])(\d)([xf]?)$/); return m ? `*c=${m[1]},e=${m[2]}`+(m[3]?`,h=${m[3]}`:'') : t; };
 const WT = {
-  id:'wt', name:'The Tower', short:'Tower', gateName:'Summit', bg:['#2c3a57','#10172a'],
-  blurb:'No floor here. Grab the top orbling of a tube and stack your way to the Summit.',
+  id:'wt', name:'The Tower', short:'Tower', gateName:'Summit', bg:['#e9eef6','#ccd6e6'],
+  blurb:'No floor here. Grab the top blob of a tube and stack your way to the Summit.',
   gatePlate:['#e4ebf6','#9fadc6','#5d6a85'],
   look:o=>RXW.look(o), radius:o=>RXW.radius(o), label:(t,o)=>RXW.label(t,o),
   accepts(spec,o){ return rxMatch(spec,RXP(o.t)); },
@@ -595,7 +608,7 @@ function lightReact(mt, ts){
 /* weight = eyes. Balance when the sum of weight x distance is the same on both sides. Everyone must be aboard. */
 const ssGate = locked => [-3,-2,-1,0,1,2,3].map(p=>locked[p]!==undefined ? 'L:w'+locked[p] : 'any');
 const WS = {
-  id:'ws', name:'The Seesaw', short:'Seesaw', gateName:'Seesaw', bg:['#3c4a2a','#161d0f'],
+  id:'ws', name:'The Seesaw', short:'Seesaw', gateName:'Seesaw', bg:['#eff3df','#d6e0bd'],
   blurb:'Everyone wants a ride. Get them all aboard and keep it level.',
   gatePlate:['#e7c38d','#b98a4f','#7a5528'],
   look(o){ const n=+o.t[1]; return {hex:'#ff9f6b', hi:'#ffe2cc', lo:'#b4521f', face:'pip', n, bounce:.25, voice:'pip'+n}; },
@@ -616,8 +629,8 @@ const WS = {
 const LCOL={r:'#ff4d4d', g:'#5dff7a', b:'#4d8bff', rg:'#ffe14d', rb:'#ff5ce0', gb:'#4de8ff', rgb:'#fffbea'};
 const LNAME={r:'Red', g:'Green', b:'Blue', rg:'Yellow', rb:'Magenta', gb:'Cyan', rgb:'White'};
 const WL = {
-  id:'wl', name:'The Lighthouse', short:'Lighthouse', gateName:'Lantern', bg:['#1d2346','#07091a'],
-  blurb:'Orblings made of light, and glass that light passes through. What is a color made of?',
+  id:'wl', name:'The Lighthouse', short:'Lighthouse', gateName:'Lantern', bg:['#2f2e55','#1b1a33'],
+  blurb:'Blobs made of light, and glass that light passes through. What is a color made of?',
   gatePlate:['#d9dde8','#8f97ad','#4b5269'],
   look(o){ const glass=o.t[0]==='F', c=o.t.slice(1);
     return glass ? {hex:LCOL[c], face:'critter', mood:'happy', glass:true, bounce:.2, voice:'glass'} : {hex:LCOL[c], face:'critter', mood:'happy', glow:true, bounce:.4, voice:'light'}; },
@@ -661,7 +674,7 @@ function qJoin(line, o){
 
 
 
-/* ===== REMIX CORE: trait-based orblings shared by every remix level ===== */
+/* ===== REMIX CORE: trait-based blobs shared by every remix level ===== */
 /* traits: k special (tw sp vo wi) · e eyes 1-6 · c color r y b g · m mood h g · a genes (two of Y R B) · s species s j g p · u hunger h f · n note 1-7 */
 const RXP = t => { const o={}; t.slice(1).split(',').forEach(kv=>{ if(!kv) return; const i=kv.indexOf('='); const k=kv.slice(0,i), v=kv.slice(i+1); o[k]=(k==='e'||k==='n')?+v:v; }); return o; };
 const RXF = o => '*'+Object.keys(o).filter(k=>o[k]!==undefined&&k!=='baby').sort().map(k=>k+'='+o[k]).join(',');
@@ -792,8 +805,8 @@ function rxValidate(kind, seat){            // seat: trait objects in gate order
 const RXL = {
   1:[ // The Commons · Remix
     {name:'A grump spoils it', orbs:['*c=r,e=1,m=h','*c=r,e=1,m=g','*c=y,e=1,m=h'], machines:['press','meet'], gateKind:'bench', gate:['*c=r,e=2'], par:2, hint:'Eyes from the Hatchery, moods from the Commons. What does a grump do in the Press?'},
-    {name:'Same color only', orbs:['*c=r,e=1,m=h','*c=y,e=1,m=h','*c=y,e=1,m=h','*c=b,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=y,e=2','*c=r'], par:1, hint:'Not every pair of one-eyed orblings will fuse.'},
-    {name:'Copy a friend', orbs:['*k=tw','*k=tw','*c=b,e=2,m=h','*c=y,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=b,e=2','*c=b,e=2','*c=y,e=2'], par:3, hint:'Will Twin copy an orbling from another world?'},
+    {name:'Same color only', orbs:['*c=r,e=1,m=h','*c=y,e=1,m=h','*c=y,e=1,m=h','*c=b,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=y,e=2','*c=r'], par:1, hint:'Not every pair of one-eyed blobs will fuse.'},
+    {name:'Copy a friend', orbs:['*k=tw','*k=tw','*c=b,e=2,m=h','*c=y,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=b,e=2','*c=b,e=2','*c=y,e=2'], par:3, hint:'Will Twin copy a blob from another world?'},
     {name:'Cheer, then split', orbs:['*k=sp','*c=r,e=4,m=g','*c=y,e=2,m=h'], machines:['press','meet'], gateKind:'bench', gate:['*c=r,e=3','*c=y','*c=r,e=3'], par:2, hint:'Does Split care about moods?'},
     {name:'Void and friends', orbs:['*k=vo','*c=b,e=2,m=g','*c=y,e=1,m=h','*c=r,e=1,m=g'], machines:['press','meet'], gateKind:'bench', gate:['*c=b,e=1','*c=y,e=1','*c=r,e=1'], par:3, hint:''},
     {name:'Campfire forge', orbs:['*k=wi','*c=r,e=2,m=g','*c=r,e=2,m=g','*c=y,e=1,m=h','*c=y,e=1,m=h'], machines:['press','camp'], gateKind:'bench', gate:['*c=r,e=4','*c=y,e=2'], par:4, hint:'Fuse first, or cheer first?'},
@@ -814,7 +827,7 @@ const RXL = {
     {name:'Wild growth', orbs:['*k=wi','*e=2,s=j,u=h','*e=2,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*e=2,s=j'], par:1, hint:''},
     {name:'Size matters', orbs:['*e=2,s=s,u=h','*e=1,s=j,u=h','*e=3,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['pool3'], gateKind:'calm', gate:['*s=s','*s=j','*s=g'], par:1, hint:'One tide. Pick who goes in carefully.'},
     {name:'Copy the prey', orbs:['*k=tw','*e=3,s=s,u=h','*e=1,s=j,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*s=s','*s=j'], par:2, hint:''},
-    {name:'Feed after you fuse', orbs:['*e=1,s=s,u=h','*e=1,s=j,u=h','*e=1,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*e=1,s=s','*e=2,s=j','*e=2,s=g'], par:2, hint:'Order matters: does a fused orbling stay full?'},
+    {name:'Feed after you fuse', orbs:['*e=1,s=s,u=h','*e=1,s=j,u=h','*e=1,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*e=1,s=s','*e=2,s=j','*e=2,s=g'], par:2, hint:'Order matters: does a fused blob stay full?'},
     {name:'Grand reef', orbs:['*k=tw','*e=2,s=s,u=h','*e=3,s=j,u=h','*e=1,s=g,u=h','*e=2,s=g,u=h','*s=p'], machines:['press','pool3'], gateKind:'calm', gate:['*s=j','*s=g','*s=s','any','*s=s'], par:2, hint:'Five seats in the Calm pool.'},
   ],
   4: QT.queueRemix,
@@ -888,15 +901,15 @@ const RULES = {
   'w1:split':{g:'sp', text:'Cracks a pip into two pips, each with one eye fewer.'},
   'w1:splitf':{g:'sp', text:'Won’t crack a one-eyed pip, or anything that isn’t a pip.'},
   'w1:bite':{g:'vo', text:'Shrinks a pip by one eye. A one-eyed pip vanishes completely.'},
-  'w1:voidf':{g:'vo', text:'Only bites pips. Other orbs are left alone.'},
+  'w1:voidf':{g:'vo', text:'Only bites pips. Other blobs are left alone.'},
   'w1:wild':{g:'wi', text:'Counts as a match for any pip and fuses with it, adding an eye.'},
   'w1:wildf':{g:'wi', text:'Only fuses with pips, and never past six eyes.'},
-  'w2:cheer':{g:'meet', text:'Orblings that get along cheer each other up.'},
+  'w2:cheer':{g:'meet', text:'Blobs that get along cheer each other up.'},
   'w2:friends':{g:'meet', text:'Two happy friends stay happy together.'},
   'w2:clash':{g:'meet', text:'When clashing colors meet, both turn grumpy.'},
-  'w2:sulk':{g:'meet', text:'Two grumpy orblings just sulk. Nothing changes.'},
+  'w2:sulk':{g:'meet', text:'Two grumpy blobs just sulk. Nothing changes.'},
   'w2:camp':{g:'camp', text:'Around the Campfire, the mood most of them share wins.'},
-  'w2:benchMood':{g:'bench', text:'Grumpy orblings refuse to sit on the bench.'},
+  'w2:benchMood':{g:'bench', text:'Grumpy blobs refuse to sit on the bench.'},
   'w2:benchClash':{g:'bench', text:'Neighbors on the bench have to get along.'},
   'w3:clutch':{g:'nest', text:'Each baby gets one ear (or petal) from each parent. A clutch of four covers every combination.'},
   'w3:oneclutch':{g:'nest', text:'Each Nest raises only one clutch.'},
@@ -907,11 +920,11 @@ const RULES = {
   'w4:eats':{g:'chain', text:'Spiky eats Jelly.'},
   'w4:eatj':{g:'chain', text:'Jelly eats Glow.'},
   'w4:eatg':{g:'chain', text:'Glow eats Spiky.'},
-  'w4:full':{g:'pool', text:'Once an orbling has eaten, it’s full and won’t eat again.'},
+  'w4:full':{g:'pool', text:'Once a blob has eaten, it’s full and won’t eat again.'},
   'w4:together':{g:'pool', text:'Everyone in the Tide pool eats at the same moment, so a hunter can be eaten while it eats.'},
-  'w4:nohunt':{g:'pool', text:'Orblings only eat the neighbor right next to them, and only their own kind of food.'},
-  'w4:allfull':{g:'pool', text:'Full orblings just float there. Nothing happens.'},
-  'w4:calm':{g:'calm', text:'The Calm pool only stays calm if no hungry orbling sits next to its food.'},
+  'w4:nohunt':{g:'pool', text:'Blobs only eat the neighbor right next to them, and only their own kind of food.'},
+  'w4:allfull':{g:'pool', text:'Full blobs just float there. Nothing happens.'},
+  'w4:calm':{g:'calm', text:'The Calm pool only stays calm if no hungry blob sits next to its food.'},
   'w4:pebble':{g:'calm', text:'Pebbles never eat and never get eaten. They keep neighbors apart.'},
   'w5:right':{g:'row', text:'In the Rehearsal row, each singer changes the note of the singer on its right.'},
   'w5:order':{g:'row', text:'The row sings from left to right, so a changed singer passes on its new note.'},
@@ -934,32 +947,32 @@ const RULES = {
   'wl:clear':{g:'glass', text:'Light that matches the glass passes straight through.'},
   'wl:filter':{g:'glass', text:'Glass keeps only the part of a light it shares, and drops the rest.'},
   'wl:dark':{g:'glass', text:'If a glass shares nothing with a light, the light goes dark.'},
-  'wq:join':{g:'persona', text:'Orblings join the Ticket line at the back, one at a time, and react the moment they arrive.'},
+  'wq:join':{g:'persona', text:'Blobs join the Ticket line at the back, one at a time, and react the moment they arrive.'},
   'wq:z':{g:'persona', text:'Sleepy never moves.'},
-  'wq:c':{g:'persona', text:'Clingy joins right behind the last orbling of its own color.'},
+  'wq:c':{g:'persona', text:'Clingy joins right behind the last blob of its own color.'},
   'wq:p':{g:'persona', text:'Pushy cuts one place forward.'},
   'wq:e':{g:'persona', text:'Eager jumps straight to the front.'},
-  'wq:coffee':{g:'cup', text:'Coffee wakes an orbling up one step: Sleepy, then Clingy, then Pushy, then Eager.'},
-  'wq:pillow':{g:'cup', text:'A Pillow calms an orbling down one step, back toward Sleepy.'},
+  'wq:coffee':{g:'cup', text:'Coffee wakes a blob up one step: Sleepy, then Clingy, then Pushy, then Eager.'},
+  'wq:pillow':{g:'cup', text:'A Pillow calms a blob down one step, back toward Sleepy.'},
   'wq:maxed':{g:'cup', text:'Eager can\u2019t get any more awake.'},
   'wq:floored':{g:'cup', text:'Sleepy can\u2019t get any sleepier.'},
   'wt:size':{g:'stack', text:'Nobody will sit on someone smaller than themselves.'},
-  'wt:prickly':{g:'stack', text:'Prickly orblings won\u2019t carry anyone.'},
-  'wt:sturdy':{g:'stack', text:'Sturdy orblings carry anyone, whatever their size.'},
-  'wt:tools':{g:'stack', text:'Hatchery tools only work on orblings, not on each other.'},
-  'rx:sulkQueue':{g:'mix', text:'Grumpy orblings sulk when they join the line. They don\u2019t react at all.'},
-  'rx:grumpCarry':{g:'mix', text:'A grumpy orbling refuses to carry anyone.'},
-  'rx:clashStack':{g:'mix', text:'Orblings whose colors clash won\u2019t stack on each other.'},
+  'wt:prickly':{g:'stack', text:'Prickly blobs won\u2019t carry anyone.'},
+  'wt:sturdy':{g:'stack', text:'Sturdy blobs carry anyone, whatever their size.'},
+  'wt:tools':{g:'stack', text:'Hatchery tools only work on blobs, not on each other.'},
+  'rx:sulkQueue':{g:'mix', text:'Grumpy blobs sulk when they join the line. They don\u2019t react at all.'},
+  'rx:grumpCarry':{g:'mix', text:'A grumpy blob refuses to carry anyone.'},
+  'rx:clashStack':{g:'mix', text:'Blobs whose colors clash won\u2019t stack on each other.'},
   'rx:twinStack':{g:'mix', text:'Twin dropped on someone turns into a copy of them, on top.'},
   'rx:voidStack':{g:'mix', text:'Void dropped on someone takes away one of their eyes.'},
   'rx:wildStack':{g:'mix', text:'Wild dropped on someone gives them an extra eye.'},
   'rx:eatStack':{g:'mix', text:'A hungry hunter dropped onto its food eats it and takes its place.'},
-  'rx:twinAny':{g:'mix', text:'Twin copies any orbling, from any world, traits and all.'},
+  'rx:twinAny':{g:'mix', text:'Twin copies any blob, from any world, traits and all.'},
   'rx:keep':{g:'mix', text:'Split, Void and Wild only change eyes. Color, mood and species stay the same.'},
-  'rx:pressKind':{g:'mix', text:'The Press only fuses orblings of the same color (or the same species) with the same eyes.'},
-  'rx:pressMood':{g:'mix', text:'If either one is grumpy, the fused orbling comes out grumpy.'},
-  'rx:noeyes':{g:'mix', text:'The Press only fuses orblings that have eyes to count. Twin can still copy anyone.'},
-  'rx:nomood':{g:'mix', text:'Only orblings with moods can use the Meeting spot or the Campfire.'},
+  'rx:pressKind':{g:'mix', text:'The Press only fuses blobs of the same color (or the same species) with the same eyes.'},
+  'rx:pressMood':{g:'mix', text:'If either one is grumpy, the fused blob comes out grumpy.'},
+  'rx:noeyes':{g:'mix', text:'The Press only fuses blobs that have eyes to count. Twin can still copy anyone.'},
+  'rx:nomood':{g:'mix', text:'Only blobs with moods can use the Meeting spot or the Campfire.'},
   'rx:colorGenes':{g:'mix', text:'In the remix, color is in the genes. Each ear is one color: Yellow beats Red, and Red beats Blue.'},
   'rx:nestMood':{g:'mix', text:'Babies pick up their parents\u2019 mood. One grumpy parent means grumpy babies.'},
   'rx:cradleMood':{g:'mix', text:'The Cradle won\u2019t take a grumpy baby.'},
@@ -1149,7 +1162,7 @@ function startLevel(wi, i, restore){
   else if (!S.visited[wi]){ S.visited[wi]=1; setTimeout(()=>toast(`New world · ${w.name}`, w.blurb, 4500), 300); }
   else if (wi===0){ const fresh=[...new Set(def.orbs.map(kindOf))].filter(k=>k!=='pip'&&!S.met[k]);
     fresh.forEach(k=>S.met[k]=1);
-    if (fresh.length) queue.push({t:.5+def.orbs.length*.16, fn:()=>toast(`New orb · ${W1K[fresh[0]].name}`, `${chipT(fresh[0],0)} Press it with other orbs to learn what it does`)}); }
+    if (fresh.length) queue.push({t:.5+def.orbs.length*.16, fn:()=>toast(`New blob · ${W1K[fresh[0]].name}`, `${chipT(fresh[0],0)} Press it with other blobs to learn what it does`)}); }
   (def.orbs||[]).forEach(t=>{ if(wi===0) S.met[kindOf(t)]=1; });
   save(); updateHUD();
 }
@@ -1191,16 +1204,16 @@ function spriteFor(l){
   if (l.sheen && g.createConicGradient){ const cg=g.createConicGradient(0,m,m); ['#ff8fb0','#8ff0e0','#b79bff','#ffd27a','#ff8fb0'].forEach((h,i)=>cg.addColorStop(i/4,h));
     g.globalAlpha=.35; g.globalCompositeOperation='source-atop'; g.fillStyle=cg; g.fillRect(0,0,m*2,m*2); g.globalCompositeOperation='source-over'; g.globalAlpha=1; }
   g.fillStyle='rgba(255,255,255,.8)'; g.beginPath(); g.ellipse(m-rad*.4,m-rad*.46,rad*.2,rad*.12,-.6,0,7); g.fill();
-  g.strokeStyle='rgba(0,0,0,.28)'; g.lineWidth=1; g.beginPath(); g.arc(m,m,rad-.5,0,7); g.stroke();
+  g.strokeStyle=INK; g.lineWidth=Math.max(1.5,rad*.075); g.beginPath(); g.arc(m,m,rad-g.lineWidth/2,0,7); g.stroke();
   spriteCache.set(key,c); return c;
 }
 function makeBg(){
   const w=world(); bg=document.createElement('canvas'); bg.width=cv.width; bg.height=cv.height; const g=bg.getContext('2d'); g.scale(dpr,dpr);
   const gr=g.createRadialGradient(W/2,H*.25,10,W/2,H*.4,Math.max(W,H)*.8); gr.addColorStop(0,w.bg[0]); gr.addColorStop(1,w.bg[1]); g.fillStyle=gr; g.fillRect(0,0,W,H);
-  g.fillStyle='rgba(255,240,220,.05)'; const sp=26;
+  const dk=boardDark(); g.fillStyle=dk?'rgba(255,240,220,.06)':'rgba(43,42,76,.07)'; const sp=26;
   for(let y=sp/2;y<H;y+=sp) for(let x=sp/2;x<W;x+=sp){ g.beginPath();
     if (S.world===1) g.ellipse(x,y,2.2,1,.6,0,7); else if (S.world===2) { g.arc(x+(y%52?0:13),y,1.6,0,7); } else g.arc(x,y,1.3,0,7); g.fill(); }
-  const tg=g.createLinearGradient(0,floorY-R*3,0,H); tg.addColorStop(0,'rgba(0,0,0,0)'); tg.addColorStop(1,'rgba(0,0,0,.35)'); g.fillStyle=tg; g.fillRect(0,floorY-R*3,W,H);
+  const tg=g.createLinearGradient(0,floorY-R*3,0,H); tg.addColorStop(0,'rgba(0,0,0,0)'); tg.addColorStop(1,dk?'rgba(0,0,0,.35)':'rgba(43,42,76,.08)'); g.fillStyle=tg; g.fillRect(0,floorY-R*3,W,H);
 }
 
 /* ======================= orbs ======================= */
@@ -1246,7 +1259,7 @@ function chipT(t, wi=S.world, opts={}){
     inner=`<circle cx="7" cy="9" r="1.7" fill="#24110a"/><circle cx="13" cy="9" r="1.7" fill="#24110a"/>`+
       (grump?`<path d="M5 5.6 8.6 7M15 5.6 11.4 7M7.2 14.6Q10 12.2 12.8 14.6" stroke="#24110a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`
             :`<path d="M7.4 12.6Q10 15 12.6 12.6" stroke="#24110a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`); }
-  return `<svg class="chip" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="${l.hex}" stroke="rgba(0,0,0,.3)"/><circle cx="7" cy="6.5" r="2" fill="${hi}" opacity=".6"/>${inner}</svg>`;
+  return `<svg class="chip" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="${l.hex}" stroke="${INK}" stroke-width="1.3"/><circle cx="7" cy="6.5" r="2" fill="${hi}" opacity=".6"/>${inner}</svg>`;
 }
 
 /* ======================= machines ======================= */
@@ -1357,7 +1370,7 @@ function stackTarget(o, px, py){
   land=Math.max(0,Math.min(m.holes-1,land));
   return {m, ok, res, land, why, same: !!(o.origin && o.origin.m===m)};
 }
-const WHY={'wt:size':'Too big to sit there','wt:prickly':'Prickly! Nobody sits on that','rx:grumpCarry':'Too grumpy to carry anyone','rx:clashStack':'They clash','wt:tools':'Tools only work on orblings','full':'No room','w1:voidf':'Void only bites orblings with eyes','w1:wildf':'Wild can\u2019t add an eye there'};
+const WHY={'wt:size':'Too big to sit there','wt:prickly':'Prickly! Nobody sits on that','rx:grumpCarry':'Too grumpy to carry anyone','rx:clashStack':'They clash','wt:tools':'Tools only work on blobs','full':'No room','w1:voidf':'Void only bites blobs with eyes','w1:wildf':'Wild can\u2019t add an eye there'};
 function returnHome(o){ const g=o.origin; o.origin=null; if(!g) return; g.m.slots[g.i]=o; o.hole={m:g.m,i:g.i}; o.snap=0; o.sx=o.x; o.sy=o.y; tone(500,300,.05,'sine',.15); }
 function dropOnStack(o, st){
   const m=st.m, up=RXP(o.t), n=stackOf(m).length, lo=n?m.slots[n-1]:null;
@@ -1782,13 +1795,14 @@ function draw(){
     const r=m.rect, ox=m.shake>0?Math.sin(time*70)*m.shake*5:0, gate=m.type==='gate';
     ctx.save(); ctx.translate(ox,0);
     if (m.state==='charging'||m.flash>0){ const a=m.state==='charging'?.5+.5*Math.sin(time*30):m.flash; ctx.shadowColor=gate?'#7ee2b8':'#ffd27a'; ctx.shadowBlur=R*1.8*a; }
-    else { ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=R*.8; ctx.shadowOffsetY=R*.25; }
+    else { ctx.shadowColor=boardDark()?'rgba(0,0,0,.6)':INK; ctx.shadowBlur=0; ctx.shadowOffsetX=R*.14; ctx.shadowOffsetY=R*.16; }
     if (m.seesaw && m.base){ const pv=m.base[3]; ctx.save(); ctx.shadowColor='transparent'; ctx.fillStyle='#5b4326'; ctx.beginPath();
         ctx.moveTo(pv.x,pv.y+R*.2); ctx.lineTo(pv.x-R*1.4,pv.y+r.h*.5+R*2.1); ctx.lineTo(pv.x+R*1.4,pv.y+r.h*.5+R*2.1); ctx.closePath(); ctx.fill();
         ctx.fillStyle='#3d2c18'; rr(pv.x-R*1.9,pv.y+r.h*.5+R*2.0,R*3.8,R*.35,R*.15); ctx.fill(); ctx.restore();
       ctx.save(); ctx.translate(pv.x,pv.y); ctx.rotate(m.ang||0); ctx.translate(-pv.x,-pv.y); }
     const pl=m.plate, g=ctx.createLinearGradient(0,r.y,0,r.y+r.h); g.addColorStop(0,pl[0]); g.addColorStop(.55,pl[1]); g.addColorStop(1,pl[2]);
     ctx.fillStyle=g; rr(r.x,r.y,r.w,r.h,R*.7); ctx.fill(); ctx.shadowColor='transparent';
+    ctx.strokeStyle=INK; ctx.lineWidth=Math.max(2,R*.09); rr(r.x,r.y,r.w,r.h,R*.7); ctx.stroke();
     ctx.strokeStyle='rgba(255,245,225,.45)'; ctx.lineWidth=1.2; rr(r.x+1.5,r.y+1.5,r.w-3,r.h-3,R*.6); ctx.stroke();
     if (m.kiosk){ const kx=r.x+R*.35, kw=R*1.45, ky=r.y+R*.35, kh=r.h-R*.7;
       ctx.fillStyle='#6b3f1d'; rr(kx,ky,kw,kh,R*.2); ctx.fill();
@@ -1806,7 +1820,7 @@ function draw(){
     if (m.type!=='nest' && m.type!=='camp'){ ctx.fillStyle='rgba(30,20,10,.4)'; [[r.x+R*.4,r.y+R*.4],[r.x+r.w-R*.4,r.y+R*.4],[r.x+R*.4,r.y+r.h-R*.4],[r.x+r.w-R*.4,r.y+r.h-R*.4]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,R*.11,0,7);ctx.fill();}); }
     if (m.seesaw && m.base){ const pv=m.base[3]; ctx.fillStyle='#3d2c18'; ctx.beginPath(); ctx.arc(pv.x,pv.y,HR*1.12,0,7); ctx.fill(); ctx.restore(); }
     m.holesPos.forEach((h,i)=>{
-      const hg=ctx.createRadialGradient(h.x,h.y-HR*.3,HR*.2,h.x,h.y,HR); hg.addColorStop(0,'#2a1c40'); hg.addColorStop(1,'#0e0818');
+      const hg=ctx.createRadialGradient(h.x,h.y-HR*.3,HR*.2,h.x,h.y,HR); hg.addColorStop(0,'#45436e'); hg.addColorStop(1,'#1f1e38');
       ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(h.x,h.y,HR,0,7); ctx.fill(); ctx.strokeStyle='rgba(20,10,0,.7)'; ctx.lineWidth=2; ctx.stroke();
       ctx.strokeStyle='rgba(255,240,200,.3)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(h.x,h.y+1,HR+1.5,.15*Math.PI,.85*Math.PI); ctx.stroke();
       const o=m.slots[i];
@@ -1829,7 +1843,7 @@ function draw(){
       const label=rules().reqLabel(m.req[i]), bh=Math.max(16,R*.95), dot=isLine?bh*.28:0, lw=ctx.measureText(label).width+R*.7+(isLine?dot*2.6:0), by=r.y-bh*.35;
       const settled = filled && m.slots[i].snap>=1 && m.state!=='charging' || (filled && m.state==='charging');
       const match = filled && rules().boothMatch && rules().boothMatch(m.req[i], m.slots[i]);
-      ctx.fillStyle='#1d1433'; rr(h.x-lw/2,by-bh/2,lw,bh,bh/2); ctx.fill();
+      ctx.fillStyle=INK; rr(h.x-lw/2,by-bh/2,lw,bh,bh/2); ctx.fill();
       ctx.strokeStyle = isLine && settled ? (match?'#7ee2b8':'#ff7a9c') : '#e6b95c'; ctx.lineWidth = isLine && settled ? 2 : 1.2; ctx.stroke();
       let tx=h.x;
       if (isLine){ const gt=rules().ghost(m.req[i]); if (gt){ ctx.fillStyle=lookOf({t:gt}).hex; ctx.beginPath(); ctx.arc(h.x-lw/2+bh*.5,by,dot,0,7); ctx.fill(); } tx=h.x+dot*1.1; }
@@ -1840,10 +1854,10 @@ function draw(){
         if (match){ ctx.moveTo(mx-mr*.45,my); ctx.lineTo(mx-mr*.1,my+mr*.35); ctx.lineTo(mx+mr*.45,my-mr*.35); }
         else { ctx.moveTo(mx-mr*.35,my-mr*.35); ctx.lineTo(mx+mr*.35,my+mr*.35); ctx.moveTo(mx+mr*.35,my-mr*.35); ctx.lineTo(mx-mr*.35,my+mr*.35); }
         ctx.stroke(); } });
-    if (m.used){ ctx.fillStyle='rgba(20,14,30,.6)'; rr(r.x,r.y,r.w,r.h,R*.7); ctx.fill();
+    if (m.used){ ctx.fillStyle='rgba(43,42,76,.55)'; rr(r.x,r.y,r.w,r.h,R*.7); ctx.fill();
       m.holesPos.forEach(h=>{ ctx.fillStyle='#f3ead6'; ctx.beginPath(); ctx.ellipse(h.x,h.y+HR*.15,HR*.42,HR*.55,0,0,7); ctx.fill();
         ctx.strokeStyle='#b9a98a'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(h.x-HR*.42,h.y); ctx.lineTo(h.x-HR*.15,h.y-HR*.15); ctx.lineTo(h.x+HR*.1,h.y+HR*.05); ctx.lineTo(h.x+HR*.42,h.y-HR*.1); ctx.stroke(); }); }
-    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle=m.used?'#a698c4':'#f5eeff';
+    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle=boardDark()?(m.used?'#a698c4':'#f5eeff'):(m.used?'#8a85a3':INK);
     ctx.font=`${Math.max(12,Math.round(R*.78))}px "Lilita One", system-ui, sans-serif`; ctx.fillText(m.used?`${m.name} · used`:m.name, r.x+r.w/2, r.y+r.h+R*.3);
     ctx.restore();
   });
@@ -1852,13 +1866,13 @@ function draw(){
   ctx.globalAlpha=1;
   parts.forEach(p=>{ ctx.globalAlpha=1-p.life/p.max; if(p.heart) heart(p.x,p.y,p.sz,false); else { ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.sz,0,7); ctx.fill(); } });
   ctx.globalAlpha=1;
-  if (held){ ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(held.x+held.r*.3,held.y+held.r*.95,held.r*.95,held.r*.45,0,0,7); ctx.fill();
+  if (held){ ctx.fillStyle='rgba(43,42,76,.18)'; ctx.beginPath(); ctx.ellipse(held.x+held.r*.3,held.y+held.r*.95,held.r*.95,held.r*.45,0,0,7); ctx.fill();
     drawOrb(held,held.x,held.y,1.14);
     ctx.font=`800 ${Math.max(11,Math.round(R*.62))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     const label=famOf(held).label(held.t,held), lw=ctx.measureText(label).width+R*.8, bh=Math.max(18,R*1.05);
     let ly=held.y-held.r*1.3-bh*.9; if (ly<bh) ly=held.y+held.r*1.4+bh*.6;
     const lx=Math.min(Math.max(held.x,lw/2+4),W-lw/2-4);
-    ctx.fillStyle='rgba(23,15,40,.88)'; rr(lx-lw/2,ly-bh/2,lw,bh,bh/2); ctx.fill(); ctx.fillStyle='#f5eeff'; ctx.fillText(label,lx,ly+1); }
+    ctx.fillStyle='rgba(43,42,76,.92)'; rr(lx-lw/2,ly-bh/2,lw,bh,bh/2); ctx.fill(); ctx.fillStyle='#f5eeff'; ctx.fillText(label,lx,ly+1); }
   bubbles.forEach(b=>{ const o=b.o; if (o.dx===undefined) return; const k=b.t, sc=k<.15?k/.15:1, al=k>b.life-.3?(b.life-k)/.3:1;
     ctx.save(); ctx.globalAlpha=al; ctx.font=`800 ${Math.max(11,Math.round(R*.56))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     const tw=ctx.measureText(b.text).width+R*.7, bh=Math.max(18,R*.95); let bx=Math.min(Math.max(o.dx,tw/2+4),W-tw/2-4), by=o.dy-(o.dr||R)-bh*.75;
@@ -1870,7 +1884,8 @@ function draw(){
     ctx.fillStyle=b.bad?'#ffc2d1':'#2a1e45'; ctx.fillText(b.text,0,1); ctx.restore(); });
   floats.forEach(f=>{ const k=f.t/1.5; ctx.globalAlpha=k<.7?1:1-(k-.7)/.3; ctx.fillStyle=f.c; ctx.textAlign='center'; ctx.textBaseline='bottom';
     ctx.font=`${Math.max(13,Math.round(R*.8))}px "Lilita One", system-ui, sans-serif`;
-    const tw=ctx.measureText(f.text).width/2; ctx.fillText(f.text,Math.min(Math.max(f.x,tw+6),W-tw-6),Math.max(R,f.y-k*R*2)); });
+    const tw=ctx.measureText(f.text).width/2, fx=Math.min(Math.max(f.x,tw+6),W-tw-6), fy=Math.max(R,f.y-k*R*2);
+    ctx.strokeStyle=INK; ctx.lineWidth=Math.max(3,R*.16); ctx.lineJoin='round'; ctx.strokeText(f.text,fx,fy); ctx.fillText(f.text,fx,fy); });
   ctx.globalAlpha=1; ctx.restore();
 }
 
@@ -1926,18 +1941,18 @@ function renderNB(){
     if (seen.length) html+=`<div class="box"><h3><span class="l">Seen in remixes</span></h3><div class="seen">${seen.join('')}</div></div>`;
   } else if (nbTab===0){
     ['pip','tw','sp','vo','wi'].forEach(k=>{
-      if (!S.met[k]){ html+=`<div class="box locked"><h3><span class="l">Unknown orb</span></h3><div class="unk">Shows up in a later level.</div></div>`; return; }
+      if (!S.met[k]){ html+=`<div class="box locked"><h3><span class="l">Unknown blob</span></h3><div class="unk">Shows up in a later level.</div></div>`; return; }
       const t=k==='pip'?'p1':k;
       const seen=seenList('w1|', p=>p.split('+').some(x=>kindOf(x)===k), (p,v)=> v==='x' ? `<span>${p.split('+').map(x=>chipT(x,0)).join('')} <span class="x">✕</span></span>`
         : `<span>${p.split('+').map(x=>chipT(x,0)).join('')} → ${v==='-'?'nothing left':v.split(',').map(x=>chipT(x,0)).join('')}</span>`);
-      html+=ruleBox(W1K[k].name, chipT(t,0), rulesFor('w1',k), 'Not figured out yet. Press it with other orbs.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
+      html+=ruleBox(W1K[k].name, chipT(t,0), rulesFor('w1',k), 'Not figured out yet. Press it with other blobs.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
     });
   } else if (nbTab===1){
     const cs=['r','y','b'];
     const grid=`<div class="aff"><span></span>${cs.map(c=>chipT(c+'h',1)).join('')}${cs.map(a=>chipT(a+'h',1)+cs.map(b=>{ const v=S.aff[affKey(a,b)]; return v==='ok'?'<span class="ok">✓</span>':v==='no'?'<span class="no">✕</span>':'<span class="q">?</span>'; }).join('')).join('')}</div>`;
     html+=`<div class="box"><h3><span class="l">Who gets along</span></h3><p>Filled in as you see them meet or sit together.</p>${grid}</div>`;
     const seen=seenList('w2|',()=>true,(p,v)=>`<span>${p.split('+').map(x=>chipT(x,1)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v.split(',').map(x=>chipT(x,1)).join('')}</span>`);
-    html+=ruleBox('Meeting spot','',rulesFor('w2','meet'),'Put two orblings in a Meeting spot and see what happens.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
+    html+=ruleBox('Meeting spot','',rulesFor('w2','meet'),'Put two blobs in a Meeting spot and see what happens.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
     html+=ruleBox('Campfire','',rulesFor('w2','camp'),'Not tried yet.');
     html+=ruleBox('Friendship bench','',rulesFor('w2','bench'),'The bench has its own rules. You’ll find out.');
   } else if (nbTab===3){
@@ -1946,11 +1961,11 @@ function renderNB(){
     html+=`<div class="box"><h3><span class="l">Food chain</span></h3><p>Rows are the hungry hunter, columns are its possible food. Filled in as you watch the tides.</p>${grid}</div>`;
     html+=ruleBox('Who eats whom','',rulesFor('w4','chain'),'Nobody has eaten anyone yet.');
     const seen=seenList('w4|',()=>true,(p,v)=>`<span>${p.split(',').map(x=>chipT(x,3)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v.split(',').map(x=>x==='0'?'<span class="x">·</span>':chipT(x,3)).join('')}</span>`);
-    html+=ruleBox('Tide pool','',rulesFor('w4','pool'),'Put orblings side by side in a Tide pool.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
+    html+=ruleBox('Tide pool','',rulesFor('w4','pool'),'Put blobs side by side in a Tide pool.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
     html+=ruleBox('Calm pool','',rulesFor('w4','calm'),'Not figured out yet.');
   } else if (nbTab===4){
-    html+=`<div class="box"><h3><span class="l">Who\u2019s who</span></h3><p>Each orbling\u2019s face shows its personality: sleepy Zz, a little heart, bossy brows, or sparkles.</p></div>`;
-    html+=ruleBox('Ticket booth','',rulesFor('wq','persona'),'Add orblings to the Ticket line and watch how each one reacts.');
+    html+=`<div class="box"><h3><span class="l">Who\u2019s who</span></h3><p>Each blob\u2019s face shows its personality: sleepy Zz, a little heart, bossy brows, or sparkles.</p></div>`;
+    html+=ruleBox('Ticket booth','',rulesFor('wq','persona'),'Add blobs to the Ticket line and watch how each one reacts.');
     html+=ruleBox('Coffee and Pillow','',rulesFor('wq','cup'),'Not tried yet.');
   } else if (nbTab===5){
     html+=ruleBox('Balance','',rulesFor('ws','balance'),'Put someone on the Seesaw and watch which way it tips.');
@@ -1997,7 +2012,7 @@ const uiTick = () => tone(1500,1800,.03,'sine',.07);
 const uiSelect = () => { tone(660,990,.07,'sine',.18); tone(990,1320,.09,'sine',.12,.003,.06); };
 function jingle(){ [0,7,12,16,19,24].forEach((s,k)=>{ const f=noteF(s); tone(f,f,.7,'triangle',.11,.004,k*.07); tone(f/2,f/2,.7,'sine',.05,.004,k*.07); }); }
 
-$('#logo').innerHTML=[...'Orbwork'].map((c,i)=>`<span style="animation-delay:${.1+i*.07}s">${c}</span>`).join('');
+$('#logo').innerHTML=[...'Blobbiverse'].map((c,i)=>`<span${i>=6?' class="b"':''} style="animation-delay:${.1+i*.06}s">${c}</span>`).join('');
 if (host && host.version) $('#ver').textContent='v'+host.version;
 
 function resumePoint(){
@@ -2153,7 +2168,7 @@ document.addEventListener('keydown',e=>{
   e.preventDefault();
 });
 
-/* ---------- title screen: real orblings from every world, physics toy behind the menu ---------- */
+/* ---------- title screen: real blobs from every world, physics toy behind the menu ---------- */
 const tcv=$('#tcv'), tctx=tcv.getContext('2d');
 let TW=1, TH=1, tOrbs=[], tHeld=null, tPtr={x:-1e4,y:-1e4,on:false}, tCache=new Map(), tSpawnAt=1e9, tBg=null, tHopAt=0;
 const tR = () => Math.max(24, Math.min(46, Math.min(TW,TH)*.055));
@@ -2163,7 +2178,7 @@ const TPOOL=(()=>{ const pool=[], sw=S.world;
     w.levels.forEach(d=>(d.orbs||[]).forEach(t=>{ if (typeof t!=='string' || seen.has(t) || seen.size>=cap) return; seen.add(t);
       try{ S.world=wi; const lk=lookOf({t}); if (lk && lk.hex && !lk.known) pool.push({t, lk}); }catch(e){} })); });
   S.world=sw; return pool; })();
-const SPARKS=Array.from({length:40},()=>({x:Math.random(), y:Math.random(), s:.6+Math.random()*1.6, v:.008+Math.random()*.02, p:Math.random()*7}));
+const SPARKS=Array.from({length:40},(_,i)=>({x:Math.random(), y:Math.random(), s:1+Math.random()*2, v:.008+Math.random()*.02, p:Math.random()*7, c:i%2?'#ff5c8a':'#3d5afe'}));
 function titleLayout(){
   const b=tcv.getBoundingClientRect(); TW=Math.max(1,b.width); TH=Math.max(1,b.height); const d=Math.min(2,window.devicePixelRatio||1);
   tcv.width=Math.round(TW*d); tcv.height=Math.round(TH*d); tBg=null; tCache.clear();
@@ -2216,11 +2231,11 @@ function titleStep(dt){
 }
 function titleBg(){
   const c=document.createElement('canvas'); c.width=tcv.width; c.height=tcv.height; const g=c.getContext('2d'), d=c.width/TW; g.scale(d,d);
-  const gr=g.createRadialGradient(TW/2,TH*.24,10,TW/2,TH*.45,Math.max(TW,TH)*.85); gr.addColorStop(0,'#4a3578'); gr.addColorStop(.5,'#2a1e45'); gr.addColorStop(1,'#120b20');
+  const gr=g.createRadialGradient(TW/2,TH*.24,10,TW/2,TH*.45,Math.max(TW,TH)*.85); gr.addColorStop(0,'#fffaf0'); gr.addColorStop(.5,'#f6eddc'); gr.addColorStop(1,'#ead9bb');
   g.fillStyle=gr; g.fillRect(0,0,TW,TH);
-  g.fillStyle='rgba(255,240,220,.05)'; for (let y=13;y<TH;y+=26) for (let x=13;x<TW;x+=26){ g.beginPath(); g.arc(x,y,1.3,0,7); g.fill(); }
-  const fl=g.createLinearGradient(0,TH*.72,0,TH); fl.addColorStop(0,'rgba(0,0,0,0)'); fl.addColorStop(1,'rgba(0,0,0,.45)'); g.fillStyle=fl; g.fillRect(0,TH*.72,TW,TH*.28);
-  const vg=g.createRadialGradient(TW/2,TH/2,Math.min(TW,TH)*.35,TW/2,TH/2,Math.max(TW,TH)*.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.45)'); g.fillStyle=vg; g.fillRect(0,0,TW,TH);
+  g.fillStyle='rgba(43,42,76,.07)'; for (let y=13;y<TH;y+=26) for (let x=13;x<TW;x+=26){ g.beginPath(); g.arc(x,y,1.3,0,7); g.fill(); }
+  const fl=g.createLinearGradient(0,TH*.72,0,TH); fl.addColorStop(0,'rgba(0,0,0,0)'); fl.addColorStop(1,'rgba(43,42,76,.10)'); g.fillStyle=fl; g.fillRect(0,TH*.72,TW,TH*.28);
+  const vg=g.createRadialGradient(TW/2,TH/2,Math.min(TW,TH)*.35,TW/2,TH/2,Math.max(TW,TH)*.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(120,90,50,.14)'); g.fillStyle=vg; g.fillRect(0,0,TW,TH);
   return c;
 }
 function titleDraw(){
@@ -2228,11 +2243,11 @@ function titleDraw(){
   tctx.setTransform(1,0,0,1,0,0); tctx.drawImage(tBg,0,0);
   tctx.setTransform(d,0,0,d,0,0);
   for (const p of SPARKS){ p.y-=p.v*.016; if (p.y<-.02) { p.y=1.02; p.x=Math.random(); }
-    tctx.globalAlpha=.25+.35*Math.max(0,Math.sin(time*1.6+p.p)); tctx.fillStyle='#ffe7b0'; tctx.beginPath(); tctx.arc(p.x*TW+Math.sin(time*.5+p.p)*8,p.y*TH,p.s,0,7); tctx.fill(); }
+    tctx.globalAlpha=.15+.3*Math.max(0,Math.sin(time*1.6+p.p)); tctx.fillStyle=p.c; tctx.beginPath(); tctx.arc(p.x*TW+Math.sin(time*.5+p.p)*8,p.y*TH,p.s,0,7); tctx.fill(); }
   tctx.globalAlpha=1;
   const sv=ctx, sR=R, sc=spriteCache, sd=dpr; ctx=tctx; R=tR(); spriteCache=tCache; dpr=d;
   try{
-    for (const o of tOrbs){ ctx.save(); ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(o.x,TH-6,o.r*.8*Math.max(.3,1-(TH-6-o.y-o.r)/400),o.r*.18,0,0,7); ctx.fill(); ctx.restore(); }
+    for (const o of tOrbs){ ctx.save(); ctx.fillStyle='rgba(43,42,76,.16)'; ctx.beginPath(); ctx.ellipse(o.x,TH-6,o.r*.8*Math.max(.3,1-(TH-6-o.y-o.r)/400),o.r*.18,0,0,7); ctx.fill(); ctx.restore(); }
     for (const o of tOrbs){ try{ drawOrb(o,o.x,o.y,o===tHeld?1.08:1); }catch(e){ o.bad=true; } }
   } finally { ctx=sv; R=sR; spriteCache=sc; dpr=sd; }
   if (tOrbs.some(o=>o.bad)) tOrbs=tOrbs.filter(o=>!o.bad);

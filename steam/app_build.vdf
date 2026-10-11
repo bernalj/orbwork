@@ -1,7 +1,7 @@
 "AppBuild"
 {
 	"AppID" "APPID"
-	"Desc" "Orbwork Windows build"
+	"Desc" "Blobbiverse Windows build"
 	"ContentRoot" "..\dist\win-unpacked\"
 	"BuildOutput" "..\dist\steam-output\"
 	"SetLive" ""

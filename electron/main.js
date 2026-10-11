@@ -1,4 +1,4 @@
-// Orbwork desktop (Steam) shell: one window running the same index.html as the web build.
+// Blobbiverse desktop (Steam) shell: one window running the same index.html as the web build.
 const { app, BrowserWindow, ipcMain, Menu, shell, screen } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -11,7 +11,7 @@ const ON_DECK = process.env.SteamDeck === '1';
 steam.preReady();
 if (!app.requestSingleInstanceLock()) app.quit();
 
-/* ---------- files in %APPDATA%/Orbwork ---------- */
+/* ---------- files in %APPDATA%/Blobbiverse ---------- */
 // The save lives on its own in saves/ so Steam Auto-Cloud can sync just that folder.
 const saveDir = () => path.join(app.getPath('userData'), 'saves');
 const saveFile = () => path.join(saveDir(), 'save.json');
@@ -52,8 +52,8 @@ function createWindow() {
     ...b,
     minWidth: 640,
     minHeight: 480,
-    title: 'Orbwork',
-    backgroundColor: '#170f28',
+    title: 'Blobbiverse',
+    backgroundColor: '#f6eddc',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     fullscreen: ON_DECK || settings.fullscreen,
     show: false,

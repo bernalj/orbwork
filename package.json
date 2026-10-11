@@ -1,8 +1,8 @@
 {
-  "name": "orbwork",
-  "productName": "Orbwork",
+  "name": "blobbiverse",
+  "productName": "Blobbiverse",
   "version": "1.0.0",
-  "description": "A small puzzle game about googly-eyed orblings.",
+  "description": "A puzzle game about googly-eyed blobs.",
   "author": "bernalj",
   "private": true,
   "main": "electron/main.js",
@@ -20,9 +20,9 @@
   },
   "steamAppId": 480,
   "build": {
-    "appId": "com.bernalj.orbwork",
-    "productName": "Orbwork",
-    "executableName": "Orbwork",
+    "appId": "com.bernalj.blobbiverse",
+    "productName": "Blobbiverse",
+    "executableName": "Blobbiverse",
     "directories": {
       "output": "dist",
       "buildResources": "build"

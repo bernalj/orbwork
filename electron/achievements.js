@@ -1,4 +1,4 @@
-// Steam achievements for Orbwork, evaluated from the progress summary the game sends (see hostSync() in index.html).
+// Steam achievements for Blobbiverse, evaluated from the progress summary the game sends (see hostSync() in index.html).
 // `id` is the API name to create on the Steamworks "Stats & Achievements" page; name/description are the suggested store text.
 
 const WORLD_NAMES = { w1: 'Hatchery', w2: 'Commons', w3: 'Nursery', w4: 'Reef', wq: 'Queue', ws: 'Seesaw', wl: 'Lighthouse' };
@@ -21,7 +21,7 @@ const ACHIEVEMENTS = [
     done: p => sum(p.worlds, 'remixTotal') > 0 && sum(p.worlds, 'remixCleared') === sum(p.worlds, 'remixTotal') },
   { id: 'PAR_WORLD', name: 'Under par', description: 'Earn three stars on every main level of any world.',
     done: p => p.worlds.some(w => w.mainTotal > 0 && w.mainPerfect === w.mainTotal) },
-  { id: 'ALL_LEVELS', name: 'Orbwork', description: 'Finish every level in the game.',
+  { id: 'ALL_LEVELS', name: 'Blobbiverse', description: 'Finish every level in the game.',
     done: p => p.worlds.every(w => w.mainCleared === w.mainTotal && w.remixCleared === w.remixTotal) },
   { id: 'ALL_STARS', name: 'Every star', description: 'Earn three stars on every level in the game.',
     done: p => p.worlds.every(w => w.mainPerfect === w.mainTotal && w.remixPerfect === w.remixTotal) },
