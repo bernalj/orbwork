@@ -86,6 +86,7 @@ To try it:
    | `PAR_WORLD` | Under par | Earn three stars on every main level of any world. |
    | `ALL_LEVELS` | Blobbiverse | Finish every level in the game. |
    | `ALL_STARS` | Every star | Earn three stars on every level in the game. |
+   | `NEWTONS_CRADLE` | Newton’s cradle | Line up five or more blobs in the Reef so that everyone in the middle trembles and only the two at the ends keep still. *Tick “Hidden” for this one, so the description stays secret until it’s earned.* |
 
 4. **Steam Cloud.** Under *Steam Cloud* → *Auto-Cloud*, set the byte and file quotas (e.g. 1 MB, 10 files), then add a Root Path:
    - Root: `WinAppDataRoaming`

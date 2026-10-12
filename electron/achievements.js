@@ -23,6 +23,9 @@ const ACHIEVEMENTS = [
     done: p => p.worlds.some(w => w.mainTotal > 0 && w.mainPerfect === w.mainTotal) },
   { id: 'ALL_LEVELS', name: 'Blobbiverse', description: 'Finish every level in the game.',
     done: p => p.worlds.every(w => w.mainCleared === w.mainTotal && w.remixCleared === w.remixTotal) },
+  // Secret: set this one to "Hidden" on the Steamworks page so its description stays secret until unlocked.
+  { id: 'NEWTONS_CRADLE', name: 'Newton’s cradle', description: 'Line up five or more blobs in the Reef so that everyone in the middle trembles and only the two at the ends keep still.', hidden: true,
+    done: p => (p.feats || []).includes('cradle') },
   { id: 'ALL_STARS', name: 'Every star', description: 'Earn three stars on every level in the game.',
     done: p => p.worlds.every(w => w.mainPerfect === w.mainTotal && w.remixPerfect === w.remixTotal) },
 ];
