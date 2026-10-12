@@ -499,13 +499,13 @@ const QJ={
   {name:'Espresso',    orbs:['bp','rz','yp','yp','yp'], machines:['coffee'], gate:['r','y','b','y','y'], par:7, hint:'One cup is good. Two cups is a personality.'},
  ],
  queueRemix:[
-  {name:'Cheer up, Eager', orbs:['*c=b,m=g,q=e','*c=r,m=h,q=e','*c=y,m=h,q=p'], machines:['meet'], gateKind:'line', gate:['*c=b','*c=r','*c=y'], par:4, hint:'Moods from the Commons. Does a grumpy Eager still rush ahead?'},
-  {name:'Make them sulk',  orbs:['*c=r,m=g,q=e','*c=b,m=h,q=e','*c=b,m=g,q=c'], machines:['meet'], gateKind:'line', gate:['*c=r','*c=b','*c=b'], par:4, hint:'Sometimes a grump is exactly what the line needs.'},
-  {name:'Campfire line',   orbs:['*c=r,m=h,q=c','*c=r,m=h,q=c','*c=r,m=h,q=e','*c=y,m=g,q=e'], machines:['camp'], gateKind:'line', gate:['*c=y','*c=r','*c=r','*c=r'], par:5, hint:''},
-  {name:'Copy and cheer',  orbs:['*k=tw','*c=b,m=h,q=e','*c=y,m=g,q=e','*c=y,m=h,q=c'], machines:['press','meet'], gateKind:'line', gate:['*c=y','*c=b','*c=y','*c=y'], par:6, hint:'Four spots, three blobs.'},
-  {name:'Coffee for a grump', orbs:['*c=y,m=h,q=p','*c=y,m=h,q=p','*c=b,m=g,q=z'], machines:['coffee','meet'], gateKind:'line', gate:['*c=b','*c=y','*c=y'], par:6, hint:''},
-  {name:'Pillow fight',    orbs:['*c=b,m=h,q=e','*c=r,m=g,q=e','*c=r,m=h,q=c','*c=b,m=h,q=p'], machines:['pillow','camp'], gateKind:'line', gate:['*c=r','*c=b','*c=r','*c=b'], par:6, hint:''},
-  {name:'Grand queue',     orbs:['*k=tw','*c=r,m=h,q=c','*c=b,m=h,q=p','*c=r,m=g,q=c','*c=y,m=h,q=p'], machines:['press','meet','coffee'], gateKind:'line', gate:['*c=r','*c=r','*c=b','*c=r','*c=y'], par:8, hint:'Three worlds, five spots.'},
+  {name:'Cheer up, Eager', orbs:['*c=b,m=g,q=e','*c=r,m=h,q=e','*c=y,m=h,q=p'], machines:['meet'], gateKind:'line', gate:['*c=b','*c=r','*c=y'], par:4, hint:'Grumpy blobs don\u2019t queue. They sulk.'},
+  {name:'Make them sulk', orbs:['*c=r,m=g,q=e','*c=b,m=h,q=e','*c=b,m=g,q=c'], machines:['meet'], gateKind:'line', gate:['*c=r','*c=b','*c=b'], par:4, hint:'Sometimes a grump is exactly what the line needs.'},
+  {name:'Fireside queue', orbs:['*c=b,m=g,q=z','*c=r,m=g,q=e','*c=r,m=h,q=e','*c=y,m=h,q=z'], machines:['camp'], gateKind:'line', gate:['*c=b','*c=r','*c=r','*c=y'], par:5, hint:'Everyone\u2019s warm. Nobody\u2019s patient.'},
+  {name:'Coffee for a grump', orbs:['*c=y,m=h,q=p','*c=y,m=h,q=p','*c=b,m=g,q=z'], machines:['coffee','meet'], gateKind:'line', gate:['*c=b','*c=y','*c=y'], par:6, hint:'It\u2019s too early for this.'},
+  {name:'Pushy party', orbs:['*c=b,m=h,q=p','*c=b,m=h,q=p','*c=r,m=g,q=z','*c=y,m=g,q=c'], machines:['camp'], gateKind:'line', gate:['*c=r','*c=y','*c=b','*c=b'], par:5, hint:'Two Pushies walk into a line.'},
+  {name:'Marshmallow line', orbs:['*c=b,m=g,q=p','*c=r,m=g,q=c','*c=y,m=h,q=c','*c=y,m=h,q=e'], machines:['camp'], gateKind:'line', gate:['*c=b','*c=r','*c=y','*c=y'], par:5, hint:'Toasted, not burnt.'},
+  {name:'Grand queue', orbs:['*k=tw','*c=r,m=h,q=c','*c=b,m=h,q=p','*c=r,m=g,q=c','*c=y,m=h,q=p'], machines:['press','meet','coffee'], gateKind:'line', gate:['*c=r','*c=r','*c=b','*c=r','*c=y'], par:8, hint:'Three worlds, five spots, one very long morning.'},
  ]};
 
 
@@ -708,31 +708,31 @@ function rxValidate(kind, seat){            // seat: trait objects in gate order
 
 const RXL = {
   1:[ // The Commons · Remix
-    {name:'A grump spoils it', orbs:['*c=r,e=1,m=h','*c=r,e=1,m=g','*c=y,e=1,m=h'], machines:['press','meet'], gateKind:'bench', gate:['*c=r,e=2'], par:2, hint:'Eyes from the Hatchery, moods from the Commons. What does a grump do in the Press?'},
-    {name:'Same color only', orbs:['*c=r,e=1,m=h','*c=y,e=1,m=h','*c=y,e=1,m=h','*c=b,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=y,e=2','*c=r'], par:1, hint:'Not every pair of one-eyed blobs will fuse.'},
-    {name:'Copy a friend', orbs:['*k=tw','*k=tw','*c=b,e=2,m=h','*c=y,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=b,e=2','*c=b,e=2','*c=y,e=2'], par:3, hint:'Will Twin copy a blob from another world?'},
-    {name:'Cheer, then split', orbs:['*k=sp','*c=r,e=4,m=g','*c=y,e=2,m=h'], machines:['press','meet'], gateKind:'bench', gate:['*c=r,e=3','*c=y','*c=r,e=3'], par:2, hint:'Does Split care about moods?'},
-    {name:'Void and friends', orbs:['*k=vo','*c=b,e=2,m=g','*c=y,e=1,m=h','*c=r,e=1,m=g'], machines:['press','meet'], gateKind:'bench', gate:['*c=b,e=1','*c=y,e=1','*c=r,e=1'], par:3, hint:''},
-    {name:'Campfire forge', orbs:['*k=wi','*c=r,e=2,m=g','*c=r,e=2,m=g','*c=y,e=1,m=h','*c=y,e=1,m=h'], machines:['press','camp'], gateKind:'bench', gate:['*c=r,e=4','*c=y,e=2'], par:4, hint:'Fuse first, or cheer first?'},
-    {name:'Grand bench', orbs:['*k=tw','*k=sp','*c=r,e=3,m=h','*c=b,e=2,m=g','*c=y,e=1,m=g','*c=y,e=1,m=h'], machines:['press','meet','camp'], gateKind:'bench', gate:['*c=r,e=2','*c=r,e=2','*c=y,e=2','*c=b','any'], par:4, hint:'Everything you know from two worlds.'},
+    {name:'A grump spoils it', orbs:['*c=r,e=1,m=h','*c=r,e=1,m=g','*c=y,e=1,m=h'], machines:['press','meet'], gateKind:'bench', gate:['*c=r,e=2'], par:2, hint:'Two worlds walk into a bench.'},
+    {name:'Same color only', orbs:['*c=r,e=1,m=h','*c=y,e=1,m=h','*c=y,e=1,m=h','*c=b,e=1,m=h'], machines:['press'], gateKind:'bench', gate:['*c=y,e=2','*c=r'], par:1, hint:'Birds of a feather. Blobs of a color.'},
+    {name:'Cheer, then split', orbs:['*k=sp','*c=r,e=4,m=g','*c=y,e=2,m=h'], machines:['press','meet'], gateKind:'bench', gate:['*c=r,e=3','*c=y','*c=r,e=3'], par:2, hint:'Half the blob, twice the friends.'},
+    {name:'Sunny side up', orbs:['*c=y,e=1,m=h','*c=y,e=2,m=h','*c=y,e=2,m=h','*c=y,e=3,m=g','*k=tw'], machines:['press'], gateKind:'bench', gate:['*c=y','*c=y,e=4'], par:3, hint:'All yellow, all the time.'},
+    {name:'Twin peaks', orbs:['*c=b,e=3,m=h','*c=r,e=2,m=g','*c=y,e=2,m=g','*c=y,e=2,m=g','*k=tw'], machines:['press','meet'], gateKind:'bench', gate:['*c=y,e=2','*c=r,e=2','*c=r,e=2'], par:3, hint:'Twin has never met a blob it didn\u2019t want to copy.'},
+    {name:'Red rally', orbs:['*c=b,e=3,m=g','*c=r,e=2,m=g','*c=r,e=2,m=g','*c=r,e=3,m=h','*c=y,e=2,m=g','*k=tw'], machines:['press','camp'], gateKind:'bench', gate:['*c=r,e=2','*c=r,e=3','*c=r,e=2'], par:3, hint:'Somebody brought marshmallows again.'},
+    {name:'Campfire forge', orbs:['*k=wi','*c=r,e=2,m=g','*c=r,e=2,m=g','*c=y,e=1,m=h','*c=y,e=1,m=h'], machines:['press','camp'], gateKind:'bench', gate:['*c=r,e=4','*c=y,e=2'], par:4, hint:'Hot metal, warm hearts.'},
   ],
   2:[ // The Nursery · Remix
-    {name:'Hidden red', orbs:['*a=YR,m=h','*a=YR,m=h'], machines:['nest'], gateKind:'cradle', gate:['*c=r'], par:1, hint:'Commons colors are in the genes now. Read the ears.'},
-    {name:'Three colors', orbs:['*a=YB,m=h','*a=RB,m=h'], machines:['nest'], gateKind:'bench', gate:['*c=b','*c=y','*c=r'], par:1, hint:'The babies have to share a Friendship bench.'},
-    {name:'Cheer before nesting', orbs:['*a=YR,m=g','*a=RB,m=h'], machines:['nest','meet'], gateKind:'bench', gate:['*c=r','*c=r'], par:2, hint:'A grumpy parent in the Nest…'},
-    {name:'Clone the carrier', orbs:['*k=tw','*a=YB,m=h','*a=RR,m=h'], machines:['press','nest'], gateKind:'cradle', gate:['*c=b'], par:2, hint:'One Blue carrier isn’t enough on its own.'},
-    {name:'Family peace', orbs:['*a=YB,m=h','*a=RB,m=g','*a=YR,m=h'], machines:['nest','meet'], gateKind:'bench', gate:['*c=r','*c=y','*c=b'], par:2, hint:''},
-    {name:'Campfire cradle', orbs:['*a=RB,m=g','*a=RB,m=g','*a=YB,m=h','*a=YY,m=h'], machines:['nest','nest','camp'], gateKind:'cradle', gate:['*c=b','*c=b'], par:3, hint:'Two blue babies, both smiling.'},
-    {name:'Dynasty', orbs:['*k=tw','*a=YR,m=g','*a=YB,m=h'], machines:['press','nest','nest','meet'], gateKind:'bench', gate:['*c=r','*c=y','*c=b','*c=b'], par:4, hint:'Three worlds, one family bench.'},
+    {name:'Hidden red', orbs:['*a=YR,m=h','*a=YR,m=h'], machines:['nest'], gateKind:'cradle', gate:['*c=r'], par:1, hint:'Commons colors run in the family now.'},
+    {name:'Three colors', orbs:['*a=YB,m=h','*a=RB,m=h'], machines:['nest'], gateKind:'bench', gate:['*c=b','*c=y','*c=r'], par:1, hint:'Siblings, sitting together. For now.'},
+    {name:'Clone the carrier', orbs:['*k=tw','*a=YB,m=h','*a=RR,m=h'], machines:['press','nest'], gateKind:'cradle', gate:['*c=b'], par:2, hint:'Two of a kind make a kind.'},
+    {name:'Moody parents', orbs:['*a=RB,m=g','*a=RB,m=g','*a=RR,m=h','*a=YR,m=g'], machines:['nest','meet'], gateKind:'cradle', gate:['*c=r','*c=r','*c=r','*c=b'], par:3, hint:'Nobody wants a grumpy baby. Least of all the Cradle.'},
+    {name:'Campfire cradle', orbs:['*a=RB,m=g','*a=RB,m=g','*a=YB,m=h','*a=YY,m=h'], machines:['nest','nest','camp'], gateKind:'cradle', gate:['*c=b','*c=b'], par:3, hint:'Lullabies by the fire.'},
+    {name:'Copy the parents', orbs:['*a=BB,m=g','*a=BB,m=h','*a=RB,m=g','*a=YR,m=g','*k=tw'], machines:['nest','camp','press'], gateKind:'cradle', gate:['*c=y','*c=r','*c=y'], par:3, hint:'The Twin has a strange idea about family planning.'},
+    {name:'Dynasty', orbs:['*a=BB,m=g','*a=RB,m=g','*a=YB,m=g','*a=YR,m=h','*k=tw'], machines:['nest','nest','press'], gateKind:'cradle', gate:['*c=r','*c=r','*c=y','*c=y'], par:3, hint:'Four cradles, three grumps and one very busy Twin.'},
   ],
   3:[ // The Reef · Remix
-    {name:'Big fish', orbs:['*e=2,s=s,u=h','*e=2,s=j,u=h','*e=2,s=j,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=s','*s=j'], par:1, hint:'Hunters have eyes now. Can a small Spiky eat a big Jelly?'},
-    {name:'Shrink the hunter', orbs:['*k=vo','*e=2,s=g,u=h','*e=2,s=s,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*e=2,s=s'], par:1, hint:''},
-    {name:'Wild growth', orbs:['*k=wi','*e=2,s=j,u=h','*e=2,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*e=2,s=j'], par:1, hint:''},
-    {name:'Size matters', orbs:['*e=2,s=s,u=h','*e=1,s=j,u=h','*e=3,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['pool3'], gateKind:'calm', gate:['*s=s','*s=j','*s=g'], par:1, hint:'One tide. Pick who goes in carefully.'},
-    {name:'Copy the prey', orbs:['*k=tw','*e=3,s=s,u=h','*e=1,s=j,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*s=s','*s=j'], par:2, hint:''},
-    {name:'Feed after you fuse', orbs:['*e=1,s=s,u=h','*e=1,s=j,u=h','*e=1,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*e=1,s=s','*e=2,s=j','*e=2,s=g'], par:2, hint:'Order matters: does a fused blob stay full?'},
-    {name:'Grand reef', orbs:['*k=tw','*e=2,s=s,u=h','*e=3,s=j,u=h','*e=1,s=g,u=h','*e=2,s=g,u=h','*s=p'], machines:['press','pool3'], gateKind:'calm', gate:['*s=j','*s=g','*s=s','any','*s=s'], par:2, hint:'Five seats in the Calm pool.'},
+    {name:'Big fish', orbs:['*e=2,s=s,u=h','*e=2,s=j,u=h','*e=2,s=j,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=s','*s=j'], par:1, hint:'Eyes bigger than your stomach.'},
+    {name:'Shrink the hunter', orbs:['*k=vo','*e=2,s=g,u=h','*e=2,s=s,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*e=2,s=s'], par:1, hint:'Big appetite, small blob.'},
+    {name:'Wild growth', orbs:['*k=wi','*e=2,s=j,u=h','*e=2,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*e=2,s=j'], par:1, hint:'Eat your greens, grow up big.'},
+    {name:'Copy the prey', orbs:['*k=tw','*e=3,s=s,u=h','*e=1,s=j,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*s=g','*s=s','*s=j'], par:2, hint:'One for lunch, one for the pool.'},
+    {name:'Feed after you fuse', orbs:['*e=1,s=s,u=h','*e=1,s=j,u=h','*e=1,s=j,u=h','*e=2,s=g,u=h','*e=1,s=g,u=h'], machines:['press','pool2'], gateKind:'calm', gate:['*e=1,s=s','*e=2,s=j','*e=2,s=g'], par:2, hint:'Never swim on a full stomach.'},
+    {name:'Glow party', orbs:['*e=2,s=g,u=h','*e=2,s=g,u=h','*e=2,s=s,u=h','*e=3,s=g,u=h','*e=3,s=s,u=h','*s=p'], machines:['press','pool3'], gateKind:'calm', gate:['*e=3,s=g','*s=s','*e=3,s=g','*s=p'], par:2, hint:'The Pebble did not RSVP.'},
+    {name:'Split decision', orbs:['*e=1,s=g,u=h','*e=3,s=g,u=h','*e=3,s=j,u=h','*e=3,s=j,u=h','*k=sp'], machines:['press','pool3'], gateKind:'calm', gate:['*e=2,s=g','*s=j','*e=3,s=j','*e=1,s=g'], par:2, hint:'Some days you\u2019re the hunter. Some days you\u2019re half the hunter.'},
   ],
   4: QJ.queueRemix,
 };
@@ -775,7 +775,8 @@ const RXW = {
     if (r.transform) out.transform=r.transform.map(x=>x?RXF(x):null);
     if (r.spawn) out.spawn=r.spawn.map(x=>({t:RXF(x), baby:!!x.baby}));
     return out; },
-  accepts(spec,o){ return (L && L.def.gateKind==='line') ? true : rxMatch(spec, RXP(o.t)); },
+  accepts(spec,o){ if (L && L.def.gateKind==='line') return true; if (L && L.def.gateKind==='cradle' && !o.baby) return false;   /* cradle: babies only */
+    return rxMatch(spec, RXP(o.t)); },
   boothMatch(spec,o){ return rxMatch(spec, RXP(o.t)); },
   qobj(o){ return RXP(o.t); },
   reqLabel(spec){ if (spec==='any') return 'Anyone'; const x=RXP(spec), p=[];
@@ -1191,7 +1192,7 @@ function holeAccepts(m,i,o){
   if (m.type==='gate' && gateKindNow()==='line') return i===m.slots.filter(Boolean).length;
   if (m.type==='gate' && m.seesaw) return true;
   if (m.type==='gate') return m.req[i]!==null && rules().accepts(m.req[i],o);
-  if (m.type==='nest' && o.baby && S.world===2 && !isRemix()) return false;   /* hatchlings are too young for a Nest */
+  if (m.type==='nest' && o.baby) return false;   /* hatchlings are too young for a Nest */
   return true;
 }
 function findHole(o, wrongToo){
@@ -1478,7 +1479,7 @@ function resolveMachine(m){
       queue.push({t:.05, fn:()=>alive.forEach((o,k)=>setTimeout(()=>voice(o,.8),k*70))});
     }
     if (res.hearts) hearts(cx,m.rect.y,6);
-    if (m.type==='nest' && S.world===2 && !isRemix()){ const kids=orbs.filter(o=>o.baby && !o.hole);
+    if (m.type==='nest'){ const kids=orbs.filter(o=>o.baby && !o.hole);
       kids.forEach((o,k)=>{ o.baby=false; o.sq=.25; o.vy=-220; burst(o.x,o.y-o.r*.9,'#fffaf0',10,200); queue.push({t:k*.05, fn:()=>tone(900+k*60,600,.08,'triangle',.05)}); });
       if (kids.length) learn('growup'); }
     (res.spawn||[]).forEach((s,k,arr)=>queue.push({t:.12+k*.11, orb:enc(s), fn:()=>{
@@ -1554,8 +1555,8 @@ function release(){
   const t=findHole(o,true);
   if (t && t.ok){ placeInHole(o,t.m,t.i); }
   else {
-    if (t && !t.ok && t.m.type==='nest' && o.baby && S.world===2 && !isRemix() && !t.m.used && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4){ sfx.denied(); t.m.shake=.35; learn('young'); floatText(t.h.x,t.m.rect.y-R*1.2,'Too young!','#ff7a9c'); }
-    if (t && !t.ok && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4 && t.m.req[t.i]){ sfx.denied(); t.m.shake=.35; const grown = S.world===2 && !isRemix() && !o.baby && W3.accepts(t.m.req[t.i], {...o, baby:true});
+    if (t && !t.ok && t.m.type==='nest' && o.baby && !t.m.used && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4){ sfx.denied(); t.m.shake=.35; learn('young'); floatText(t.h.x,t.m.rect.y-R*1.2,'Too young!','#ff7a9c'); }
+    if (t && !t.ok && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4 && t.m.req[t.i]){ sfx.denied(); t.m.shake=.35; const grown = gateKindNow()==='cradle' && !o.baby && rules().accepts(t.m.req[t.i], {...o, baby:true});
       if (grown) learn('babies');
       floatText(t.h.x,t.m.rect.y-R*1.2, grown ? 'Hatchlings only!' : `Wants ${rules().reqLabel(t.m.req[t.i])}`,'#ff7a9c'); }
     const now=performance.now(); let a=hist[0]; for(const h of hist) if(now-h.t<=90){ a=h; break; }
@@ -1768,6 +1769,10 @@ function remixFace(o,r,ghost,l){
   cfg.e.forEach(([ex,ey])=>eye(ex*r,ey*r,es*r,ghost?0:open,o.lx,lyR,ghost,squint&&P!=='z'));
   if (ghost) return;
   const top=Math.min(...cfg.e.map(e=>e[1]))*r - es*r*1.5, my=cfg.m*r;
+  if (o.hunting){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.4,r*.08); ctx.lineCap='round';   /* Reef remix: the hunter scowls at its food */
+    [-1,1].forEach(sd=>{ ctx.beginPath(); ctx.moveTo(sd*r*.55,top-r*.06); ctx.lineTo(sd*r*.12,top+r*.08); ctx.stroke(); }); }
+  if (o.scared){ ctx.fillStyle='#bfe9ff'; ctx.strokeStyle='#3d7ea6'; ctx.lineWidth=Math.max(1,r*.04);   /* ...and the food sweats */
+    const dx=r*.66, dy=-r*.42+Math.sin(time*6+o.id)*r*.03; ctx.beginPath(); ctx.moveTo(dx,dy-r*.2); ctx.quadraticCurveTo(dx+r*.12,dy,dx,dy+r*.08); ctx.quadraticCurveTo(dx-r*.12,dy,dx,dy-r*.2); ctx.fill(); ctx.stroke(); }
   if (P) personaFx(o,r,P,top,isHeld);
   if (P && md!=='grumpy'){ if (P==='p'){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.3,r*.065); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-r*.13,my); ctx.lineTo(r*.13,my); ctx.stroke(); return; }
     if (P==='e'){ mouth(r,my,'o'); return; } }
@@ -1864,7 +1869,7 @@ function drawOrb(o,x,y,scale=1,alpha=1,ghost=false){
   if (ghost) ctx.globalAlpha=Math.min(1,alpha*1.8);
   if (l.face==='pip') pipFace(o,r,ghost,l); else if (l.face==='critter') critterFace(o,r,ghost,l); else if (l.face==='remix') remixFace(o,r,ghost,l); else glyph(o,r);
   if (o.glare && !ghost) angerFx(o,r);
-  if (l.baby && l.face==='critter' && l.line){ shellCap(r, l.line==='P'); if (l.line==='P') petals(l,r); }
+  if (l.baby && (l.face==='critter' || l.face==='remix') && l.line){ shellCap(r, l.line==='P'); if (l.line==='P') petals(l,r); }
   ctx.restore();
   if (l.badge && !ghost){ ctx.font=`800 ${Math.max(10,Math.round(r*.48))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     const tw=ctx.measureText(l.badge).width+r*.5, bh=Math.max(14,r*.6), py=y-r*1.02;
