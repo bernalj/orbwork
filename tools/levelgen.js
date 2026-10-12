@@ -1,22 +1,40 @@
 // Level generator: samples random setups and keeps the ones that hit a difficulty target.
-//   node tools/levelgen.js <hatchery|lighthouse> <par> [count] [seconds] [--uses=sp,vo] [--gate=1-3] [--orbs=3-6] [--machines=lamp,prism]
+//   node tools/levelgen.js <hatchery|commons|lighthouse> <par> [count] [seconds] [--uses=sp,vo] [--gate=1-3] [--orbs=3-6] [--machines=lamp,prism]
 //     --uses      blob kinds the solution must feed into a machine (e.g. sp,vo / glass)
-//     --gate      goal size range; --orbs starting blob count range; --machines fixed machine set (Lighthouse)
+//     --gate      goal size range; --orbs starting blob count range; --machines fixed machine set
+//     --essential every machine is needed (removing any one makes the level longer or unsolvable)
+//     --spreadneeded Commons: the "moods spread" bench rule must matter (old rule: longer or impossible)
+//     --allsit    Commons: every blob must sit (bench seats = blobs, plus 0-2 seated guests)
+//     BENCH=spread env: Commons bench uses the "moods spread" rule
 // Prints JSON candidates sorted best-first: start blobs, machines, goal, par, number of optimal
 // solutions, traps (first moves that make the level unsolvable), random-win rate, decoys.
 'use strict';
-const { moves, solve, solvable, contains, key } = require('./solver');
+const { moves, solve, solvable, contains, key, won } = require('./solver');
 
-const argv = process.argv.slice(2), flags = Object.fromEntries(argv.filter(a => a.startsWith('--')).map(a => a.slice(2).split('=')));
+const argv = process.argv.slice(2), flags = Object.fromEntries(argv.filter(a => a.startsWith('--')).map(a => { const [k, v] = a.slice(2).split('='); return [k, v === undefined ? true : v]; }));   // bare --flag means on
 const [world, parArg, countArg = '8', secsArg = '60'] = argv.filter(a => !a.startsWith('--'));
 const range = (v, d) => (v || d).split('-').map(Number).concat([]).slice(0, 2).map((x, i, a) => x ?? a[0]);
-const [GMIN, GMAX = GMIN] = range(flags.gate, '1-3'), [OMIN, OMAX = OMIN] = range(flags.orbs, world === 'hatchery' ? '3-6' : '3-5');
+const [GMIN, GMAX = GMIN] = range(flags.gate, world === 'commons' ? '2-5' : '1-3'), [OMIN, OMAX = OMIN] = range(flags.orbs, world === 'lighthouse' ? '3-5' : '3-6');
 const USES = flags.uses ? flags.uses.split(',') : [], FIXED_M = flags.machines ? flags.machines.split(',') : null;
 const TARGET = +parArg, WANT = +countArg, DEADLINE = Date.now() + 1000 * +secsArg;
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const LIGHTS = ['r', 'g', 'b', 'rg', 'rb', 'gb', 'rgb'];
 
 function sampleSetup() {
+  if (world === 'commons') {                                         // blobs, machines AND the bench in one go
+    const n = OMIN + Math.floor(Math.random() * (OMAX - OMIN + 1));
+    const orbs = Array.from({ length: n }, () => pick('rrbbyy') + (Math.random() < .55 ? 'g' : 'h'));
+    const machines = FIXED_M || (Math.random() < .5 ? ['meet', 'camp'] : ['meet']);
+    // --allsit: every blob has to find a seat (plus up to two guests already seated, happy or grumpy)
+    const seats = flags.allsit ? n : GMIN + Math.floor(Math.random() * (GMAX - GMIN + 1));
+    let guests = 0;
+    const gate = Array.from({ length: seats }, () => { const r = Math.random();
+      if (!flags.allsit && r < .12 && guests < 2) { guests++; return 'L:' + pick('rby') + 'h'; }
+      return r < .4 ? pick('rby') : 'any'; });
+    if (flags.allsit) for (let g = Math.floor(Math.random() * 3); g > 0; g--) gate.splice(Math.floor(Math.random() * (gate.length + 1)), 0, 'L:' + pick('rby') + (Math.random() < .5 ? 'h' : 'g'));
+    if (gate.every(g => g.startsWith('L:'))) gate[0] = 'any';
+    return { orbs, machines, gate };
+  }
   if (world === 'hatchery') {
     const n = OMIN + Math.floor(Math.random() * (OMAX - OMIN + 1));
     const bag = ['p1', 'p1', 'p1', 'p2', 'p2', 'p3', 'p3', 'p4', 'tw', 'tw', 'sp', 'vo', 'wi', 'wi'];
@@ -53,6 +71,13 @@ function goalsAt(setup) {
 function rate(level, trials = 600) {
   const goal = level.gate, sol = solve(level);
   if (sol.par !== TARGET) return null;
+  // every machine must earn its place: without it the level gets longer or impossible
+  if (flags.essential && level.machines.length > 1) for (const m of new Set(level.machines)) {
+    const without = solve({ ...level, machines: level.machines.filter(x => x !== m) }, TARGET);
+    if (without.par !== null && without.par <= TARGET) return null; }
+  // --spreadneeded (Commons): under the old bench rule (no grumpy blobs at all) the level must be longer or impossible
+  if (flags.spreadneeded && world === 'commons') { const was = process.env.BENCH; process.env.BENCH = 'classic';
+    const classic = solve(level, TARGET); process.env.BENCH = was; if (classic.par !== null && classic.par <= TARGET) return null; }
   const fed = (sol.line || []).join(' ');
   if (USES.some(u => u === 'glass' ? !/\+F|\(F/.test(fed) : u === 'machines' ? !level.machines.every(m => fed.includes(m + '(')) : !fed.includes(u))) return null;
   const first = moves(world, level.machines, level.orbs);
@@ -60,22 +85,29 @@ function rate(level, trials = 600) {
   let wins = 0;
   for (let t = 0; t < trials; t++) {
     let s = level.orbs.slice();
-    for (let i = 0; i < TARGET + 3 && !contains(s, goal); i++) { const ms = moves(world, level.machines, s); if (!ms.length) break; s = pick(ms).next; }
-    if (contains(s, goal)) wins++;
+    for (let i = 0; i < TARGET + 3 && !won(world, s, goal); i++) { const ms = moves(world, level.machines, s); if (!ms.length) break; s = pick(ms).next; }
+    if (won(world, s, goal)) wins++;
   }
   // decoys: starting blobs the sample solution never feeds into a machine
   const used = []; (sol.line || []).forEach(step => step.replace(/^\w+\(|\)$/g, '').split('+').forEach(t => used.push(t)));
   const pool = level.orbs.slice(); used.forEach(t => { const i = pool.indexOf(t); if (i >= 0) pool.splice(i, 1); });
-  const decoys = pool.filter(t => !goal.includes(t)).length;
-  const kinds = new Set(level.orbs.map(t => world === 'hatchery' ? (t[0] === 'p' ? 'pip' : t) : t[0] + t.length)).size;
+  const decoys = world === 'commons' ? Math.max(0, level.orbs.length - goal.filter(g => !g.startsWith('L:')).length) : pool.filter(t => !goal.includes(t)).length;
+  const kinds = new Set(level.orbs.map(t => world === 'hatchery' ? (t[0] === 'p' ? 'pip' : t) : world === 'commons' ? t : t[0] + t.length)).size;
   // score: rare to stumble into, has traps, few optimal lines, some decoys, uses variety
-  const score = (1 - wins / trials) * 4 + Math.min(traps, 3) * .8 + (sol.solutions <= 2 ? 1.5 : sol.solutions <= 6 ? .6 : 0) + Math.min(decoys, 2) * .5 + kinds * .3 - level.orbs.length * .15;
+  const few = world === 'commons' ? (sol.solutions <= 4 ? 1.5 : sol.solutions <= 16 ? .6 : 0) : (sol.solutions <= 2 ? 1.5 : sol.solutions <= 6 ? .6 : 0);   // Commons: independent meetings commute
+  const score = (1 - wins / trials) * 4 + Math.min(traps, 3) * .8 + few + Math.min(decoys, 2) * .5 + kinds * .3 - level.orbs.length * .15;
   return { ...level, par: sol.par, solutions: sol.solutions, firstMoves: first.length, traps, randomWin: +(wins / trials).toFixed(3), decoys, score: +score.toFixed(2), solution: sol.line };
 }
 
 const found = new Map();
 while (Date.now() < DEADLINE) {
   const setup = sampleSetup();
+  if (world === 'commons') {
+    const lvl = { world, orbs: setup.orbs.slice().sort(), machines: setup.machines, gate: setup.gate };
+    const k = key(lvl.orbs) + '|' + lvl.machines.join() + '|' + lvl.gate.join();
+    if (!found.has(k)) { const r = rate(lvl); if (r) found.set(k, r); }
+    continue;
+  }
   for (const gate of goalsAt(setup).slice(0, 6)) {
     if (setup.machines.length > 3 || gate.length < GMIN || gate.length > GMAX) continue;
     const lvl = { world, orbs: setup.orbs.slice().sort(), machines: setup.machines, gate };
@@ -85,7 +117,8 @@ while (Date.now() < DEADLINE) {
   }
 }
 // one candidate per solution shape (which machines/kinds are used, in order), so the list isn't near-copies
-const shape = c => (c.solution || []).map(st => st.replace(/p\d/g, 'p').replace(/L[rgb]+/g, 'L').replace(/F[rgb]+/g, 'F')).join('>') + '|' + c.gate.length;
+const shape = c => world === 'commons' ? (c.solution || []).map(st => st.split('(')[0]).join('>') + '|' + c.gate.map(g => g.startsWith('L:') ? 'G' : g === 'any' ? 'a' : 'c').join('')
+  : (c.solution || []).map(st => st.replace(/p\d/g, 'p').replace(/L[rgb]+/g, 'L').replace(/F[rgb]+/g, 'F')).join('>') + '|' + c.gate.length;
 const seenShape = new Set(), best = [];
 for (const c of [...found.values()].sort((a, b) => b.score - a.score)) { if (seenShape.has(shape(c))) continue; seenShape.add(shape(c)); best.push(c); if (best.length >= WANT) break; }
 console.log(JSON.stringify({ world, par: TARGET, examined: found.size, best }, null, 1));
