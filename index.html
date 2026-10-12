@@ -1011,7 +1011,7 @@ function hatchList(list, gap){
 }
 function loadState(s){
   orbs=orbs.filter(o=>o.locked); queue=[]; held=null;
-  machines.forEach((m,i)=>{ m.state='idle'; m.slots=m.slots.map(o=>o&&o.locked?o:null); m.used=!!(s.used&&s.used[i]); });
+  machines.forEach((m,i)=>{ m.state='idle'; m.fed=m.lunged=false; m.slots=m.slots.map(o=>o&&o.locked?o:null); m.used=!!(s.used&&s.used[i]); });
   const g=machines[0];
   (s.gate||[]).forEach((e,i)=>{ if(!e||!g.holesPos[i]||g.slots[i]) return; const o=makeOrb(dec(e),0,0); o.pop=1; o.hole={m:g,i}; g.slots[i]=o; });
   hatchList(s.orbs||[], .09); L.moves=s.moves||0;
@@ -1367,6 +1367,14 @@ function ejectFrom(m, list){
 function resolveMachine(m){
   const w=rules(), ins=m.slots.slice(), ts=ins.map(o=>o.t), res=w.react(m.type,ts);
   const cx=m.rect.x+m.rect.w/2, by=m.rect.y+m.rect.h;
+  // Tide pools: play the meal out first (every eater lunges at its food, the food shrinks away), then resolve
+  if (res.chomp && res.transform && !m.fed){ const eaten=ins.map((o,i)=>res.transform[i]===null);
+    let any=false;
+    ins.forEach((o,i)=>{ if (eaten[i] || res.transform[i]===o.t) return;
+      const v=[i-1,i+1].filter(j=>eaten[j]).map(j=>ins[j]).find(x=>lookOf(o).prey===lookOf(x).species) || [i-1,i+1].filter(j=>eaten[j]).map(j=>ins[j])[0];
+      if (v){ o.lungeTo=v; o.lungeT=0; o.bit=false; v.eatenAt=time+.25; any=true; } });
+    if (any){ m.fed=true; m.state='feeding'; queue.push({t:.95, fn:()=>resolveMachine(m)}); return; } }
+  m.fed=false;
   L.moves++; w.seen(ts,res);
   m.slots=m.slots.map(()=>null);
   if (res.fail){
@@ -1736,7 +1744,8 @@ function glyph(o,r){
 }
 function drawOrb(o,x,y,scale=1,alpha=1,ghost=false){
   const l=lookOf(o); const pe=o.pop<1 ? (1+2.2*Math.pow(o.pop-1,3)+1.2*Math.pow(o.pop-1,2)) : 1;
-  const r=o.r*scale*pe; if (!ghost){ o.dx=x; o.dy=y; o.dr=r; } if (r<=.5) return; const sp=spriteFor(l), s=(r/(R*SPR))*(R*SPR+3);
+  const gulp = o.eatenAt && !ghost ? Math.max(0,1-Math.max(0,time-o.eatenAt)/.4) : 1;
+  const r=o.r*scale*pe*gulp; if (!ghost){ o.dx=x; o.dy=y; o.dr=r; } if (r<=.5) return; const sp=spriteFor(l), s=(r/(R*SPR))*(R*SPR+3);
   const shk = ghost ? 0 : o.glare ? Math.sin(time*48+o.id)*r*.07 : o.scared ? Math.sin(time*55+o.id)*r*.045 : 0;
   if (o.lungeTo && !ghost){ const pa=posOf(o), pb=posOf(o.lungeTo), k=Math.sin(Math.min(1,o.lungeT/.45)*Math.PI)*.42; x+=(pb.x-pa.x)*k; y+=(pb.y-pa.y)*k; }
   ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x+shk,y); if (o.lean && !ghost) ctx.rotate(o.lean); ctx.scale(1+o.sq,1-o.sq);
