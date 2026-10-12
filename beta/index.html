@@ -885,6 +885,38 @@ const MT = {
 /* ======================= save ======================= */
 const KEY='orbwork-beta-levels', OLD='orbwork-beta-none';   // beta: separate save
 const host = window.orbworkHost || null;  // set by the desktop (Steam) build's preload; null on the web
+
+/* ======================= analytics (PostHog, website only) =======================
+   One summary per level attempt (level_started -> level_completed / level_left), plus every failed move and
+   refused drop, rules learned, the one-minute Notebook nudge and secrets. Off in the desktop build and on
+   local copies (QA runs). A friend can be named with ?player=Name in the link. */
+const ANALYTICS = !host && /^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+if (ANALYTICS){ try {
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog&&window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session identify setPersonProperties reset get_distinct_id get_session_id alias set_config startSessionRecording stopSessionRecording captureException opt_in_capturing opt_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('phc_vy68EdzhVik2QkndWr5cqXzUGgeLPJXKPzmHCcRW9GyN', { api_host:'https://eu.i.posthog.com', person_profiles:'always', capture_pageleave:true });
+  const who=new URLSearchParams(location.search).get('player'); if (who) posthog.setPersonProperties({name: who.slice(0,40)});
+  posthog.register({ build: location.pathname.includes('/beta/') ? 'beta' : 'live', touch: matchMedia('(pointer:coarse)').matches });
+} catch(e){} }
+function track(ev, props, beacon){ if (!ANALYTICS || !window.posthog) return; try { posthog.capture(ev, props, beacon ? {transport:'sendBeacon'} : undefined); } catch(e){} }
+let att=null;   // the level attempt in progress
+function attBase(){ const w=WORLDS[att.wi], d=att.def, n=d.remix ? att.li-mainCount(w)+1 : att.li+1;
+  return { world:w.short, world_index:att.wi, level:n, remix:!!d.remix, level_key:`${w.short} ${d.remix?'remix ':''}${n}`, level_name:d.name, par:d.par }; }
+function attStats(){ const f=att.fails, top=Object.keys(f).sort((a,b)=>f[b]-f[a])[0]||null, r=att.refused, topR=Object.keys(r).sort((a,b)=>r[b]-r[a])[0]||null;
+  return { seconds:Math.round((Date.now()-att.t0)/1000), moves:L?L.moves:0, undos:att.undos, fails:Object.values(f).reduce((a,b)=>a+b,0), fail_reasons:f, top_fail_reason:top,
+    refused_drops:Object.values(r).reduce((a,b)=>a+b,0), top_refused_drop:topR, notebook_opens:att.nb, nudge_shown:att.nudged, attempt:att.attempt }; }
+function attStart(wi, li, def, resumed){
+  if (att && !att.done) attEnd(att.wi===wi && att.li===li ? 'restarted' : 'left');
+  const k=`${wi}:${li}`; S.attempts=S.attempts||{}; if (!resumed) S.attempts[k]=(S.attempts[k]||0)+1;
+  att={wi, li, def, t0:Date.now(), undos:0, fails:{}, refused:{}, nb:0, nudged:false, attempt:S.attempts[k]||1, done:false};
+  track('level_started', {...attBase(), attempt:att.attempt, resumed:!!resumed, already_beaten:(S.prog[wi].best[li]||0)>0});
+}
+function attEnd(outcome, beacon){ if (!att || att.done) return; att.done=true; track('level_left', {...attBase(), ...attStats(), outcome}, beacon); }
+function attFail(reason, machine){ if (!att || att.done || !reason) return; const k=String(reason).includes(':') ? reason : WORLDS[att.wi].id+':'+reason;
+  att.fails[k]=(att.fails[k]||0)+1; track('move_failed', {...attBase(), reason:k, machine, moves:L?L.moves:0}); }
+function attRefused(text){ if (!att || att.done) return; att.refused[text]=(att.refused[text]||0)+1; track('drop_refused', {...attBase(), reason:text}); }
+addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='hidden'){ if (att && !att.done && L && !L.done) attEnd('app_hidden', true); }
+  else if (att && att.done && L && !L.done && scene==='play') attStart(S.world, L.idx, L.def, true); });
+addEventListener('pagehide', ()=>{ if (att && !att.done && L && !L.done) attEnd('closed', true); });
 const blank = () => ({v4:1, v5:1, v6:1, world:0, prog:[0,1,2,3,4,5,6].map(()=>({level:0,best:{}})), learned:{}, seen:{}, aff:{}, food:{}, met:{}, visited:{}, cur:null});
 let S=blank();
 try {
@@ -1028,7 +1060,8 @@ const levelClock={ key:'', t:0, nudged:false };
 function startLevel(wi, i, restore){
   if (levelClock.key!==`${wi}:${i}`){ levelClock.key=`${wi}:${i}`; levelClock.t=0; levelClock.nudged=false; }
   S.world=wi; const w=world(); i=Math.max(0,Math.min(w.levels.length-1,i));
-  const def=w.levels[i]; L={idx:i, def, moves:0, history:[], done:false}; S.prog[wi].level=i;
+  const def=w.levels[i]; attStart(wi, i, def, !!restore);   // closes the previous attempt (with its moves) first
+  L={idx:i, def, moves:0, history:[], done:false}; S.prog[wi].level=i;
   orbs=[]; queue=[]; parts=[]; floats=[]; rings=[]; bubbles=[]; held=null;
   buildMachines(def); layout(); seatGuests();
   $('#done').hidden=true; clearTimeout(toastTimer); $('#toast').hidden=true;
@@ -1410,7 +1443,7 @@ function cradleCheck(dt){
   for (let i=1;i<fl.length;i++){ if (close(fl[i-1],fl[i])) run.push(fl[i]); else { ok=ok||test(run); run=[fl[i]]; } }
   if (fl.length) ok=ok||test(run);
   cradleT = ok ? cradleT+dt : 0;
-  if (cradleT>.8){ S.feats=S.feats||{}; S.feats.cradle=1; save(); hostSync(); sfx.learn();
+  if (cradleT>.8){ S.feats=S.feats||{}; S.feats.cradle=1; save(); hostSync(); sfx.learn(); track('secret_found', {secret:'newtons_cradle'});
     floatText(W/2, floorY-R*3.2, 'Newton’s cradle!', '#ffd27a'); orbs.filter(o=>!o.hole).forEach(o=>{ o.sq=.2; }); }
 }
 /* the Calm pool goes wrong: the hunter lunges and takes a bite before everyone is pushed out */
@@ -1462,6 +1495,7 @@ function resolveMachine(m){
   L.moves++; w.seen(ts,res);
   m.slots=m.slots.map(()=>null);
   if (res.fail){
+    attFail(res.fail, m.type);
     ejectFrom(m, ins); m.shake=.5; sfx.fizz(); floatText(cx,m.rect.y-4,'Nothing happens','#a698c4'); learn(res.fail); (res.learnFail||[]).forEach(learn);
   } else {
     if (res.consume){ ins.forEach((o,i)=>{ const h=m.holesPos[i], hex=lookOf(o).hex; burst(h.x,h.y,hex,14,280); ring(h.x,h.y,hex,HR*2.6); removeOrb(o); }); }
@@ -1502,7 +1536,7 @@ const nbDot = () => $('#nb-btn').classList.toggle('new', !!S.nbNew);   // "somet
 function learn(rule){
   const key=String(rule).includes(':') ? rule : world().id+':'+rule;
   if (!rule || !RULES[key] || S.learned[key]) return;
-  S.learned[key]=1; S.nbNew=1; hostSync(); sfx.learn(); nbDot();   // no popup: discoveries go quietly into the Notebook
+  S.learned[key]=1; S.nbNew=1; hostSync(); sfx.learn(); nbDot(); track('rule_learned', {rule:key, ...(att&&!att.done ? attBase() : {})});   // no popup: discoveries go quietly into the Notebook
 }
 function resolveGate(m){
   const w=world(), rl=rules();
@@ -1513,6 +1547,7 @@ function resolveGate(m){
     if (pr){ m.lunged=true; m.state='lunge'; pr[0].lungeTo=pr[1]; pr[0].lungeT=0; pr[0].bit=false; queue.push({t:.8, fn:()=>resolveGate(m)}); return; } }
   m.lunged=false;
   if (!v.ok){
+    attFail(v.fail, gateKindNow());
     if (gateKindNow()!=='line') L.moves++; m.bad=v.bad; m.badT=1.6; m.shake=.6; sfx.fizz(); learn(v.fail);
     v.bad.forEach(i=>{ const h=m.holesPos[i]; ring(h.x,h.y,'#ff7a9c',HR*2.2); });
     floatText(m.rect.x+m.rect.w/2, m.rect.y-R*1.2, v.msg, '#ff9db4');
@@ -1528,6 +1563,7 @@ function resolveGate(m){
   const justUnlocked = S.world===0 && Object.keys(best).length===UNLOCK_AT && !S.unlockNote;
   if (justUnlocked) S.unlockNote=1;
   save(); updateHUD(); hostSync();
+  if (att && !att.done){ att.done=true; track('level_completed', {...attBase(), ...attStats(), stars, over_par:mv-par}); }
   setTimeout(()=>{
     const last=L.idx===w.levels.length-1;
     const mainDone = !L.def.remix && L.idx===mainCount(w)-1 && w.levels.length>mainCount(w);
@@ -1541,7 +1577,7 @@ function resolveGate(m){
 }
 function undo(){
   if (!L || !L.history.length || L.done) return;
-  loadState(L.history.pop()); updateHUD(); save();
+  loadState(L.history.pop()); updateHUD(); save(); if (att) att.undos++;
 }
 
 /* ======================= input ======================= */
@@ -1561,10 +1597,11 @@ function release(){
   const t=findHole(o,true);
   if (t && t.ok){ placeInHole(o,t.m,t.i); }
   else {
-    if (t && !t.ok && t.m.type==='nest' && o.baby && !t.m.used && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4){ sfx.denied(); t.m.shake=.35; learn('young'); floatText(t.h.x,t.m.rect.y-R*1.2,'Too young!','#ff7a9c'); }
+    if (t && !t.ok && t.m.type==='nest' && o.baby && !t.m.used && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4){ sfx.denied(); t.m.shake=.35; learn('young'); attRefused('Too young!'); floatText(t.h.x,t.m.rect.y-R*1.2,'Too young!','#ff7a9c'); }
     if (t && !t.ok && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4 && t.m.req[t.i]){ sfx.denied(); t.m.shake=.35; const grown = gateKindNow()==='cradle' && !o.baby && rules().accepts(t.m.req[t.i], {...o, baby:true});
       if (grown) learn('babies');
-      floatText(t.h.x,t.m.rect.y-R*1.2, grown ? 'Hatchlings only!' : `Wants ${rules().reqLabel(t.m.req[t.i])}`,'#ff7a9c'); }
+      const why = grown ? 'Hatchlings only!' : `Wants ${rules().reqLabel(t.m.req[t.i])}`; attRefused(why);
+      floatText(t.h.x,t.m.rect.y-R*1.2, why,'#ff7a9c'); }
     const now=performance.now(); let a=hist[0]; for(const h of hist) if(now-h.t<=90){ a=h; break; }
     const b=hist[hist.length-1], dt=Math.max(16,b.t-a.t)/1000;
     o.vx=Math.max(-1600,Math.min(1600,(b.x-a.x)/dt)); o.vy=Math.max(-1600,Math.min(1600,(b.y-a.y)/dt));
@@ -1656,7 +1693,7 @@ function faces(dt){
 /* ======================= update ======================= */
 function update(dt){
   time+=dt;
-  if (L && !L.done){ levelClock.t+=dt; if (!levelClock.nudged && levelClock.t>60){ levelClock.nudged=true; updateHUD(); } }
+  if (L && !L.done){ levelClock.t+=dt; if (!levelClock.nudged && levelClock.t>60){ levelClock.nudged=true; updateHUD(); if (att && !att.done){ att.nudged=true; track('notebook_nudge_shown', attBase()); } } }
   for (let i=queue.length-1;i>=0;i--){ queue[i].t-=dt; if(queue[i].t<=0){ const q=queue[i]; queue.splice(i,1); q.fn(); } }
   if (held){ let tx=ptr.x, ty=ptr.y;
     const h=findHole({...held,x:ptr.x,y:ptr.y},false); if(h){ const a=h.m.kiosk&&h.m.entry ? h.m.entry : h.h; tx+=(a.x-tx)*.35; ty+=(a.y-ty)*.35; }
@@ -2137,7 +2174,7 @@ function renderNB(){
   $('#nb-body').innerHTML=html;
 }
 $('#nb-tabs').addEventListener('click',e=>{ const b=e.target.closest('.tab'); if(!b) return; nbTab=+b.dataset.i; renderNB(); });
-$('#nb-btn').addEventListener('click',()=>{ nbTab=isRemix()?9:S.world; renderNB(); $('#nb').hidden=false; S.nbNew=0; nbDot(); });
+$('#nb-btn').addEventListener('click',()=>{ if (att && !att.done){ att.nb++; track('notebook_opened', attBase()); } nbTab=isRemix()?9:S.world; renderNB(); $('#nb').hidden=false; S.nbNew=0; nbDot(); });
 $('#map-btn').addEventListener('click',openMap);
 $('#nb-close').addEventListener('click',()=>$('#nb').hidden=true);
 $('#map-close').addEventListener('click',()=>$('#map').hidden=true);
@@ -2260,6 +2297,7 @@ function pauseGame(){
 }
 function resumeGame(){ paused=false; $('#pause').hidden=true; last=performance.now(); }
 function toMainMenu(){
+  if (L && !L.done) attEnd('menu');
   save(); paused=false; $('#pause').hidden=true; ['#nb','#map'].forEach(id=>$(id).hidden=true);
   sceneEl.hidden=false; sceneEl.classList.remove('out'); titleLayout(); showMenu();
 }
