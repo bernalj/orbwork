@@ -363,25 +363,21 @@ const W2 = {
   ghost(req){ return req.length===1 ? req+'h' : null; },
   validate(slots){
     const ts=slots.map(o=>o.t);
+    for (let i=0;i<ts.length;i++) if (ts[i][1]==='g') return {fail:'benchMood', bad:[i], msg:'Too grumpy to sit'};
     for (let i=0;i<ts.length-1;i++){ const a=ts[i][0], b=ts[i+1][0];
       if (!along(a,b)){ S.aff[affKey(a,b)]='no'; return {fail:'benchClash', bad:[i,i+1], msg:'They won’t sit together'}; }
       S.aff[affKey(a,b)]='ok'; }
-    // Moods spread once: a blob between two happy neighbours cheers up, one between two grumpy ones sulks.
-    const mood=ts.map((t,i)=> i>0 && i<ts.length-1 && ts[i-1][1]===ts[i+1][1] ? ts[i-1][1] : t[1]);
-    const bad=mood.map((m,i)=>m==='h'?-1:i).filter(i=>i>=0);
-    if (bad.length) return {fail:'benchMood', bad, msg: bad.some(i=>ts[i][1]==='h') ? 'Grumpy neighbours spoil the mood' : 'Too grumpy to sit'};
-    slots.forEach((o,i)=>{ if (mood[i]!==o.t[1]){ o.t=o.t[0]+mood[i]; learn('benchSpread'); } });
     return {ok:true};
   },
   seen(ts,res){ const key=ts.slice().sort().join('+'); S.seen['w2|'+key] = res.fail ? 'x' : res.transform.slice().sort().join(','); },
   levels:[
-    {name:'Cheer up',        orbs:['yh','yg'],                machines:['meet'],        gate:['any','any'],                          par:1, hint:'Commons blobs wear their mood right on their face.'},
-    {name:'Clash',           orbs:['rh','bg','yh'],           machines:['meet'],        gate:['b','any'],                            par:1, hint:'Everyone in the Commons has an opinion about everyone else.'},
-    {name:'Around the fire', orbs:['rh','rh','bg'],           machines:['camp'],        gate:['b'],                                  par:1, hint:'Somebody always brings marshmallows. Nobody knows who.'},
-    {name:'Squeeze in',      orbs:['bg','bh','rg','yg','yg'], machines:['meet'],        gate:['y','L:rh','any','r'],                 par:2, hint:'The bench was built for four. Nobody measured.'},
-    {name:'Sore loser',      orbs:['bg','bg','rg','rg','rh'], machines:['meet','camp'], gate:['any','L:yh','any','b'],               par:2, hint:'Blue lost at cards again.'},
-    {name:'Red team',        orbs:['bg','bh','rg','rg','rg'], machines:['meet','camp'], gate:['L:rh','any','any','any'],             par:3, hint:'The Reds have a secret handshake. It takes eleven minutes.'},
-    {name:'Full house',      orbs:['bg','bh','rg','rg','yg'], machines:['meet','camp'], gate:['b','L:yg','r','any','y','any'],       par:3, hint:'Everyone\u2019s invited. Yes, even him.'},
+    {name:'Cheer up',      orbs:['yh','yg'],                machines:['meet'], gate:['any','any'],                         par:1, hint:'Commons blobs wear their mood right on their face.'},
+    {name:'Clash',         orbs:['rh','bh','yg'],           machines:['meet'], gate:['any','any','any'],                   par:1, hint:'Everyone in the Commons has an opinion about everyone else.'},
+    {name:'Pass it on',    orbs:['bh','bh','rg','yg'],      machines:['meet'], gate:['any','any','any','any'],             par:2, hint:'Good moods are catching. So are bad ones.'},
+    {name:'Picnic',        orbs:['bh','rg','rg','rh','yh'], machines:['meet'], gate:['any','any','any','any','any'],       par:2, hint:'Somebody brought egg sandwiches. Nobody will admit it.'},
+    {name:'Family dinner', orbs:['bg','bg','rh','yg'],      machines:['meet'], gate:['any','any','any','any'],             par:3, hint:'The Blues are still upset about the lasagna.'},
+    {name:'Movie night',   orbs:['bg','bg','rh','rh','yg'], machines:['meet'], gate:['any','any','any','any','any'],       par:3, hint:'Two Blues, one blanket. This could go either way.'},
+    {name:'Group photo',   orbs:['bg','bg','bg','rh','yh','yh'], machines:['meet'], gate:['any','any','any','any','any','any'], par:3, hint:'Everyone say “blob”!'},
   ],
 };
 
@@ -805,8 +801,7 @@ const RULES = {
   'w2:clash':{g:'meet', text:'When clashing colors meet, both turn grumpy.'},
   'w2:sulk':{g:'meet', text:'Two grumpy blobs just sulk. Nothing changes.'},
   'w2:camp':{g:'camp', text:'Around the Campfire, the mood most of them share wins.'},
-  'w2:benchMood':{g:'bench', text:'Everyone on the bench has to end up happy. The two at the ends never change their mood.'},
-  'w2:benchSpread':{g:'bench', text:'On the bench, a blob between two happy neighbours cheers up, and one between two grumpy neighbours sulks.'},
+  'w2:benchMood':{g:'bench', text:'Grumpy blobs refuse to sit on the bench.'},
   'w2:benchClash':{g:'bench', text:'Neighbors on the bench have to get along.'},
   'w3:clutch':{g:'nest', text:'Each baby gets one ear (or petal) from each parent. A clutch of four covers every combination.'},
   'w3:oneclutch':{g:'nest', text:'Each Nest raises only one clutch.'},
@@ -1254,6 +1249,50 @@ function glareTick(){
   pairs.forEach(([a,b])=>{ a.glare=b; b.glare=a; });
   orbs.forEach(o=>{ if (o.glare && !o.glareWas){ tone(170,120,.22,'sawtooth',.06); noise(.15,.1,400,2); o.sq=.2; } o.glareWas=!!o.glare; });
 }
+/* ---- Commons: friends are sweet on each other (looks and sounds only, never a rule) ---- */
+const cozy = () => S.world===1 && !isRemix();
+const cozyNext = new Map();
+function cozyPairs(){
+  const out=[], g=gateKindNow()==='bench' && machines.find(m=>m.type==='gate');
+  if (g) for (let i=0;i<g.holes-1;i++){ const a=g.slots[i], b=g.slots[i+1]; if (a&&b) out.push([a,b,true]); }
+  const free=orbs.filter(o=>!o.hole && o!==held);
+  for (let i=0;i<free.length;i++) for (let j=i+1;j<free.length;j++){ const a=free[i], b=free[j];
+    if (Math.hypot(a.x-b.x,a.y-b.y)<(a.r+b.r)*1.3) out.push(a.x<b.x?[a,b,false]:[b,a,false]); }
+  return out;
+}
+function nuzzle(a,b){
+  const pa=posOf(a), pb=posOf(b);
+  parts.push({x:(pa.x+pb.x)/2,y:Math.min(pa.y,pb.y)-a.r*.7,vx:(Math.random()-.5)*20,vy:-55,life:0,max:1.2,c:'#ff8fb0',sz:R*.22,heart:true,g:-10});
+  a.sq=b.sq=.1; a.trickT=b.trickT=0;
+  tone(880,1240,.09,'sine',.035); tone(1050,1480,.09,'sine',.03,.003,.08);
+}
+function cozyTick(dt){
+  orbs.forEach(o=>{ o.leanT=0; o.buddy=null; });
+  if (cozy()){
+    const live=new Set();
+    for (const [a,b,bench] of cozyPairs()){
+      const ha=a.t[1]==='h', hb=b.t[1]==='h';
+      if (!along(a.t[0],b.t[0])){ if (!bench){ a.leanT-=.09; b.leanT+=.09; } continue; }   // not friends: a little cold shoulder
+      if (ha) { a.leanT+=.1; a.buddy=b; }    // happy blobs lean in toward a friend, even a grumpy one
+      if (hb) { b.leanT-=.1; b.buddy=a; }
+      if (ha && hb){
+        const sway=Math.sin(time*2.2+Math.min(a.id,b.id))*.05; a.leanT+=sway; b.leanT+=sway;   // swaying together
+        const key=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id); live.add(key);
+        if (!cozyNext.has(key)) cozyNext.set(key, time+.35);
+        else if (time>=cozyNext.get(key)){ nuzzle(a,b); cozyNext.set(key, time+(bench?3:5)+Math.random()*5); }
+      }
+    }
+    for (const k of [...cozyNext.keys()]) if (!live.has(k)) cozyNext.delete(k);
+  }
+  const k=1-Math.exp(-dt*5); orbs.forEach(o=>{ o.lean=(o.lean||0)+(o.leanT-(o.lean||0))*k; });
+}
+const GREET={ friends:['Hi!','Hey you!','Oh, hello!','Buddy!'], cheer:['Aw, thanks.','I needed that.','\u2026okay, fine.','You\u2019re sweet.'], clash:['Hmph!','Ugh.','Rude.'] };
+function greet(ins, before, verb){
+  if (!cozy() || !GREET[verb] || Math.random()<.35) return;
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const who = verb==='cheer' ? ins.find((o,i)=>before[i][1]==='g') : ins[Math.floor(Math.random()*ins.length)];
+  if (who) queue.push({t:.25, fn:()=>say(who, pick(GREET[verb]), verb==='clash'?'sulk':'')});
+}
 function angerFx(o,r){
   ctx.fillStyle='rgba(255,40,40,.22)'; ctx.beginPath(); ctx.arc(0,0,r*.98,0,7); ctx.fill();
   ctx.strokeStyle='#4a0d0d'; ctx.lineWidth=Math.max(1.6,r*.09); ctx.lineCap='round'; ctx.beginPath();
@@ -1297,6 +1336,7 @@ function resolveMachine(m){
       if (res.grow) alive.forEach(o=>{ o.baby=false; });
       ejectFrom(m, alive);
       alive.forEach(o=>{ o.trickT=0; });
+      if (m.type==='meet') greet(alive, ts, res.verb);
       if (m.type==='coffee'||m.type==='pillow') alive.forEach(o=>queue.push({t:.15, fn:()=>say(o, m.type==='coffee'?'Wide awake!':'Yaaawn\u2026')}));
       queue.push({t:.05, fn:()=>alive.forEach((o,k)=>setTimeout(()=>voice(o,.8),k*70))});
     }
@@ -1331,7 +1371,7 @@ function resolveGate(m){
     m.state='idle'; save(); updateHUD(); return;
   }
   const winSlots=m.slots.slice();
-  m.slots.forEach((o,i)=>{ const h=m.holesPos[i]; for(let k=0;k<3;k++) ring(h.x,h.y,k?'#ffffff':'#e6b95c',HR*(2+k*1.5)); burst(h.x,h.y,'#e6b95c',22,360); if(gateKindNow()==='bench') hearts(h.x,h.y,3); removeOrb(o); });
+  m.slots.forEach((o,i)=>{ const h=m.holesPos[i]; for(let k=0;k<3;k++) ring(h.x,h.y,k?'#ffffff':'#e6b95c',HR*(2+k*1.5)); burst(h.x,h.y,'#e6b95c',22,360); if(gateKindNow()==='bench') queue.push({t:i*.11, fn:()=>{ hearts(h.x,h.y,3); if (cozy()) tone(660*Math.pow(1.122,i),880*Math.pow(1.122,i),.12,'sine',.04); }}); removeOrb(o); });
   m.slots=m.slots.map(()=>null); m.state='open'; shake=1; if (rl.onWin) rl.onWin(winSlots); else sfx.win(); L.done=true;
   const par=L.def.par, mv=L.moves, stars = mv<=par?3 : mv<=par+2?2 : 1;
   const best=S.prog[S.world].best; best[L.idx]=Math.max(best[L.idx]||0,stars);
@@ -1435,6 +1475,7 @@ function faces(dt){
       const g=o.gid!==null && orbs.find(x=>x.id===o.gid);
       if (g){ const gp=posOf(g); tx=gp.x; ty=gp.y; } else if (o.gid!==null) o.glanceAt=0;
     }
+    if (o.buddy && !held && o!==held){ const gp=posOf(o.buddy); tx=gp.x; ty=gp.y; }
     let wx=o.gx, wy=o.gy;
     if (tx!==null){ const dx=tx-p.x, dy=ty-p.y, d=Math.hypot(dx,dy)||1, mag=Math.min(1,d/(o.r*2.5)); wx=dx/d*mag; wy=dy/d*mag; }
     if (o.glare){ const gp=posOf(o.glare), dx=gp.x-p.x, dy=gp.y-p.y, d=Math.hypot(dx,dy)||1; wx=dx/d; wy=dy/d*.5; }
@@ -1462,6 +1503,7 @@ function update(dt){
     const k=1-Math.exp(-dt*28); held.x+=(tx-held.x)*k; held.y+=(ty-held.y)*k; }
   for (let s=0;s<2;s++) physics(dt/2);
   glareTick();
+  cozyTick(dt);
   faces(dt);
   orbs.forEach(o=>{ o.sq*=Math.exp(-dt*12); if(o.snap<1){ o.snap=Math.min(1,o.snap+dt/(o.snapDur||.09)); if(o.snap>=1) o.snapDur=0; } });
   machines.forEach(m=>{ if (m.seesaw) seesawTick(m,dt); if(m.state==='charging'){ m.t-=dt; if(m.t<=0) (m.type==='gate'?resolveGate:resolveMachine)(m); }
@@ -1620,7 +1662,7 @@ function drawOrb(o,x,y,scale=1,alpha=1,ghost=false){
   const l=lookOf(o); const pe=o.pop<1 ? (1+2.2*Math.pow(o.pop-1,3)+1.2*Math.pow(o.pop-1,2)) : 1;
   const r=o.r*scale*pe; if (!ghost){ o.dx=x; o.dy=y; o.dr=r; } if (r<=.5) return; const sp=spriteFor(l), s=(r/(R*SPR))*(R*SPR+3);
   const shk = o.glare && !ghost ? Math.sin(time*48+o.id)*r*.07 : 0;
-  ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x+shk,y); ctx.scale(1+o.sq,1-o.sq);
+  ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x+shk,y); if (o.lean && !ghost) ctx.rotate(o.lean); ctx.scale(1+o.sq,1-o.sq);
   if (l.baby && o.trickT>=0) ctx.rotate(Math.sin(o.trickT*14)*.15*(1-o.trickT/1.4));
   appendages(l,r,ghost);
   if (l.glow && !ghost){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.drawImage(glowSprite(l.hex), -r*2.1, -r*2.1, r*4.2, r*4.2); ctx.restore(); }
@@ -1838,7 +1880,7 @@ function renderNB(){
     html+=`<div class="box"><h3><span class="l">Who gets along</span></h3><p>Filled in as you see them meet or sit together.</p>${grid}</div>`;
     const seen=seenList('w2|',()=>true,(p,v)=>`<span>${p.split('+').map(x=>chipT(x,1)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v.split(',').map(x=>chipT(x,1)).join('')}</span>`);
     html+=ruleBox('Meeting spot','',rulesFor('w2','meet'),'Put two blobs in a Meeting spot and see what happens.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
-    html+=ruleBox('Campfire','',rulesFor('w2','camp'),'Not tried yet.');
+    if (rulesFor('w2','camp').length) html+=ruleBox('Campfire','',rulesFor('w2','camp'),'');   /* the Campfire only turns up in remixes */
     html+=ruleBox('Friendship bench','',rulesFor('w2','bench'),'The bench has its own rules. You’ll find out.');
   } else if (nbTab===3){
     const sp=['s','j','g'];
