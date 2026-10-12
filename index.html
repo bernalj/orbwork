@@ -909,8 +909,8 @@ function attStart(wi, li, def, resumed){
   track('level_started', {...attBase(), attempt:att.attempt, resumed:!!resumed, already_beaten:(S.prog[wi].best[li]||0)>0});
 }
 function attEnd(outcome, beacon){ if (!att || att.done) return; att.done=true; track('level_left', {...attBase(), ...attStats(), outcome}, beacon); }
-function attFail(reason, machine){ if (!att || att.done || !reason) return; const k=String(reason).includes(':') ? reason : WORLDS[att.wi].id+':'+reason;
-  att.fails[k]=(att.fails[k]||0)+1; track('move_failed', {...attBase(), reason:k, machine, moves:L?L.moves:0}); }
+function attFail(reason, machine, msg){ if (!att || att.done || !reason) return; const k=String(reason).includes(':') ? reason : WORLDS[att.wi].id+':'+reason;
+  att.fails[k]=(att.fails[k]||0)+1; track('move_failed', {...attBase(), reason:k, reason_text: msg || (RULES[k] && RULES[k].text) || k, machine, moves:L?L.moves:0}); }
 function attRefused(text){ if (!att || att.done) return; att.refused[text]=(att.refused[text]||0)+1; track('drop_refused', {...attBase(), reason:text}); }
 addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='hidden'){ if (att && !att.done && L && !L.done) attEnd('app_hidden', true); }
   else if (att && att.done && L && !L.done && scene==='play') attStart(S.world, L.idx, L.def, true); });
@@ -1545,7 +1545,7 @@ function resolveGate(m){
     if (pr){ m.lunged=true; m.state='lunge'; pr[0].lungeTo=pr[1]; pr[0].lungeT=0; pr[0].bit=false; queue.push({t:.8, fn:()=>resolveGate(m)}); return; } }
   m.lunged=false;
   if (!v.ok){
-    attFail(v.fail, gateKindNow());
+    attFail(v.fail, gateKindNow(), v.msg);
     if (gateKindNow()!=='line') L.moves++; m.bad=v.bad; m.badT=1.6; m.shake=.6; sfx.fizz(); learn(v.fail);
     v.bad.forEach(i=>{ const h=m.holesPos[i]; ring(h.x,h.y,'#ff7a9c',HR*2.2); });
     floatText(m.rect.x+m.rect.w/2, m.rect.y-R*1.2, v.msg, '#ff9db4');
