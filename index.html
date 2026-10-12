@@ -908,6 +908,7 @@ function hostSync(){
   if (!host) return;
   host.progress({
     learned: Object.keys(S.learned).length,
+    feats: Object.keys(S.feats||{}),   // one-off moments (secret achievements)
     worlds: WORLDS.map((w,wi)=>{ const best=S.prog[wi].best, idx=w.levels.map((d,i)=>[d,i]);
       const main=idx.filter(([d])=>!d.remix), rmx=idx.filter(([d])=>d.remix);
       return {id:w.id, mainTotal:main.length, mainCleared:main.filter(([,i])=>best[i]>0).length, mainPerfect:main.filter(([,i])=>best[i]>=3).length,
@@ -1289,11 +1290,11 @@ function cozyTick(dt){
     }
     for (const k of [...cozyNext.keys()]) if (!live.has(k)) cozyNext.delete(k);
   }
-  reefTick();
+  reefTick(dt);
   const k=1-Math.exp(-dt*5); orbs.forEach(o=>{ o.lean=(o.lean||0)+(o.leanT-(o.lean||0))*k; });
 }
 /* ---- Reef: a hungry blob stares at its food; close by, it scowls and leans in, and the food trembles ---- */
-function reefTick(){
+function reefTick(dt){
   orbs.forEach(o=>{ o.hunting=null; o.scared=null; o.stalk=null; });
   const L4=new Map(orbs.map(o=>[o,lookOf(o)]));
   if (![...L4.values()].some(l=>l.prey)) return;
@@ -1312,6 +1313,21 @@ function reefTick(){
     if (o.hunting && o.huntWas!==o.hunting){ tone(150,95,.22,'sawtooth',.045); o.sq=.12; }
     if (o.scared && !o.scaredWas){ tone(1250,1750,.09,'sine',.05); tone(1500,1100,.07,'sine',.04,.003,.1); o.sq=.18; }
     o.huntWas=o.hunting; o.scaredWas=!!o.scared; });
+  cradleCheck(dt);
+}
+/* Secret: "Newton's cradle", a row of 5+ blobs on the floor where every blob in the middle trembles and the two ends don't */
+let cradleT=0;
+function cradleCheck(dt){
+  if ((S.feats||{}).cradle) return;
+  const fl=orbs.filter(o=>!o.hole && o!==held && Math.abs(o.vy)<30).sort((a,b)=>a.x-b.x);
+  let ok=false, run=[fl[0]];
+  const close=(a,b)=>b.x-a.x<(a.r+b.r)*1.45 && Math.abs(a.y-b.y)<a.r;
+  const test=r=>r.length>=5 && !r[0].scared && !r[r.length-1].scared && r.slice(1,-1).every(o=>o.scared);
+  for (let i=1;i<fl.length;i++){ if (close(fl[i-1],fl[i])) run.push(fl[i]); else { ok=ok||test(run); run=[fl[i]]; } }
+  if (fl.length) ok=ok||test(run);
+  cradleT = ok ? cradleT+dt : 0;
+  if (cradleT>.8){ S.feats=S.feats||{}; S.feats.cradle=1; save(); hostSync(); sfx.learn();
+    floatText(W/2, floorY-R*3.2, 'Newton’s cradle!', '#ffd27a'); orbs.filter(o=>!o.hole).forEach(o=>{ o.sq=.2; }); }
 }
 /* the Calm pool goes wrong: the hunter lunges and takes a bite before everyone is pushed out */
 function lungePair(m,bad){ const [a,b]=bad.map(i=>m.slots[i]); if (!a||!b) return null; const la=lookOf(a), lb=lookOf(b);
