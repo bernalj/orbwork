@@ -19,8 +19,8 @@ rep('<meta charset="utf-8">\n', '<meta charset="utf-8">\n<base href="../">\n<met
 rep("<title>Blobbiverse</title>", "<title>Blobbiverse (level beta)</title>")
 rep("const KEY='orbwork-v2', OLD='orbwork-levels-v1';", "const KEY='orbwork-beta-levels', OLD='orbwork-beta-none';   // beta: separate save")
 rep("const PREF_KEY='orbwork-prefs';", "const PREF_KEY='orbwork-beta-prefs';")
-rep('<div class="splash" id="splash"><small>A game by</small><b>bernalj</b></div>',
-    '<div class="splash" id="splash"><small>Level beta</small><b>bernalj</b></div>')
+rep('<div class="splash" id="splash"><small>A game by</small><b>javiotic</b></div>',
+    '<div class="splash" id="splash"><small>Level beta</small><b>javiotic</b></div>')
 rep("const worldOpen = i => i===0 || Object.keys(S.prog[0].best).length>=UNLOCK_AT;", "const worldOpen = () => true;   // beta: everything unlocked for testing")
 rep("const levelOpen = (wi,i) => i===0 || !!S.prog[wi].best[i-1];", "const levelOpen = () => true;")
 io.open(out, 'w', encoding='utf-8', newline='').write(s)

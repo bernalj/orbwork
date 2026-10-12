@@ -3,7 +3,7 @@
   "productName": "Blobbiverse",
   "version": "1.0.0",
   "description": "A puzzle game about googly-eyed blobs.",
-  "author": "bernalj",
+  "author": "javiotic",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
