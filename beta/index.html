@@ -1579,7 +1579,6 @@ function critterFace(o,r,ghost,l){
   if (P && !ghost) personaFx(o,r,P,ey-erP*1.5,isHeld);
   if (P && !ghost && !grumpy){ if (P==='p'){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.3,r*.065); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-r*.13,r*.42); ctx.lineTo(r*.13,r*.42); ctx.stroke(); return; }
     if (P==='e' || isHeld){ mouth(r,r*.42,'o'); return; } }
-  if (l.baby && l.line && !isHeld){ pacifier(r,l.hex); return; }   /* Nursery babies always have a pacifier */
   if (ghost) return;
   if (md==='hungry'){ const ch=Math.abs(Math.sin(time*7+o.id)); ctx.fillStyle='#4a2000';
     ctx.beginPath(); ctx.ellipse(0,r*.42,r*.17,r*(.05+.1*(isHeld?1:ch)),0,0,7); ctx.fill();
@@ -1595,14 +1594,6 @@ function critterFace(o,r,ghost,l){
   mouth(r, r*.42, isHeld?'o':grumpy?'frown':'smile');
 }
 /* hybrid orblings: Hatchery eye layouts + Commons moods + Reef hunger + Choir singing */
-function pacifier(r,hex){   /* front view: a mint shield with a ring handle */
-  const y=r*.46;
-  ctx.fillStyle='#9fe8d4'; ctx.strokeStyle='#2f7f6c'; ctx.lineWidth=Math.max(1.1,r*.05);
-  ctx.beginPath(); ctx.ellipse(0,y,r*.34,r*.15,0,0,7); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,.7)'; ctx.beginPath(); ctx.ellipse(-r*.14,y-r*.05,r*.09,r*.035,-.2,0,7); ctx.fill();
-  ctx.strokeStyle='#2f7f6c'; ctx.lineWidth=Math.max(2.4,r*.12); ctx.beginPath(); ctx.arc(0,y+r*.03,r*.13,0,7); ctx.stroke();
-  ctx.strokeStyle='#ffffff'; ctx.lineWidth=Math.max(1.4,r*.07); ctx.beginPath(); ctx.arc(0,y+r*.03,r*.13,0,7); ctx.stroke();
-}
 function remixFace(o,r,ghost,l){
   if (ghost && RXP(o.t).e===undefined) return;   /* the seat doesn't care how many eyes: don't draw any */
   const n=l.n, cfg=EYES[n], isHeld=o===held, md=l.mood, tk=o.trickT>=0?o.trickT/1.4:-1;
