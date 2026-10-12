@@ -1327,11 +1327,12 @@ const cozyNext = new Map();
 function cozyPairs(){
   const out=[], g=gateKindNow()==='bench' && machines.find(m=>m.type==='gate');
   if (g) for (let i=0;i<g.holes-1;i++){ const a=g.slots[i], b=g.slots[i+1]; if (a&&b) out.push([a,b,true]); }
-  const free=orbs.filter(o=>!o.hole && o!==held);
-  for (let i=0;i<free.length;i++) for (let j=i+1;j<free.length;j++){ const a=free[i], b=free[j];
-    if (Math.hypot(a.x-b.x,a.y-b.y)<(a.r+b.r)*1.3) out.push(a.x<b.x?[a,b,false]:[b,a,false]); }
   return out;
 }
+// on the floor every blob notices only its nearest neighbour (within about two blob-widths)
+function nearestOnFloor(o, free){ let best=null, bd=1e9;
+  for (const x of free){ if (x===o) continue; const d=Math.hypot(x.x-o.x,x.y-o.y); if (d<bd){ bd=d; best=x; } }
+  return best && bd<(o.r+best.r)*2.2 ? {o:best, d:bd} : null; }
 function nuzzle(a,b){
   const pa=posOf(a), pb=posOf(b);
   parts.push({x:(pa.x+pb.x)/2,y:Math.min(pa.y,pb.y)-a.r*.7,vx:(Math.random()-.5)*20,vy:-55,life:0,max:1.2,c:'#ff8fb0',sz:R*.22,heart:true,g:-10});
@@ -1339,19 +1340,30 @@ function nuzzle(a,b){
   tone(880,1240,.09,'sine',.035); tone(1050,1480,.09,'sine',.03,.003,.08);
 }
 function cozyTick(dt){
-  orbs.forEach(o=>{ o.leanT=0; o.buddy=null; });
+  orbs.forEach(o=>{ o.leanT=0; o.buddy=null; o.annoy=null; });
   if (cozy()){
-    const live=new Set();
+    const live=new Set(), free=orbs.filter(o=>!o.hole && o!==held);
+    for (const a of free){ const n=nearestOnFloor(a, free); if (!n) continue; const b=n.o, s=Math.sign(b.x-a.x)||1;
+      if (!along(a.t[0],b.t[0])){ a.annoy=b; a.leanT-=s*.09;   // not friends: a cold shoulder and a look that says "hmph"
+        if (a.annoyWas!==b && a.t[1]==='h'){ tone(250,175,.12,'triangle',.035); a.sq=.12; } continue; }
+      if (a.t[1]==='h'){ a.buddy=b; a.leanT+=s*.1; }                 // happy blobs lean in toward a friend, even a grumpy one
+      const nb=nearestOnFloor(b, free);
+      if (a.t[1]==='h' && b.t[1]==='h' && nb && nb.o===a && n.d<(a.r+b.r)*1.4 && a.id<b.id){   // two happy friends, each other's nearest, touching
+        const sway=Math.sin(time*2.2+a.id)*.05; a.leanT+=sway; b.leanT+=sway;
+        const key=a.id+'-'+b.id; live.add(key);
+        if (!cozyNext.has(key)) cozyNext.set(key, time+.35);
+        else if (time>=cozyNext.get(key)){ nuzzle(a,b); cozyNext.set(key, time+5+Math.random()*5); } } }
+    free.forEach(o=>{ o.annoyWas=o.annoy; });
     for (const [a,b,bench] of cozyPairs()){
       const ha=a.t[1]==='h', hb=b.t[1]==='h';
-      if (!along(a.t[0],b.t[0])){ if (!bench){ a.leanT-=.09; b.leanT+=.09; } continue; }   // not friends: a little cold shoulder
+      if (!along(a.t[0],b.t[0])) continue;   // on the bench, clashing neighbours glare (glareTick)
       if (ha) { a.leanT+=.1; a.buddy=b; }    // happy blobs lean in toward a friend, even a grumpy one
       if (hb) { b.leanT-=.1; b.buddy=a; }
       if (ha && hb){
         const sway=Math.sin(time*2.2+Math.min(a.id,b.id))*.05; a.leanT+=sway; b.leanT+=sway;   // swaying together
         const key=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id); live.add(key);
         if (!cozyNext.has(key)) cozyNext.set(key, time+.35);
-        else if (time>=cozyNext.get(key)){ nuzzle(a,b); cozyNext.set(key, time+(bench?3:5)+Math.random()*5); }
+        else if (time>=cozyNext.get(key)){ nuzzle(a,b); cozyNext.set(key, time+3+Math.random()*5); }
       }
     }
     for (const k of [...cozyNext.keys()]) if (!live.has(k)) cozyNext.delete(k);
@@ -1610,12 +1622,12 @@ function faces(dt){
       const g=o.gid!==null && orbs.find(x=>x.id===o.gid);
       if (g){ const gp=posOf(g); tx=gp.x; ty=gp.y; } else if (o.gid!==null) o.glanceAt=0;
     }
-    if (o.buddy && !held && o!==held){ const gp=posOf(o.buddy); tx=gp.x; ty=gp.y; }
+    if ((o.buddy||o.annoy) && !held && o!==held){ const gp=posOf(o.buddy||o.annoy); tx=gp.x; ty=gp.y; }
     { const w=o.hunting||o.scared||o.stalk; if (w && o!==held){ const gp=posOf(w); tx=gp.x; ty=gp.y; } }
     let wx=o.gx, wy=o.gy;
     if (tx!==null){ const dx=tx-p.x, dy=ty-p.y, d=Math.hypot(dx,dy)||1, mag=Math.min(1,d/(o.r*2.5)); wx=dx/d*mag; wy=dy/d*mag; }
     if (o.glare){ const gp=posOf(o.glare), dx=gp.x-p.x, dy=gp.y-p.y, d=Math.hypot(dx,dy)||1; wx=dx/d; wy=dy/d*.5; }
-    else if (l.mood==='grumpy' && o!==held){ wx=-wx; wy=wy*.4+.25; }   // grumpy ones look away
+    else if (l.mood==='grumpy' && o!==held && !o.annoy){ wx=-wx; wy=wy*.4+.25; }   // grumpy ones look away (unless they're glaring at someone)
     o.lx+=(wx-o.lx)*k; o.ly+=(wy-o.ly)*k;
     if (time>=o.blinkAt){ o.blinkT=0; o.blinkAt=time+2.5+Math.random()*4.5; }
     if (o.blinkT>=0){ o.blinkT+=dt; if(o.blinkT>.16) o.blinkT=-1; }
@@ -1731,6 +1743,9 @@ function critterFace(o,r,ghost,l){
   if (md==='pebble'){ ctx.strokeStyle='#3a3d44'; ctx.lineWidth=Math.max(1.2,r*.06); ctx.beginPath(); ctx.moveTo(-r*.1,r*.4); ctx.lineTo(r*.1,r*.4); ctx.stroke(); return; }
   if (md==='sing'){ const singing=isHeld||tk>=0; if (singing){ ctx.fillStyle='#4a2000'; ctx.beginPath(); ctx.ellipse(0,r*.42,r*.12,r*(.1+.05*Math.sin(time*12)),0,0,7); ctx.fill(); }
     else mouth(r,r*.42,'smile'); return; }
+  if (o.annoy && !grumpy && !isHeld){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.3,r*.065); ctx.lineCap='round';
+    [-1,1].forEach(s=>{ ctx.beginPath(); ctx.moveTo(s*(ex+er*1.05),ey-er*1.4); ctx.lineTo(s*(ex-er*.7),ey-er*1.15); ctx.stroke(); });
+    ctx.beginPath(); ctx.moveTo(-r*.14,r*.44); ctx.lineTo(r*.14,r*.42); ctx.stroke(); return; }
   if (grumpy){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.4,r*.075); ctx.lineCap='round';
     [-1,1].forEach(s=>{ ctx.beginPath(); ctx.moveTo(s*(ex+er*1.05),ey-er*1.55); ctx.lineTo(s*(ex-er*.7),ey-er*1.05); ctx.stroke(); }); }
   else { ctx.fillStyle='rgba(255,110,140,.42)'; [-1,1].forEach(s=>{ ctx.beginPath(); ctx.ellipse(s*r*.56,r*.2,r*.14,r*.085,0,0,7); ctx.fill(); }); }
