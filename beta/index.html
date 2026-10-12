@@ -1589,8 +1589,11 @@ function physics(dt){
   }
   for (let i=0;i<free.length;i++) for (let j=i+1;j<free.length;j++){
     const a=free[i], b=free[j], dx=b.x-a.x, dy=b.y-a.y, d2=dx*dx+dy*dy, md=a.r+b.r;
-    if (d2>=md*md||d2<1e-4) continue;
+    if (a.held || b.held) continue;   // a blob you're dragging passes over the others like a ghost
+    if (d2>=md*md) continue;
+    if (d2<1e-4){ a.x-=.5; b.x+=.5; continue; }   // dropped exactly on top: nudge so they can slide apart
     const d=Math.sqrt(d2), nx=dx/d, ny=dy/d, pen=md-d;
+    if (pen>md*.35){ const k=Math.min(1,dt*7)*pen/2; a.x-=nx*k; a.y-=ny*k; b.x+=nx*k; b.y+=ny*k; continue; }   // dropped on top of someone: slide apart gently, no bounce
     if (a.held){ b.x+=nx*pen; b.y+=ny*pen; } else if (b.held){ a.x-=nx*pen; a.y-=ny*pen; }
     else { a.x-=nx*pen/2; a.y-=ny*pen/2; b.x+=nx*pen/2; b.y+=ny*pen/2; }
     const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
