@@ -470,13 +470,13 @@ const W4 = {
   },
   seen(ts,res){ S.seen['w4|'+ts.join(',')] = res.fail ? 'x' : res.transform.map(t=>t||'0').join(','); },
   levels:[
-    {name:'Feeding time',   orbs:['sh','jh','jh'],                     machines:['pool2'],          gate:['s','j'],                 par:1, hint:'The <b>Calm pool</b> wants a Spiky next to a Jelly. Is that safe?'},
-    {name:'Glow bites',     orbs:['gh','sh','sh'],                     machines:['pool2'],          gate:['g','s'],                 par:1, hint:'Watch who the hungry ones stare at.'},
-    {name:'The loop',       orbs:['sh','jh','jh','gh','gh'],           machines:['pool2'],          gate:['s','j','g'],             par:2, hint:'Three hungry neighbors in a row.'},
-    {name:'Pebble',         orbs:['gh','sh','jh','jh','pe'],           machines:['pool2'],          gate:['g','any','s','j'],       par:1, hint:'A Pebble joins the reef. Nobody wants to eat it.'},
-    {name:'Chain reaction', orbs:['jh','jh','sh','sh','gh'],           machines:['pool4'],          gate:['g','s','j'],             par:1, hint:'One big tide. Everyone eats at once.'},
-    {name:'Hungry crowd',   orbs:['sh','sh','sh','jh','jh','gh','gh'], machines:['pool2','pool2'],  gate:['s','j','g','s'],         par:3, hint:''},
-    {name:'Calm reef',      orbs:['sh','sh','jh','jh','gh','gh','pe'], machines:['pool3'],          gate:['s','j','g','any','s'],   par:2, hint:'Five seats, and every one of them is hungry.'},
+    {name:'Feeding time',   orbs:['sh','jh','jh'],                     machines:['pool2'],          gate:['s','j'],                 par:1, hint:'Lunch is served. Some of the guests are the lunch.'},
+    {name:'Glow bites',     orbs:['gh','sh','sh'],                     machines:['pool2'],          gate:['g','s'],                 par:1, hint:'Glows look sweet. Glows are not sweet.'},
+    {name:'The loop',       orbs:['sh','jh','jh','gh','gh'],           machines:['pool2'],          gate:['s','j','g'],             par:2, hint:'Everybody here is somebody’s snack.'},
+    {name:'Pebble',         orbs:['gh','sh','jh','jh','pe'],           machines:['pool2'],          gate:['g','any','s','j'],       par:1, hint:'The Pebble has seen things. The Pebble says nothing.'},
+    {name:'Chain reaction', orbs:['jh','jh','sh','sh','gh'],           machines:['pool4'],          gate:['g','s','j'],             par:1, hint:'One big tide. Nobody is having a relaxing day.'},
+    {name:'Seconds',        orbs:['gh','jh','jh','sh','sh','sh'],      machines:['pool3'],          gate:['s','any','s','g'],       par:2, hint:'Seconds, anyone?'},
+    {name:'Feeding frenzy', orbs:['gh','gh','jh','jh','jh','sh'],      machines:['pool4'],          gate:['s','j','g','j'],         par:2, hint:'Four seats at the table. Bring your own appetite.'},
   ],
 };
 
@@ -1291,8 +1291,37 @@ function cozyTick(dt){
     }
     for (const k of [...cozyNext.keys()]) if (!live.has(k)) cozyNext.delete(k);
   }
+  reefTick();
   const k=1-Math.exp(-dt*5); orbs.forEach(o=>{ o.lean=(o.lean||0)+(o.leanT-(o.lean||0))*k; });
 }
+/* ---- Reef: a hungry blob stares at its food; close by, it scowls and leans in, and the food trembles ---- */
+function reefTick(){
+  orbs.forEach(o=>{ o.hunting=null; o.scared=null; o.stalk=null; });
+  const L4=new Map(orbs.map(o=>[o,lookOf(o)]));
+  if (![...L4.values()].some(l=>l.prey)) return;
+  // where a blob is (or is about to be): its seat, or the seat the held blob hovers over
+  const hov = held ? findHole(held,true) : null, seatOf = o => o.hole || (o===held && hov ? {m:hov.m,i:hov.i} : null);
+  const near = (a,b,d) => { const sa=seatOf(a), sb=seatOf(b); if (sa && sb) return sa.m===sb.m && Math.abs(sa.i-sb.i)===1; return !sa && !sb && d<(a.r+b.r)*1.45; };
+  for (const a of orbs){ const la=L4.get(a); if (la.mood!=='hungry' || !la.prey) continue;
+    const pa=posOf(a); let best=null, bd=1e9;
+    for (const b of orbs){ if (b===a || L4.get(b).species!==la.prey) continue; const pb=posOf(b), d=Math.hypot(pa.x-pb.x,pa.y-pb.y); if (d<bd){ bd=d; best=b; } }
+    if (!best) continue; a.stalk=best;
+    const close=orbs.filter(b=>b!==a && L4.get(b).species===la.prey && near(a,b,Math.hypot(pa.x-posOf(b).x,pa.y-posOf(b).y)));
+    if (close.length){ best=close[0]; a.hunting=best;
+      close.forEach(b=>{ if (!b.scared) b.scared=a; const sd=Math.sign(posOf(b).x-pa.x)||1; b.leanT+=sd*.1; });
+      a.leanT+=(Math.sign(posOf(best).x-pa.x)||1)*.12; } }
+  orbs.forEach(o=>{
+    if (o.hunting && o.huntWas!==o.hunting){ tone(150,95,.22,'sawtooth',.045); o.sq=.12; }
+    if (o.scared && !o.scaredWas){ tone(1250,1750,.09,'sine',.05); tone(1500,1100,.07,'sine',.04,.003,.1); o.sq=.18; }
+    o.huntWas=o.hunting; o.scaredWas=!!o.scared; });
+}
+/* the Calm pool goes wrong: the hunter lunges and takes a bite before everyone is pushed out */
+function lungePair(m,bad){ const [a,b]=bad.map(i=>m.slots[i]); if (!a||!b) return null; const la=lookOf(a), lb=lookOf(b);
+  if (la.mood==='hungry' && la.prey && la.prey===lb.species) return [a,b];
+  if (lb.mood==='hungry' && lb.prey && lb.prey===la.species) return [b,a]; return null; }
+function lungeTick(dt){ orbs.forEach(o=>{ if (!o.lungeTo) return; o.lungeT+=dt; const v=o.lungeTo;
+  if (o.lungeT>.2 && !o.bit){ o.bit=true; v.sq=.4; const pv=posOf(v); burst(pv.x,pv.y,lookOf(v).hex,10,220); sfx.chomp(1); tone(1600,900,.12,'sine',.05,.003,.05); }
+  if (o.lungeT>.7){ o.lungeTo=null; o.bit=false; } }); }
 const GREET={ friends:['Hi!','Hey you!','Oh, hello!','Buddy!'], cheer:['Aw, thanks.','I needed that.','\u2026okay, fine.','You\u2019re sweet.'], clash:['Hmph!','Ugh.','Rude.'] };
 function greet(ins, before, verb){
   if (!cozy() || !GREET[verb] || Math.random()<.35) return;
@@ -1372,6 +1401,9 @@ function resolveGate(m){
   let v = rl.validate ? rl.validate(m.slots, m.req) : {ok:true};
   if (v.ok && gateKindNow()==='line'){ const bad=m.slots.map((o,i)=>rl.boothMatch(m.req[i],o)?-1:i).filter(i=>i>=0);
     if (bad.length) v={fail:'wq:wrong', bad, msg:'Not the right order. Everyone steps out.'}; }
+  if (!v.ok && gateKindNow()==='calm' && !m.lunged){ const pr=lungePair(m,v.bad||[]);
+    if (pr){ m.lunged=true; m.state='lunge'; pr[0].lungeTo=pr[1]; pr[0].lungeT=0; pr[0].bit=false; queue.push({t:.8, fn:()=>resolveGate(m)}); return; } }
+  m.lunged=false;
   if (!v.ok){
     if (gateKindNow()!=='line') L.moves++; m.bad=v.bad; m.badT=1.6; m.shake=.6; sfx.fizz(); learn(v.fail);
     v.bad.forEach(i=>{ const h=m.holesPos[i]; ring(h.x,h.y,'#ff7a9c',HR*2.2); });
@@ -1489,6 +1521,7 @@ function faces(dt){
       if (g){ const gp=posOf(g); tx=gp.x; ty=gp.y; } else if (o.gid!==null) o.glanceAt=0;
     }
     if (o.buddy && !held && o!==held){ const gp=posOf(o.buddy); tx=gp.x; ty=gp.y; }
+    { const w=o.hunting||o.scared||o.stalk; if (w && o!==held){ const gp=posOf(w); tx=gp.x; ty=gp.y; } }
     let wx=o.gx, wy=o.gy;
     if (tx!==null){ const dx=tx-p.x, dy=ty-p.y, d=Math.hypot(dx,dy)||1, mag=Math.min(1,d/(o.r*2.5)); wx=dx/d*mag; wy=dy/d*mag; }
     if (o.glare){ const gp=posOf(o.glare), dx=gp.x-p.x, dy=gp.y-p.y, d=Math.hypot(dx,dy)||1; wx=dx/d; wy=dy/d*.5; }
@@ -1517,6 +1550,7 @@ function update(dt){
   for (let s=0;s<2;s++) physics(dt/2);
   glareTick();
   cozyTick(dt);
+  lungeTick(dt);
   faces(dt);
   orbs.forEach(o=>{ o.sq*=Math.exp(-dt*12); if(o.snap<1){ o.snap=Math.min(1,o.snap+dt/(o.snapDur||.09)); if(o.snap>=1) o.snapDur=0; } });
   machines.forEach(m=>{ if (m.seesaw) seesawTick(m,dt); if(m.state==='charging'){ m.t-=dt; if(m.t<=0) (m.type==='gate'?resolveGate:resolveMachine)(m); }
@@ -1581,12 +1615,18 @@ function critterFace(o,r,ghost,l){
   if (md==='pebble') open=isHeld?Math.min(open,.6):0;
   if (P==='z') open=isHeld?Math.min(open,.45):0;
   if (isHeld) open=Math.min(1.15,open*1.15);
+  if (o.scared && !ghost) open=Math.max(open,1)*1.18;
   const ly=P==='s'&&!isHeld ? .55+o.ly*.3 : o.ly, erP=P==='e'?er*1.15:er;
   [-1,1].forEach(s=>eye(s*ex,ey,erP,ghost?0:open,o.lx,ly,ghost,squint));
   if (P && !ghost) personaFx(o,r,P,ey-erP*1.5,isHeld);
   if (P && !ghost && !grumpy){ if (P==='p'){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.3,r*.065); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-r*.13,r*.42); ctx.lineTo(r*.13,r*.42); ctx.stroke(); return; }
     if (P==='e' || isHeld){ mouth(r,r*.42,'o'); return; } }
   if (ghost) return;
+  if (o.hunting){ ctx.strokeStyle='#4a2000'; ctx.lineWidth=Math.max(1.4,r*.08); ctx.lineCap='round';
+    [-1,1].forEach(s=>{ ctx.beginPath(); ctx.moveTo(s*(ex+er*1.1),ey-er*1.6); ctx.lineTo(s*(ex-er*.6),ey-er*1.05); ctx.stroke(); }); }
+  if (o.scared){ ctx.fillStyle='#bfe9ff'; ctx.strokeStyle='#3d7ea6'; ctx.lineWidth=Math.max(1,r*.04);
+    const dx=r*.62, dy=-r*.42+Math.sin(time*6+o.id)*r*.03; ctx.beginPath(); ctx.moveTo(dx,dy-r*.2); ctx.quadraticCurveTo(dx+r*.12,dy,dx,dy+r*.08); ctx.quadraticCurveTo(dx-r*.12,dy,dx,dy-r*.2); ctx.fill(); ctx.stroke();
+    if (!o.hunting){ ctx.fillStyle='#4a2000'; ctx.beginPath(); ctx.ellipse(0,r*.44,r*.07,r*(.07+.02*Math.sin(time*30)),0,0,7); ctx.fill(); return; } }
   if (md==='hungry'){ const ch=Math.abs(Math.sin(time*7+o.id)); ctx.fillStyle='#4a2000';
     ctx.beginPath(); ctx.ellipse(0,r*.42,r*.17,r*(.05+.1*(isHeld?1:ch)),0,0,7); ctx.fill();
     ctx.fillStyle='#fff'; [-1,1].forEach(s=>{ ctx.beginPath(); ctx.moveTo(s*r*.12,r*.34); ctx.lineTo(s*r*.05,r*.34); ctx.lineTo(s*r*.085,r*.42); ctx.fill(); }); return; }
@@ -1683,7 +1723,8 @@ function glyph(o,r){
 function drawOrb(o,x,y,scale=1,alpha=1,ghost=false){
   const l=lookOf(o); const pe=o.pop<1 ? (1+2.2*Math.pow(o.pop-1,3)+1.2*Math.pow(o.pop-1,2)) : 1;
   const r=o.r*scale*pe; if (!ghost){ o.dx=x; o.dy=y; o.dr=r; } if (r<=.5) return; const sp=spriteFor(l), s=(r/(R*SPR))*(R*SPR+3);
-  const shk = o.glare && !ghost ? Math.sin(time*48+o.id)*r*.07 : 0;
+  const shk = ghost ? 0 : o.glare ? Math.sin(time*48+o.id)*r*.07 : o.scared ? Math.sin(time*55+o.id)*r*.045 : 0;
+  if (o.lungeTo && !ghost){ const pa=posOf(o), pb=posOf(o.lungeTo), k=Math.sin(Math.min(1,o.lungeT/.45)*Math.PI)*.42; x+=(pb.x-pa.x)*k; y+=(pb.y-pa.y)*k; }
   ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x+shk,y); if (o.lean && !ghost) ctx.rotate(o.lean); ctx.scale(1+o.sq,1-o.sq);
   if (l.baby && o.trickT>=0) ctx.rotate(Math.sin(o.trickT*14)*.15*(1-o.trickT/1.4));
   appendages(l,r,ghost);
