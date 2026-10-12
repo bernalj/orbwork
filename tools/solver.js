@@ -26,14 +26,17 @@ const { react1, lightReact, along, alle, phen, norm3 } = new Function(rulesCode 
 // Nursery: a Nest takes two parents of the same family; they stay, and a clutch of four babies
 // (every ear/petal combination) joins them. Each Nest raises one clutch, so a level's Nests are
 // 'N' tokens in the state: firing a Nest spends one.
+// Babies carry a '~' suffix; a baby who goes into a Nest comes out grown up.
+const CRADLE_BABIES = process.env.CRADLE === 'babies' || /\/\* cradle: babies only \*\//.test(SRC);
+const adult = t => t.replace('~', '');
 function nurseryFire(m, ts) {
-  const [a, b] = ts; if (a === 'N' || b === 'N' || a[0] !== b[0]) return null;
+  const [a, b] = ts.map(adult); if (ts.includes('N') || a[0] !== b[0]) return null;
   const A = alle(a), B = alle(b), line = a[0];
-  return [a, b, ...[A[0] + B[0], A[0] + B[1], A[1] + B[0], A[1] + B[1]].map(x => line + ':' + norm3(line, x))];
+  return [a, b, ...[A[0] + B[0], A[0] + B[1], A[1] + B[0], A[1] + B[1]].map(x => line + ':' + norm3(line, x) + '~')];
 }
 // Cradle: every seat filled by body color; 'GG' (pure gold) needs two gold ears
 function cradleOK(state, gate) {
-  const c = {}; state.forEach(t => { if (t !== 'N') c[t] = (c[t] || 0) + 1; });
+  const c = {}; state.forEach(t => { if (t !== 'N' && (!CRADLE_BABIES || t.endsWith('~'))) c[adult(t)] = (c[adult(t)] || 0) + 1; });   // babies-only Cradle: grown-ups don't count
   const n = t => c[t] || 0, need = r => gate.filter(g => g === r).length;
   const pure = n('G:GG') - need('GG');
   return pure >= 0 && need('gold') <= n('G:Gg') + pure && need('blue') <= n('G:gg')
@@ -199,7 +202,7 @@ function currentLevels() {
   return { hatchery: parse(block('W1'), 'hatchery'), commons: parse(block('W2'), 'commons'), nursery, lighthouse: parse(block('WL'), 'lighthouse') };
 }
 
-module.exports = { react1, lightReact, along, commonsFire, nurseryFire, cradleOK, phen, benchOK, benchSpreadOK, spreadOK, won, moves, solve, solvable, difficulty, currentLevels, WORLD, HOLES, contains, key };
+module.exports = { react1, lightReact, along, commonsFire, nurseryFire, cradleOK, CRADLE_BABIES, phen, benchOK, benchSpreadOK, spreadOK, won, moves, solve, solvable, difficulty, currentLevels, WORLD, HOLES, contains, key };
 
 if (require.main === module && process.argv[2] === 'report') {
   const lv = currentLevels();
