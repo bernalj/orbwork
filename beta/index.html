@@ -1589,7 +1589,7 @@ function physics(dt){
   }
   for (let i=0;i<free.length;i++) for (let j=i+1;j<free.length;j++){
     const a=free[i], b=free[j], dx=b.x-a.x, dy=b.y-a.y, d2=dx*dx+dy*dy, md=a.r+b.r;
-    if (a.held || b.held) continue;   // a blob you're dragging passes over the others like a ghost
+    if ((a.held || b.held) && S.world===6) continue;   // Lighthouse: a light you're dragging passes over the others like a ghost (so you can see them mix)
     if (d2>=md*md) continue;
     if (d2<1e-4){ a.x-=.5; b.x+=.5; continue; }   // dropped exactly on top: nudge so they can slide apart
     const d=Math.sqrt(d2), nx=dx/d, ny=dy/d, pen=md-d;
