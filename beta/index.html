@@ -1764,8 +1764,8 @@ function draw(){
 }
 
 /* ======================= HUD & sheets ======================= */
-const worldOpen = i => i===0 || Object.keys(S.prog[0].best).length>=UNLOCK_AT;
-const levelOpen = (wi,i) => i===0 || !!S.prog[wi].best[i-1];
+const worldOpen = () => true;   // beta: everything unlocked for testing
+const levelOpen = () => true;
 function updateHUD(){
   if (!L) return; const w=world();
   $('#lvl-w').textContent = L.def.remix ? `${w.short} Remix ${L.idx-mainCount(w)+1}/${w.levels.length-mainCount(w)} · ${L.def.from.map(i=>WORLDS[i].short).join(' + ')}`
