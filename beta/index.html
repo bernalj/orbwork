@@ -365,21 +365,25 @@ const W2 = {
   ghost(req){ return req.length===1 ? req+'h' : null; },
   validate(slots){
     const ts=slots.map(o=>o.t);
-    for (let i=0;i<ts.length;i++) if (ts[i][1]==='g') return {fail:'benchMood', bad:[i], msg:'Too grumpy to sit'};
     for (let i=0;i<ts.length-1;i++){ const a=ts[i][0], b=ts[i+1][0];
       if (!along(a,b)){ S.aff[affKey(a,b)]='no'; return {fail:'benchClash', bad:[i,i+1], msg:'They won’t sit together'}; }
       S.aff[affKey(a,b)]='ok'; }
+    // Moods spread once: a blob between two happy neighbours cheers up, one between two grumpy ones sulks.
+    const mood=ts.map((t,i)=> i>0 && i<ts.length-1 && ts[i-1][1]===ts[i+1][1] ? ts[i-1][1] : t[1]);
+    const bad=mood.map((m,i)=>m==='h'?-1:i).filter(i=>i>=0);
+    if (bad.length) return {fail:'benchMood', bad, msg: bad.some(i=>ts[i][1]==='h') ? 'Grumpy neighbours spoil the mood' : 'Too grumpy to sit'};
+    slots.forEach((o,i)=>{ if (mood[i]!==o.t[1]){ o.t=o.t[0]+mood[i]; learn('benchSpread'); } });
     return {ok:true};
   },
   seen(ts,res){ const key=ts.slice().sort().join('+'); S.seen['w2|'+key] = res.fail ? 'x' : res.transform.slice().sort().join(','); },
   levels:[
-    {name:'Cheer up',        orbs:['yh','yg'],               machines:['meet'],              gate:['any','any'],               par:1, hint:'The bench wants two friends. Is everyone in the mood?'},
-    {name:'Clash',           orbs:['rh','bh','yg'],          machines:['meet'],              gate:['any','any','any'],         par:1, hint:'Three on one bench. Not every color gets along.'},
-    {name:'Bad influence',   orbs:['rh','bg','yh'],          machines:['meet'],              gate:['b','any'],                 par:1, hint:'A seat is saved for Blue. Pick who Blue meets carefully.'},
-    {name:'Campfire',        orbs:['bg','yh','yh'],          machines:['camp'],              gate:['any','any','any'],         par:1, hint:'Gather three around the <b>Campfire</b>.'},
-    {name:'Majority rules',  orbs:['rg','rg','rg','yh'],     machines:['meet','camp'],       gate:['r','r','r'],               par:3, hint:'Three grumpy Reds and one cheerful friend.'},
-    {name:'Guests of honor', orbs:['rh','bg','yg'],          machines:['meet'],              gate:['L:bh','any','any','L:rh'], par:1, hint:'Two guests already have seats. Fill the ones between them.'},
-    {name:'Peacemaker',      orbs:['rg','rg','bg','bg','yh'],machines:['meet','meet','camp'],gate:['any','any','any','any','any'], par:4, hint:'Everyone on one bench. Only one of them is smiling.'},
+    {name:'Cheer up',        orbs:['yh','yg'],                machines:['meet'],        gate:['any','any'],                          par:1, hint:'Commons blobs wear their mood right on their face.'},
+    {name:'Clash',           orbs:['rh','bg','yh'],           machines:['meet'],        gate:['b','any'],                            par:1, hint:'Everyone in the Commons has an opinion about everyone else.'},
+    {name:'Around the fire', orbs:['rh','rh','bg'],           machines:['camp'],        gate:['b'],                                  par:1, hint:'Somebody always brings marshmallows. Nobody knows who.'},
+    {name:'Squeeze in',      orbs:['bg','bh','rg','yg','yg'], machines:['meet'],        gate:['y','L:rh','any','r'],                 par:2, hint:'The bench was built for four. Nobody measured.'},
+    {name:'Sore loser',      orbs:['bg','bg','rg','rg','rh'], machines:['meet','camp'], gate:['any','L:yh','any','b'],               par:2, hint:'Blue lost at cards again.'},
+    {name:'Red team',        orbs:['bg','bh','rg','rg','rg'], machines:['meet','camp'], gate:['L:rh','any','any','any'],             par:3, hint:'The Reds have a secret handshake. It takes eleven minutes.'},
+    {name:'Full house',      orbs:['bg','bh','rg','rg','yg'], machines:['meet','camp'], gate:['b','L:yg','r','any','y','any'],       par:3, hint:'Everyone\u2019s invited. Yes, even him.'},
   ],
 };
 
@@ -803,7 +807,8 @@ const RULES = {
   'w2:clash':{g:'meet', text:'When clashing colors meet, both turn grumpy.'},
   'w2:sulk':{g:'meet', text:'Two grumpy blobs just sulk. Nothing changes.'},
   'w2:camp':{g:'camp', text:'Around the Campfire, the mood most of them share wins.'},
-  'w2:benchMood':{g:'bench', text:'Grumpy blobs refuse to sit on the bench.'},
+  'w2:benchMood':{g:'bench', text:'Everyone on the bench has to end up happy. The two at the ends never change their mood.'},
+  'w2:benchSpread':{g:'bench', text:'On the bench, a blob between two happy neighbours cheers up, and one between two grumpy neighbours sulks.'},
   'w2:benchClash':{g:'bench', text:'Neighbors on the bench have to get along.'},
   'w3:clutch':{g:'nest', text:'Each baby gets one ear (or petal) from each parent. A clutch of four covers every combination.'},
   'w3:oneclutch':{g:'nest', text:'Each Nest raises only one clutch.'},
