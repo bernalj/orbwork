@@ -1591,6 +1591,7 @@ function critterFace(o,r,ghost,l){
 }
 /* hybrid orblings: Hatchery eye layouts + Commons moods + Reef hunger + Choir singing */
 function remixFace(o,r,ghost,l){
+  if (ghost && RXP(o.t).e===undefined) return;   /* the seat doesn't care how many eyes: don't draw any */
   const n=l.n, cfg=EYES[n], isHeld=o===held, md=l.mood, tk=o.trickT>=0?o.trickT/1.4:-1;
   let open = o.blinkT>=0 ? Math.abs(o.blinkT/.08-1) : 1;
   const squint=(md==='happy'||md==='sing') && !isHeld && tk>=0 && tk<.55;
@@ -1768,14 +1769,18 @@ function draw(){
     if (gate && !m.vertical && !m.seesaw && !m.req.every(q=>q==='any')) m.holesPos.forEach((h,i)=>{ const isLine=m.kiosk, filled=!!m.slots[i];   /* no labels when anyone may sit anywhere */
       if((filled && !isLine) || !m.req[i]) return;
       ctx.font=`800 ${Math.max(10,Math.round(R*.56))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-      const label=rules().reqLabel(m.req[i]), bh=Math.max(16,R*.95), dot=isLine?bh*.28:0, lw=ctx.measureText(label).width+R*.7+(isLine?dot*2.6:0), by=r.y-bh*.35;
+      const label=rules().reqLabel(m.req[i]), bh0=Math.max(16,R*.95), dot=isLine?bh0*.28:0, pitch=m.holes>1?Math.abs(m.holesPos[1].x-m.holesPos[0].x)-R*.12:1e9;
+      let lines=[label], fs=Math.max(10,Math.round(R*.56)), tw=()=>Math.max(...lines.map(t=>ctx.measureText(t).width));
+      if (!isLine && tw()+R*.7>pitch && label.includes(' · ')) lines=label.split(' · ');
+      if (!isLine && tw()+R*.7>pitch){ fs=Math.max(8,Math.floor(fs*(pitch-R*.7)/tw())); ctx.font=`800 ${fs}px Nunito, system-ui, sans-serif`; }
+      const lh=fs*1.08, bh=bh0+(lines.length-1)*lh, lw=tw()+R*.7+(isLine?dot*2.6:0), by=r.y-bh0*.35-(lines.length-1)*lh/2;
       const settled = filled && m.slots[i].snap>=1 && m.state!=='charging' || (filled && m.state==='charging');
       const match = filled && rules().boothMatch && rules().boothMatch(m.req[i], m.slots[i]);
       ctx.fillStyle=INK; rr(h.x-lw/2,by-bh/2,lw,bh,bh/2); ctx.fill();
       ctx.strokeStyle = isLine && settled ? (match?'#7ee2b8':'#ff7a9c') : '#e6b95c'; ctx.lineWidth = isLine && settled ? 2 : 1.2; ctx.stroke();
       let tx=h.x;
       if (isLine){ const gt=rules().ghost(m.req[i]); if (gt){ ctx.fillStyle=lookOf({t:gt}).hex; ctx.beginPath(); ctx.arc(h.x-lw/2+bh*.5,by,dot,0,7); ctx.fill(); } tx=h.x+dot*1.1; }
-      ctx.fillStyle='#ffd27a'; ctx.fillText(label,tx,by+1);
+      ctx.fillStyle='#ffd27a'; lines.forEach((t,k)=>ctx.fillText(t,tx,by+1+(k-(lines.length-1)/2)*lh));
       if (isLine && settled){ const mx=h.x+lw/2-bh*.1, my=by-bh*.45, mr=bh*.32;
         ctx.fillStyle=match?'#2f8f67':'#c43d5e'; ctx.beginPath(); ctx.arc(mx,my,mr,0,7); ctx.fill();
         ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(1.5,mr*.28); ctx.lineCap='round'; ctx.beginPath();
