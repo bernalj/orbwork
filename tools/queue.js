@@ -6,7 +6,7 @@
 // Rules modelled: a move is either dropping a floor blob into the Ticket line (it joins at the back, then reacts:
 // Sleepy stays, Clingy goes behind the last blob of its color, Pushy swaps one place forward, Eager goes to the
 // front) or putting a floor blob in the Coffee (one step livelier) / Pillow (one step calmer). The level is won
-// when the line is full and its colors match the booths. A full line in the wrong order sends everyone back out.
+// when the line is full and its colors match the booths. A level may start with blobs already in line (line:[...]). A full line in the wrong order sends everyone back out.
 'use strict';
 const fs = require('fs'), path = require('path');
 const SRC = fs.readFileSync(process.env.SOLVER_SRC || path.join(__dirname, '..', 'index.html'), 'utf8').split('\r\n').join('\n');
@@ -30,7 +30,7 @@ function moves(s, cups, gate) {
   return out;
 }
 function solve(level, maxDepth = 10) {
-  const start = { line: [], floor: level.orbs.slice() }, ways = new Map([[key(start), 1]]), parent = new Map(); let fr = [start];
+  const start = { line: (level.line || []).slice(), floor: level.orbs.slice() }, ways = new Map([[key(start), 1]]), parent = new Map(); let fr = [start];
   for (let d = 1; d <= maxDepth && fr.length; d++) {
     const nx = new Map();
     for (const s of fr) for (const mv of moves(s, level.cups, level.gate)) { const k = key(mv.next), w = ways.get(key(s));
@@ -50,7 +50,7 @@ function canWin(s, level, budget, memo = new Map()) {
   memo.set(k, ok); return ok;
 }
 function difficulty(level, trials = 2000) {
-  const sol = solve(level), start = { line: [], floor: level.orbs.slice() }, first = moves(start, level.cups, level.gate), par = sol.par || 6;
+  const sol = solve(level), start = { line: (level.line || []).slice(), floor: level.orbs.slice() }, first = moves(start, level.cups, level.gate), par = sol.par || 6;
   const traps = first.filter(mv => !canWin(mv.next, level, par + 1)).length;
   let w = 0;
   for (let t = 0; t < trials; t++) { let s = start;
@@ -60,8 +60,8 @@ function difficulty(level, trials = 2000) {
 }
 function currentLevels() {
   const i = SRC.indexOf('const QJ={'), j = SRC.indexOf('queue:[', i), k = SRC.indexOf('\n ],', j);
-  return [...SRC.slice(j + 7, k).matchAll(/\{name:'([^']+)',\s*orbs:(\[[^\]]*\]),\s*machines:(\[[^\]]*\]),\s*gate:(\[[^\]]*\]),\s*par:(\d+)/g)]
-    .map(m => ({ name: m[1], orbs: eval(m[2]), cups: eval(m[3]), gate: eval(m[4]), par: +m[5] }));
+  return [...SRC.slice(j + 7, k).matchAll(/\{name:'([^']+)',\s*orbs:(\[[^\]]*\]),\s*(?:line:(\[[^\]]*\]),\s*)?machines:(\[[^\]]*\]),\s*gate:(\[[^\]]*\]),\s*par:(\d+)/g)]
+    .map(m => ({ name: m[1], orbs: eval(m[2]), line: m[3] ? eval(m[3]) : [], cups: eval(m[4]), gate: eval(m[5]), par: +m[6] }));   // line: blobs already queuing
 }
 module.exports = { join, moves, solve, difficulty, currentLevels };
 
