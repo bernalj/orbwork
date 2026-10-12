@@ -1763,7 +1763,7 @@ function draw(){
     if (gate && gateKindNow()==='bench') for (let i=0;i<m.holes-1;i++){ const a=m.holesPos[i], b=m.holesPos[i+1]; const broken=m.bad && m.bad.includes(i) && m.bad.includes(i+1);
       heart((a.x+b.x)/2, a.y+HR*.15, R*.38*(broken?1.3:1), broken); }
     if (gate && m.bad && gateKindNow()!=='bench') m.bad.forEach(i=>{ const h=m.holesPos[i]; ctx.strokeStyle='#ff4f6d'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(h.x,h.y,HR+4,0,7); ctx.stroke(); });
-    if (gate && !m.vertical && !m.seesaw) m.holesPos.forEach((h,i)=>{ const isLine=m.kiosk, filled=!!m.slots[i];
+    if (gate && !m.vertical && !m.seesaw && !m.req.every(q=>q==='any')) m.holesPos.forEach((h,i)=>{ const isLine=m.kiosk, filled=!!m.slots[i];   /* no labels when anyone may sit anywhere */
       if((filled && !isLine) || !m.req[i]) return;
       ctx.font=`800 ${Math.max(10,Math.round(R*.56))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       const label=rules().reqLabel(m.req[i]), bh=Math.max(16,R*.95), dot=isLine?bh*.28:0, lw=ctx.measureText(label).width+R*.7+(isLine?dot*2.6:0), by=r.y-bh*.35;
