@@ -1239,9 +1239,13 @@ function clingyTick(o,l,grounded,dt){
   const d=f.x-o.x, gap=(o.r+f.r)*1.05;
   if (Math.abs(d)<=gap){ o.seek=null; o.seekAt=0; hearts(f.x+(o.x-f.x)/2, o.y-o.r, 2); voice(o,.6); return; }
   const dir=Math.sign(d), onFloor=o.y>floorY-o.r*1.6 && Math.abs(o.vy)<1;
-  const inWay=orbs.some(x=>x!==o && x!==f && !x.hole && x!==held && Math.sign(x.x-o.x)===dir && Math.abs(x.x-o.x)<(o.r+x.r)*1.25 && Math.abs(x.y-o.y)<R*1.5);
-  if (onFloor) o.vy = inWay ? -470 : -150;              // little hops on the way, a big one over anyone in the way
-  o.x+=dir*Math.min(Math.abs(d)-gap, 230*dt);
+  const inWay=orbs.some(x=>x!==o && x!==f && !x.hole && x!==held && Math.sign(x.x-o.x)===dir && Math.abs(x.x-o.x)<(o.r+x.r)*1.6 && Math.abs(x.y-o.y)<R*1.5);
+  // stuck? (no real progress for a moment) -> vault anyway
+  if (!o.seekChk || time>o.seekChk.t+.35){ o.stuck = o.seekChk && Math.abs(o.x-o.seekChk.x)<R*.15; o.seekChk={t:time, x:o.x}; }
+  if (onFloor){
+    if (inWay || o.stuck){ o.vy=-Math.sqrt(2*G*R*2.7); o.vault=true; o.stuck=false; o.seekChk=null; }   // clears a whole blob, whatever the screen size
+    else { o.vy=-150; o.vault=false; } }                   // little hops on the way
+  o.x+=dir*Math.min(Math.abs(d)-gap, (o.vault?360:230)*dt);
 }
 function floorTackle(o){ const fl=orbs.filter(x=>x!==o && !x.hole && x!==held && Math.abs(x.y-o.y)<R*1.5 && Math.abs(x.x-o.x)<R*PUSH_REACH);
   if (!fl.length){ o.vy=-160; return; }
