@@ -1221,7 +1221,15 @@ function tackleImpact(src,tgt){ shake=Math.max(shake,.22); noise(.08,.28,500,2);
   const ps=posOf(src); if (tgt){ tgt.sq=.35; startle(tgt); }
   orbs.forEach(o=>{ if (o===src||o===tgt||o===held||o.walk) return; const p=posOf(o); if (Math.hypot(p.x-ps.x,p.y-ps.y)>R*7) return;
     startle(o); o.gid=src.id; o.glanceAt=time+1; if (!o.hole && Math.abs(o.vy)<1 && lookOf(o).persona!=='z') o.vy=-110; }); }
-function floorTackle(o){ const fl=orbs.filter(x=>x!==o && !x.hole && x!==held && Math.abs(x.y-o.y)<R*1.5 && Math.abs(x.x-o.x)<R*5);
+const PUSH_REACH=3.1;   // Pushy only tackles a blob within this many radii (centre to centre): roughly one blob-width of gap
+function pushTarget(o){ const fl=orbs.filter(x=>x!==o && !x.hole && x!==held && Math.abs(x.y-o.y)<R*1.5 && Math.abs(x.x-o.x)<R*PUSH_REACH);
+  return fl.length ? fl.reduce((a,b)=>Math.abs(a.x-o.x)<Math.abs(b.x-o.x)?a:b) : null; }
+function pushyTick(o,l,grounded){
+  if (l.persona!=='p' || o.hole || o===held || o.tackleTo || !grounded || time<(o.pushCool||0)){ o.pushAt=0; return; }
+  if (!pushTarget(o)){ o.pushAt=0; return; }
+  if (!o.pushAt) o.pushAt=time+.12;                       // a short wind-up, then the tackle
+  else if (time>=o.pushAt){ o.pushAt=0; o.pushCool=time+2.5; floorTackle(o); } }
+function floorTackle(o){ const fl=orbs.filter(x=>x!==o && !x.hole && x!==held && Math.abs(x.y-o.y)<R*1.5 && Math.abs(x.x-o.x)<R*PUSH_REACH);
   if (!fl.length){ o.vy=-160; return; }
   const t=fl.reduce((a,b)=>Math.abs(a.x-o.x)<Math.abs(b.x-o.x)?a:b);
   o.tackleTo=t; o.tackleT=0; o.sq=.25; voice(o,.5); }
@@ -1581,9 +1589,10 @@ function faces(dt){
     o.lx+=(wx-o.lx)*k; o.ly+=(wy-o.ly)*k;
     if (time>=o.blinkAt){ o.blinkT=0; o.blinkAt=time+2.5+Math.random()*4.5; }
     if (o.blinkT>=0){ o.blinkT+=dt; if(o.blinkT>.16) o.blinkT=-1; }
+    pushyTick(o,l,!o.hole && o.y>floorY-o.r*1.3 && Math.abs(o.vy)<240);   /* on (or just bouncing on) the floor */
     if (time>=o.trickAt && o!==held){ o.trickT=0; o.trickAt=time+(l.baby?4:7)+Math.random()*9;
       const grounded=!o.hole && o.vy===0;
-      if (grounded && l.persona==='p') floorTackle(o);
+      if (l.persona==='p'){}   /* Pushy doesn't hop: it tackles (pushyTick) */
       else if (grounded && ((l.face==='pip'&&(l.n===2||l.n===4)) || l.mood==='happy')) o.vy=-(l.baby?340:l.face==='pip'&&l.n===4?200:280); }
     if (o.trickT>=0){ o.trickT+=dt; if(o.trickT>1.4) o.trickT=-1;
       if (l.mood==='grumpy' && o.trickT<.5 && Math.random()<.3){ const pp=posOf(o); parts.push({x:pp.x+(Math.random()-.5)*o.r,y:pp.y-o.r,vx:(Math.random()-.5)*40,vy:-60,life:0,max:.6,c:'rgba(200,200,220,.6)',sz:o.r*.18,g:-40}); } }
@@ -1598,7 +1607,7 @@ function update(dt){
   if (L && !L.done){ levelClock.t+=dt; if (!levelClock.nudged && levelClock.t>60){ levelClock.nudged=true; updateHUD(); } }
   for (let i=queue.length-1;i>=0;i--){ queue[i].t-=dt; if(queue[i].t<=0){ const q=queue[i]; queue.splice(i,1); q.fn(); } }
   if (held){ let tx=ptr.x, ty=ptr.y;
-    const h=findHole({...held,x:ptr.x,y:ptr.y},false); if(h){ tx+=(h.h.x-tx)*.35; ty+=(h.h.y-ty)*.35; }
+    const h=findHole({...held,x:ptr.x,y:ptr.y},false); if(h){ const a=h.m.kiosk&&h.m.entry ? h.m.entry : h.h; tx+=(a.x-tx)*.35; ty+=(a.y-ty)*.35; }
     const k=1-Math.exp(-dt*28); held.x+=(tx-held.x)*k; held.y+=(ty-held.y)*k; }
   for (let s=0;s<2;s++) physics(dt/2);
   glareTick();
