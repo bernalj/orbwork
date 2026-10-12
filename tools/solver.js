@@ -19,29 +19,8 @@ const rulesCode = [
   grab(/function react1\(a,b\)\{[\s\S]*?\n\}\n/),
   grab(/const norm=[^\n]+\n/), grab(/function lightReact\(mt, ts\)\{[\s\S]*?\n\}\n/),
   grab(/const along = [^\n]+\n/),
-  grab(/const alle = [^\n]+\n/), grab(/function phen\(t\)\{[^\n]+\n/), grab(/const norm3 = [^\n]+\n/),
 ].join('');
-const { react1, lightReact, along, alle, phen, norm3 } = new Function(rulesCode + 'return { react1, lightReact, along, alle, phen, norm3 };')();
-
-// Nursery: a Nest takes two parents of the same family; they stay, and a clutch of four babies
-// (every ear/petal combination) joins them. Each Nest raises one clutch, so a level's Nests are
-// 'N' tokens in the state: firing a Nest spends one.
-// Babies carry a '~' suffix; a baby who goes into a Nest comes out grown up.
-const CRADLE_BABIES = process.env.CRADLE === 'babies' || /\/\* cradle: babies only \*\//.test(SRC);
-const adult = t => t.replace('~', '');
-function nurseryFire(m, ts) {
-  const [a, b] = ts.map(adult); if (ts.includes('N') || a[0] !== b[0]) return null;
-  const A = alle(a), B = alle(b), line = a[0];
-  return [a, b, ...[A[0] + B[0], A[0] + B[1], A[1] + B[0], A[1] + B[1]].map(x => line + ':' + norm3(line, x) + '~')];
-}
-// Cradle: every seat filled by body color; 'GG' (pure gold) needs two gold ears
-function cradleOK(state, gate) {
-  const c = {}; state.forEach(t => { if (t !== 'N' && (!CRADLE_BABIES || t.endsWith('~'))) c[adult(t)] = (c[adult(t)] || 0) + 1; });   // babies-only Cradle: grown-ups don't count
-  const n = t => c[t] || 0, need = r => gate.filter(g => g === r).length;
-  const pure = n('G:GG') - need('GG');
-  return pure >= 0 && need('gold') <= n('G:Gg') + pure && need('blue') <= n('G:gg')
-    && need('red') <= n('P:RR') && need('pink') <= n('P:RW') && need('white') <= n('P:WW');
-}
+const { react1, lightReact, along } = new Function(rulesCode + 'return { react1, lightReact, along };')();
 
 // Commons: the Meeting spot and Campfire exactly as W2.react does them (transform only, nothing consumed)
 function commonsFire(m, ts) {
@@ -99,10 +78,9 @@ function benchOK(state, gate) {
   return ok(0);
 }
 
-const HOLES = { press: 2, lamp: 2, prism: 1, filter: 2, meet: 2, camp: 3, nest: 2 };
+const HOLES = { press: 2, lamp: 2, prism: 1, filter: 2, meet: 2, camp: 3 };
 const WORLD = {
   hatchery: { machines: ['press'], fire: (m, ts) => { const r = react1(ts[0], ts[1]); return r.fail ? null : r.out; } },
-  nursery: { machines: ['nest'], fire: nurseryFire, goal: cradleOK, spends: 'N' },
   commons: { machines: ['meet', 'camp'], fire: commonsFire, goal: (s, g) => (process.env.BENCH === 'spread' ? benchSpreadOK : benchOK)(s, g) },
   lighthouse: { machines: ['lamp', 'prism', 'filter'], fire: (m, ts) => {
     const r = lightReact(m, ts); if (r.fail) return null;
@@ -127,8 +105,7 @@ function moves(world, machines, state) {
       if (seen.has(sig)) continue; seen.add(sig);
       const res = WORLD[world].fire(m, ins);
       if (!res) continue;
-      const rest = state.filter((_, i) => !c.includes(i)), sp = WORLD[world].spends;
-      if (sp) { const j = rest.indexOf(sp); if (j < 0) continue; rest.splice(j, 1); }   // uses up a Nest
+      const rest = state.filter((_, i) => !c.includes(i));
       out.push({ machine: m, inputs: ins, next: rest.concat(res) });
     }
   }
@@ -197,16 +174,14 @@ function currentLevels() {
   const block = (name) => { const i = SRC.indexOf(`const ${name} = {`); const j = SRC.indexOf('levels:[', i); const k = SRC.indexOf('\n  ],', j); return SRC.slice(j + 8, k); };
   const parse = (txt, world) => [...txt.matchAll(/\{name:'([^']+)',\s*orbs:(\[[^\]]*\]),\s*(?:machines:(\[[^\]]*\]),\s*)?gate:(\[[^\]]*\]),\s*par:(\d+)/g)]
     .map(m => ({ world, name: m[1], orbs: eval(m[2]), machines: m[3] ? eval(m[3]) : ['press'], gate: eval(m[4]), par: +m[5] }));
-  // Nursery: each Nest on the board becomes an 'N' token (one clutch each)
-  const nursery = parse(block('W3'), 'nursery').map(l => ({ ...l, orbs: l.orbs.concat(l.machines.filter(m => m === 'nest').map(() => 'N')), machines: ['nest'] }));
-  return { hatchery: parse(block('W1'), 'hatchery'), commons: parse(block('W2'), 'commons'), nursery, lighthouse: parse(block('WL'), 'lighthouse') };
+  return { hatchery: parse(block('W1'), 'hatchery'), commons: parse(block('W2'), 'commons'), lighthouse: parse(block('WL'), 'lighthouse') };
 }
 
-module.exports = { react1, lightReact, along, commonsFire, nurseryFire, cradleOK, CRADLE_BABIES, phen, benchOK, benchSpreadOK, spreadOK, won, moves, solve, solvable, difficulty, currentLevels, WORLD, HOLES, contains, key };
+module.exports = { react1, lightReact, along, commonsFire, benchOK, benchSpreadOK, spreadOK, won, moves, solve, solvable, difficulty, currentLevels, WORLD, HOLES, contains, key };
 
 if (require.main === module && process.argv[2] === 'report') {
   const lv = currentLevels();
-  for (const w of ['hatchery', 'commons', 'nursery', 'lighthouse']) {
+  for (const w of ['hatchery', 'commons', 'lighthouse']) {
     console.log(`\n== ${w} (${lv[w].length} levels)`);
     console.log('  #  name                  par  solver  optimal-paths  first-moves  traps  random-win  solution');
     lv[w].forEach((l, i) => {
