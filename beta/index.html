@@ -396,7 +396,7 @@ const W3 = {
   gatePlate:['#f2e2c4','#cdb08a','#937652'],
   look(o){ return {hex:PH[phen(o.t)].hex, face:'critter', mood:'happy', line:o.t[0], al:alle(o.t), baby:!!o.baby, known:!!o.known, bounce:o.baby?.45:.3, voice:o.baby?'baby':'adult'}; },
   radius(){ return R; },   // babies are full size: smaller ones next to their parents read badly
-  label(t,o){ return PH[phen(t)].name + (o&&o.known?` (${alle(t)})`:'') + (o&&o.baby?' baby':''); },
+  label(t,o){ return PH[phen(t)].name + (o&&o.known?` (${alle(t)})`:'') + (o&&o.baby?' hatchling':''); },
   react(mt,ts){
     if (mt==='lens') return {verb:'lens', reveal:true};
     if (mt==='nest'){ const [a,b]=ts; if (a[0]!==b[0]) return {fail:'species'};
@@ -422,13 +422,13 @@ const W3 = {
     const v = res.fail ? 'x' : summary(res.spawn.map(s=>s.t)); const arr=Array.isArray(S.seen[key])?S.seen[key]:[];
     if (!arr.includes(v)) arr.push(v); S.seen[key]=arr.slice(-4); },
   levels:[
-    {name:'First clutch',   orbs:['G:Gg','G:Gg'],                      machines:['nest'],               gate:['blue'],              par:1, hint:'Babies! Everyone stay calm.'},
-    {name:'Carriers',       orbs:['G:gg','G:GG','G:Gg','G:Gg'],        machines:['nest'],               gate:['blue'],              par:1, hint:'Nobody in this family talks about Great-Uncle Blue.'},
-    {name:'Petals',         orbs:['P:RR','P:WW'],                      machines:['nest'],               gate:['pink'],              par:1, hint:'A new family moved in next door. They garden.'},
-    {name:'Pure gold',      orbs:['G:Gg','G:gg','G:gg'],               machines:['nest','nest'],        gate:['GG'],                par:2, hint:'Old money. Very old. Very gold.'},
-    {name:'Playdate',       orbs:['G:Gg','G:gg','G:gg','P:RW','P:WW'], machines:['nest','nest'],        gate:['gold','blue','pink'],par:2, hint:'Both families booked the Cradle for the same afternoon.'},
-    {name:'Rose garden',    orbs:['P:RR','P:RR','P:WW','P:WW'],        machines:['nest','nest'],        gate:['red','pink','white'],par:2, hint:'Someone ordered one of everything. The Nursery delivers.'},
-    {name:'Family reunion', orbs:['G:GG','G:gg','G:gg','P:RW','P:WW'], machines:['nest','nest','nest'], gate:['blue','GG','white'], par:3, hint:'Three Nests, two families, one very tired stork.'},
+    {name:'First clutch',   orbs:['G:Gg','G:Gg'],                       machines:['nest'],               gate:['blue'],                 par:1, hint:'Babies! Everyone stay calm.'},
+    {name:'Carriers',       orbs:['G:gg','G:GG','G:Gg','G:Gg'],         machines:['nest'],               gate:['blue'],                 par:1, hint:'Nobody in this family talks about Great-Uncle Blue.'},
+    {name:'Petals',         orbs:['P:RR','P:WW'],                       machines:['nest'],               gate:['pink'],                 par:1, hint:'A new family moved in next door. They garden.'},
+    {name:'Pure gold',      orbs:['G:Gg','G:Gg','G:Gg','G:gg','G:gg'],  machines:['nest','nest'],        gate:['GG','GG'],              par:2, hint:'Old money. Very old. Very gold.'},
+    {name:'Rose garden',    orbs:['P:RR','P:RW','P:WW','P:WW'],         machines:['nest','nest'],        gate:['red','red','red'],      par:2, hint:'Someone ordered three reds. The Nursery delivers.'},
+    {name:'Blue moon',      orbs:['G:GG','G:GG','G:GG','G:Gg','G:gg'],  machines:['nest','nest'],        gate:['blue','blue','blue'],   par:2, hint:'It only happens once in a while.'},
+    {name:'Family reunion', orbs:['P:RR','P:RR','P:RW','P:RW'],         machines:['nest','nest','nest'], gate:['white','white','white'],par:3, hint:'Three Nests, one family, one very tired stork.'},
   ],
 };
 
@@ -807,7 +807,9 @@ const RULES = {
   'w2:benchMood':{g:'bench', text:'Grumpy blobs refuse to sit on the bench.'},
   'w2:benchClash':{g:'bench', text:'Neighbors on the bench have to get along.'},
   'w3:clutch':{g:'nest', text:'Each baby gets one ear (or petal) from each parent. A clutch of four covers every combination.'},
-  'w3:babies':{g:'nest', text:'The Cradle is only for babies. A baby who becomes a parent grows up.'},
+  'w3:babies':{g:'nest', text:'The Cradle only takes hatchlings.'},
+  'w3:young':{g:'nest', text:'Hatchlings are too young for a Nest.'},
+  'w3:growup':{g:'nest', text:'When a new clutch hatches, hatchlings still on the floor grow up.'},
   'w3:oneclutch':{g:'nest', text:'Each Nest raises only one clutch.'},
   'w3:species':{g:'nest', text:'Gold and Petal families can’t have babies together.'},
   'w3:hidden':{g:'G', text:'One gold ear is enough to make the body Gold. A blue ear can hide on a Gold.'},
@@ -1179,6 +1181,7 @@ function holeAccepts(m,i,o){
   if (m.type==='gate' && gateKindNow()==='line') return i===m.slots.filter(Boolean).length;
   if (m.type==='gate' && m.seesaw) return true;
   if (m.type==='gate') return m.req[i]!==null && rules().accepts(m.req[i],o);
+  if (m.type==='nest' && o.baby && S.world===2 && !isRemix()) return false;   /* hatchlings are too young for a Nest */
   return true;
 }
 function findHole(o, wrongToo){
@@ -1345,6 +1348,9 @@ function resolveMachine(m){
       queue.push({t:.05, fn:()=>alive.forEach((o,k)=>setTimeout(()=>voice(o,.8),k*70))});
     }
     if (res.hearts) hearts(cx,m.rect.y,6);
+    if (m.type==='nest' && S.world===2 && !isRemix()){ const kids=orbs.filter(o=>o.baby && !o.hole);
+      kids.forEach((o,k)=>{ o.baby=false; o.sq=.25; o.vy=-220; burst(o.x,o.y-o.r*.9,'#fffaf0',10,200); queue.push({t:k*.05, fn:()=>tone(900+k*60,600,.08,'triangle',.05)}); });
+      if (kids.length) learn('growup'); }
     (res.spawn||[]).forEach((s,k,arr)=>queue.push({t:.12+k*.11, orb:enc(s), fn:()=>{
       const o=makeOrb(s, cx+(k-(arr.length-1)/2)*R*1.4, by+R+2, (k-(arr.length-1)/2)*240+(Math.random()-.5)*80, 90+Math.random()*80);
       o.pop=0; o.phase=true; burst(o.x,o.y,lookOf(o).hex,8); voice(o,.85); }}));
@@ -1415,9 +1421,10 @@ function release(){
   const t=findHole(o,true);
   if (t && t.ok){ placeInHole(o,t.m,t.i); }
   else {
+    if (t && !t.ok && t.m.type==='nest' && o.baby && S.world===2 && !isRemix() && !t.m.used && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4){ sfx.denied(); t.m.shake=.35; learn('young'); floatText(t.h.x,t.m.rect.y-R*1.2,'Too young!','#ff7a9c'); }
     if (t && !t.ok && Math.hypot(t.h.x-o.x,t.h.y-o.y)<HR*1.4 && t.m.req[t.i]){ sfx.denied(); t.m.shake=.35; const grown = S.world===2 && !isRemix() && !o.baby && W3.accepts(t.m.req[t.i], {...o, baby:true});
       if (grown) learn('babies');
-      floatText(t.h.x,t.m.rect.y-R*1.2, grown ? 'Babies only!' : `Wants ${rules().reqLabel(t.m.req[t.i])}`,'#ff7a9c'); }
+      floatText(t.h.x,t.m.rect.y-R*1.2, grown ? 'Hatchlings only!' : `Wants ${rules().reqLabel(t.m.req[t.i])}`,'#ff7a9c'); }
     const now=performance.now(); let a=hist[0]; for(const h of hist) if(now-h.t<=90){ a=h; break; }
     const b=hist[hist.length-1], dt=Math.max(16,b.t-a.t)/1000;
     o.vx=Math.max(-1600,Math.min(1600,(b.x-a.x)/dt)); o.vy=Math.max(-1600,Math.min(1600,(b.y-a.y)/dt));
@@ -1631,6 +1638,7 @@ function personaFx(o,r,P,top,isHeld){
   if (P==='e'){ const tw=.6+.4*Math.sin(time*6+o.id); ctx.fillStyle=`rgba(255,250,210,${tw})`;
     [[-.7,-.75],[.72,-.62]].forEach(([sx,sy],k)=>{ const s=r*(.12+.04*k); ctx.save(); ctx.translate(sx*r,sy*r); ctx.rotate(time*2); ctx.beginPath(); for(let i=0;i<8;i++){ const a=i*Math.PI/4, rad=i%2?s*.35:s; ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad); } ctx.fill(); ctx.restore(); }); }
 }
+const AC={G:'#ffb02e', g:'#3f95f2', R:'#ff4f6d', W:'#f6f2ff', Y:'#ffd23f', B:'#4aa8ff', '?':'#9a90b0'};
 function appendages(l,r,ghost){
   if (l.crown){ ctx.fillStyle='#2f6b3a'; ctx.strokeStyle='#173d1f'; ctx.lineWidth=1;
     for(let i=0;i<5;i++){ const a=Math.PI*(1.2+i*.15); ctx.beginPath(); ctx.moveTo(Math.cos(a-.14)*r*.92,Math.sin(a-.14)*r*.92); ctx.lineTo(Math.cos(a)*r*1.38,Math.sin(a)*r*1.38); ctx.lineTo(Math.cos(a+.14)*r*.92,Math.sin(a+.14)*r*.92); ctx.fill(); ctx.stroke(); } }
@@ -1645,15 +1653,22 @@ function appendages(l,r,ghost){
   if (l.tuft){ ctx.strokeStyle=lo; ctx.lineWidth=Math.max(1.5,r*.1); ctx.lineCap='round'; ctx.beginPath();
     ctx.moveTo(-r*.05,-r*.9); ctx.quadraticCurveTo(r*.1,-r*1.35,r*.32,-r*1.12); ctx.stroke(); }
   /* Nursery: each ear / petal is one allele, so genes are always visible */
-  const AC={G:'#ffb02e', g:'#3f95f2', R:'#ff4f6d', W:'#f6f2ff', Y:'#ffd23f', B:'#4aa8ff', '?':'#9a90b0'};
   if (l.line==='G'){ [-1,1].forEach((s,i)=>{ const c=AC[l.al[i]]||AC['?'];
     ctx.fillStyle=c; ctx.strokeStyle=mix(c,'#000000',.4); ctx.lineWidth=Math.max(1.2,r*.07);
     ctx.beginPath(); ctx.arc(s*r*.6,-r*.72,r*.3,0,7); ctx.fill(); ctx.stroke();
     ctx.fillStyle=mix(c,'#ffffff',.45); ctx.beginPath(); ctx.arc(s*r*.6,-r*.72,r*.13,0,7); ctx.fill(); }); }
-  if (l.line==='P'){ [-1,1].forEach((s,i)=>{ const c=AC[l.al[i]]||AC['?'];
+  if (l.line==='P') petals(l,r);
+}
+function petals(l,r){ [-1,1].forEach((s,i)=>{ const c=AC[l.al[i]]||AC['?'];
     ctx.save(); ctx.translate(s*r*.3,-r*.9); ctx.rotate(s*.55); ctx.fillStyle=c; ctx.strokeStyle=mix(c,'#000000',.4); ctx.lineWidth=Math.max(1.2,r*.06);
     ctx.beginPath(); ctx.ellipse(0,0,r*.2,r*.34,0,0,7); ctx.fill(); ctx.stroke(); ctx.restore(); });
-    ctx.fillStyle='#5aa04a'; ctx.beginPath(); ctx.arc(0,-r*.9,r*.09,0,7); ctx.fill(); }
+  ctx.fillStyle='#5aa04a'; ctx.beginPath(); ctx.arc(0,-r*.9,r*.09,0,7); ctx.fill(); }
+function shellCap(r,side){   /* hatchlings: a bit of eggshell still on the head (Petals: off to the side, clear of the petals) */
+  ctx.save(); if (side){ ctx.translate(-r*.6,-r*.6); ctx.rotate(-.8); } else { ctx.translate(-r*.05,-r*.86); ctx.rotate(-.25); }
+  const w=side?r*.34:r*.42; ctx.beginPath(); ctx.moveTo(-w,0);
+  for (let i=0;i<4;i++){ ctx.lineTo(-w+2*w*(i+.5)/4, r*.12); ctx.lineTo(-w+2*w*(i+1)/4, 0); }
+  ctx.bezierCurveTo(w,-r*.42,-w,-r*.42,-w,0); ctx.closePath();
+  ctx.fillStyle='#fffaf0'; ctx.fill(); ctx.strokeStyle='#6b5a44'; ctx.lineWidth=Math.max(1.2,r*.06); ctx.lineJoin='round'; ctx.stroke(); ctx.restore();
 }
 function glyph(o,r){
   const k=kindOf(o.t), id=o.id;
@@ -1679,6 +1694,7 @@ function drawOrb(o,x,y,scale=1,alpha=1,ghost=false){
   if (ghost) ctx.globalAlpha=Math.min(1,alpha*1.8);
   if (l.face==='pip') pipFace(o,r,ghost,l); else if (l.face==='critter') critterFace(o,r,ghost,l); else if (l.face==='remix') remixFace(o,r,ghost,l); else glyph(o,r);
   if (o.glare && !ghost) angerFx(o,r);
+  if (l.baby && l.face==='critter' && l.line){ shellCap(r, l.line==='P'); if (l.line==='P') petals(l,r); }
   ctx.restore();
   if (l.badge && !ghost){ ctx.font=`800 ${Math.max(10,Math.round(r*.48))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     const tw=ctx.measureText(l.badge).width+r*.5, bh=Math.max(14,r*.6), py=y-r*1.02;
