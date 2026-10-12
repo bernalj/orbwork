@@ -1449,7 +1449,9 @@ function resolveMachine(m){
       ejectFrom(m, alive);
       alive.forEach(o=>{ o.trickT=0; });
       if (m.type==='meet') greet(alive, ts, res.verb);
-      if (m.type==='coffee'||m.type==='pillow') alive.forEach(o=>queue.push({t:.15, fn:()=>say(o, m.type==='coffee'?'Wide awake!':'Yaaawn\u2026')}));
+      if (m.type==='coffee'||m.type==='pillow') alive.forEach(o=>queue.push({t:.15, fn:()=>{   /* the line fits what it became */
+        const LINES={coffee:{c:'Hm? Oh, hi!', p:'Outta my way!', e:'Me first!!'}, pillow:{p:'Okay, okay\u2026', c:'Need a hug\u2026', z:'Yaaawn\u2026'}};
+        const t=LINES[m.type][lookOf(o).persona]; if (t) say(o,t); }}));
       queue.push({t:.05, fn:()=>alive.forEach((o,k)=>setTimeout(()=>voice(o,.8),k*70))});
     }
     if (res.hearts) hearts(cx,m.rect.y,6);
