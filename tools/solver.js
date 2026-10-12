@@ -78,13 +78,13 @@ function benchOK(state, gate) {
   return ok(0);
 }
 
-const HOLES = { press: 2, lamp: 2, prism: 1, filter: 2, meet: 2, camp: 3 };
+const HOLES = { press: 2, lamp: 2, prism: 1, meet: 2, camp: 3 };
 const WORLD = {
   hatchery: { machines: ['press'], fire: (m, ts) => { const r = react1(ts[0], ts[1]); return r.fail ? null : r.out; } },
   commons: { machines: ['meet', 'camp'], fire: commonsFire, goal: (s, g) => (process.env.BENCH === 'spread' ? benchSpreadOK : benchOK)(s, g) },
-  lighthouse: { machines: ['lamp', 'prism', 'filter'], fire: (m, ts) => {
+  lighthouse: { machines: ['lamp', 'prism'], fire: (m, ts) => {
     const r = lightReact(m, ts); if (r.fail) return null;
-    return r.consume ? r.spawn : r.transform.filter(Boolean); } },
+    return r.spawn; } },
 };
 
 const key = ms => ms.slice().sort().join(' ');

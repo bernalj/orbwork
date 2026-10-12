@@ -1,6 +1,6 @@
 // Level generator: samples random setups and keeps the ones that hit a difficulty target.
 //   node tools/levelgen.js <hatchery|commons|lighthouse> <par> [count] [seconds] [--uses=sp,vo] [--gate=1-3] [--orbs=3-6] [--machines=lamp,prism]
-//     --uses      blob kinds the solution must feed into a machine (e.g. sp,vo / glass)
+//     --uses      blob kinds the solution must feed into a machine (e.g. sp,vo / machines)
 //     --gate      goal size range; --orbs starting blob count range; --machines fixed machine set
 //     --essential every machine is needed (removing any one makes the level longer or unsolvable)
 //     --spreadneeded Commons: the "moods spread" bench rule must matter (old rule: longer or impossible)
@@ -41,12 +41,9 @@ function sampleSetup() {
     const bag = ['p1', 'p1', 'p1', 'p2', 'p2', 'p3', 'p3', 'p4', 'tw', 'tw', 'sp', 'vo', 'wi', 'wi'];
     return { orbs: Array.from({ length: n }, () => pick(bag)), machines: ['press'] };
   }
-  const n = OMIN + Math.floor(Math.random() * (OMAX - OMIN + 1));  // up to 2 of them glass
+  const n = OMIN + Math.floor(Math.random() * (OMAX - OMIN + 1));
   const orbs = Array.from({ length: n }, () => 'L' + pick(LIGHTS));
-  const glass = FIXED_M && !FIXED_M.includes('filter') ? 0 : Math.random() < .6 ? 1 + (Math.random() < .3) : 0;   // no glass without a Filter
-  for (let i = 0; i < glass; i++) orbs[i] = 'F' + pick(['r', 'g', 'b', 'rg', 'rb', 'gb']);
-  if (FIXED_M && FIXED_M.includes('filter') && !glass) orbs[0] = 'F' + pick(['r', 'g', 'b', 'rg', 'rb', 'gb']);
-  const machines = FIXED_M || ['lamp', 'prism', 'filter'].filter(m => (m !== 'filter' || glass) && Math.random() < .75);
+  const machines = FIXED_M || ['lamp', 'prism'].filter(() => Math.random() < .75);
   return { orbs, machines: machines.length ? machines : ['lamp'] };
 }
 
@@ -80,7 +77,7 @@ function rate(level, trials = 600) {
   if (flags.spreadneeded && world === 'commons') { const was = process.env.BENCH; process.env.BENCH = 'classic';
     const classic = solve(level, TARGET); process.env.BENCH = was; if (classic.par !== null && classic.par <= TARGET) return null; }
   const fed = (sol.line || []).join(' ');
-  if (USES.some(u => u === 'glass' ? !/\+F|\(F/.test(fed) : u === 'machines' ? !level.machines.every(m => fed.includes(m + '(')) : !fed.includes(u))) return null;
+  if (USES.some(u => u === 'machines' ? !level.machines.every(m => fed.includes(m + '(')) : !fed.includes(u))) return null;
   const first = moves(world, level.machines, level.orbs);
   const traps = first.filter(mv => !solvable(world, level.machines, mv.next, goal, TARGET + 2)).length;
   let wins = 0;
@@ -119,7 +116,7 @@ while (Date.now() < DEADLINE) {
 }
 // one candidate per solution shape (which machines/kinds are used, in order), so the list isn't near-copies
 const shape = c => world === 'commons' ? (c.solution || []).map(st => st.split('(')[0]).join('>') + '|' + c.gate.map(g => g.startsWith('L:') ? 'G' : g === 'any' ? 'a' : 'c').join('')
-  : (c.solution || []).map(st => st.replace(/p\d/g, 'p').replace(/L[rgb]+/g, 'L').replace(/F[rgb]+/g, 'F')).join('>') + '|' + c.gate.length;
+  : (c.solution || []).map(st => st.replace(/p\d/g, 'p').replace(/L[rgb]+/g, 'L')).join('>') + '|' + c.gate.length;
 const seenShape = new Set(), best = [];
 for (const c of [...found.values()].sort((a, b) => b.score - a.score)) { if (seenShape.has(shape(c))) continue; seenShape.add(shape(c)); best.push(c); if (best.length >= WANT) break; }
 console.log(JSON.stringify({ world, par: TARGET, examined: found.size, best }, null, 1));
