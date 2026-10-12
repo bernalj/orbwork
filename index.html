@@ -1683,6 +1683,8 @@ function faces(dt){
       else if (grounded && ((l.face==='pip'&&(l.n===2||l.n===4)) || l.mood==='happy')) o.vy=-(l.baby?340:l.face==='pip'&&l.n===4?200:280); }
     if (o.trickT>=0){ o.trickT+=dt; if(o.trickT>1.4) o.trickT=-1;
       if (l.mood==='grumpy' && o.trickT<.5 && Math.random()<.3){ const pp=posOf(o); parts.push({x:pp.x+(Math.random()-.5)*o.r,y:pp.y-o.r,vx:(Math.random()-.5)*40,vy:-60,life:0,max:.6,c:'rgba(200,200,220,.6)',sz:o.r*.18,g:-40}); } }
+    if (l.mood==='grumpy' && time>=(o.smokeAt||0)){ o.smokeAt=time+.22+Math.random()*.2;   // grumpy ones always fume a little, so they read apart from a happy blob's passing "hmph"
+      const s=o.smokeSide=-(o.smokeSide||1); parts.push({x:p.x+s*o.r*(.25+Math.random()*.2),y:p.y-o.r*.85,vx:s*(8+Math.random()*14),vy:-38-Math.random()*16,life:0,max:1,c:'rgba(120,124,146,.5)',sz:o.r*.12,g:-25,grow:1.6}); }
     if (o.pop<1) o.pop=Math.min(1,o.pop+dt/.28);
   }
   orbs.forEach(o=>{ if(o.pop<1 && lookOf(o).face==='glyph') o.pop=Math.min(1,o.pop+dt/.28); });
@@ -2041,7 +2043,7 @@ function draw(){
   if (S.world===6 && !held) mixOverlay();
   rings.forEach(r=>{ const k=r.t/.45; ctx.strokeStyle=r.c; ctx.globalAlpha=1-k; ctx.lineWidth=3*(1-k)+.5; ctx.beginPath(); ctx.arc(r.x,r.y,R*.6+(r.max-R*.6)*(1-Math.pow(1-k,3)),0,7); ctx.stroke(); });
   ctx.globalAlpha=1;
-  parts.forEach(p=>{ ctx.globalAlpha=1-p.life/p.max; if(p.heart) heart(p.x,p.y,p.sz,false); else { ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.sz,0,7); ctx.fill(); } });
+  parts.forEach(p=>{ ctx.globalAlpha=1-p.life/p.max; if(p.heart) heart(p.x,p.y,p.sz,false); else { ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.sz*(1+(p.grow||0)*p.life/p.max),0,7); ctx.fill(); } });
   ctx.globalAlpha=1;
   if (held){ ctx.fillStyle='rgba(43,42,76,.18)'; ctx.beginPath(); ctx.ellipse(held.x+held.r*.3,held.y+held.r*.95,held.r*.95,held.r*.45,0,0,7); ctx.fill();
     drawOrb(held,held.x,held.y,1.14);
