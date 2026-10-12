@@ -419,13 +419,13 @@ const W3 = {
     const v = res.fail ? 'x' : summary(res.spawn.map(s=>s.t)); const arr=Array.isArray(S.seen[key])?S.seen[key]:[];
     if (!arr.includes(v)) arr.push(v); S.seen[key]=arr.slice(-4); },
   levels:[
-    {name:'First clutch',      orbs:['G:Gg','G:Gg'],               machines:['nest'],               gate:['blue'],         par:1, hint:'Two Golds. Put them in the <b>Nest</b> together.'},
-    {name:'Carriers',          orbs:['G:GG','G:Gg','G:Gg'],        machines:['nest'],               gate:['blue'],         par:1, hint:'Same body color. Look at their <b>ears</b>.'},
-    {name:'Skips a generation',orbs:['G:gg','G:GG'],               machines:['nest','nest'],        gate:['blue','blue'],  par:2, hint:'Two Nests, and each one raises a single clutch.'},
-    {name:'Pure gold',         orbs:['G:Gg','G:gg','G:gg'],        machines:['nest','nest'],        gate:['GG'],           par:2, hint:'The Cradle wants a Gold with two gold ears.'},
-    {name:'Petals',            orbs:['P:RR','P:WW'],               machines:['nest'],               gate:['pink'],         par:1, hint:'A new family. Red meets White.'},
-    {name:'Back to white',     orbs:['P:RR','P:WW'],               machines:['nest','nest'],        gate:['white','white'],par:2, hint:''},
-    {name:'Family tree',       orbs:['G:Gg','G:GG','P:RW','P:RW'], machines:['nest','nest','nest'], gate:['blue','white'], par:3, hint:'Two families, two wishes, three Nests.'},
+    {name:'First clutch',   orbs:['G:Gg','G:Gg'],               machines:['nest'],               gate:['blue'],             par:1, hint:'Babies! Everyone stay calm.'},
+    {name:'Carriers',       orbs:['G:GG','G:Gg','G:Gg'],        machines:['nest'],               gate:['blue'],             par:1, hint:'Nobody in this family talks about Great-Uncle Blue.'},
+    {name:'Petals',         orbs:['P:RR','P:WW'],               machines:['nest'],               gate:['pink'],             par:1, hint:'A new family moved in next door. They garden.'},
+    {name:'Pure gold',      orbs:['G:Gg','G:gg','G:gg'],        machines:['nest','nest'],        gate:['GG'],               par:2, hint:'Old money. Very old. Very gold.'},
+    {name:'Rose garden',    orbs:['G:Gg','G:gg','P:RR','P:WW'], machines:['nest','nest'],        gate:['red','red','red'],  par:2, hint:'Someone ordered three reds. The Nursery delivers.'},
+    {name:'Gold rush',      orbs:['G:Gg','G:Gg','G:gg','G:gg'], machines:['nest','nest'],        gate:['GG','GG','GG'],     par:2, hint:'Everybody wants a piece of the family fortune.'},
+    {name:'Family reunion', orbs:['G:Gg','G:gg','P:RR','P:RW'], machines:['nest','nest','nest'], gate:['blue','GG','GG'],   par:3, hint:'Three Nests, two families, one very tired stork.'},
   ],
 };
 
