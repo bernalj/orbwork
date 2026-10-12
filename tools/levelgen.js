@@ -4,6 +4,7 @@
 //     --gate      goal size range; --orbs starting blob count range; --machines fixed machine set
 //     --essential every machine is needed (removing any one makes the level longer or unsolvable)
 //     --spreadneeded Commons: the "moods spread" bench rule must matter (old rule: longer or impossible)
+//     --anyseats  Commons: no seat says which color goes there; --noguests: nobody is seated beforehand
 //     --allsit    Commons: every blob must sit (bench seats = blobs, plus 0-2 seated guests)
 //     BENCH=spread env: Commons bench uses the "moods spread" rule
 // Prints JSON candidates sorted best-first: start blobs, machines, goal, par, number of optimal
@@ -30,8 +31,8 @@ function sampleSetup() {
     let guests = 0;
     const gate = Array.from({ length: seats }, () => { const r = Math.random();
       if (!flags.allsit && r < .12 && guests < 2) { guests++; return 'L:' + pick('rby') + 'h'; }
-      return r < .4 ? pick('rby') : 'any'; });
-    if (flags.allsit) for (let g = Math.floor(Math.random() * 3); g > 0; g--) gate.splice(Math.floor(Math.random() * (gate.length + 1)), 0, 'L:' + pick('rby') + (Math.random() < .5 ? 'h' : 'g'));
+      return !flags.anyseats && r < .4 ? pick('rby') : 'any'; });
+    if (flags.allsit && !flags.noguests) for (let g = Math.floor(Math.random() * 3); g > 0; g--) gate.splice(Math.floor(Math.random() * (gate.length + 1)), 0, 'L:' + pick('rby') + (process.env.BENCH === 'spread' && Math.random() < .5 ? 'g' : 'h'));
     if (gate.every(g => g.startsWith('L:'))) gate[0] = 'any';
     return { orbs, machines, gate };
   }
