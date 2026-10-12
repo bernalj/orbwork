@@ -550,7 +550,8 @@ const WS = {
   blurb:'Everyone wants a ride. Get them all aboard and keep it level.',
   gatePlate:['#e7c38d','#b98a4f','#7a5528'],
   look(o){ const n=+o.t[1]; return {hex:'#ff9f6b', hi:'#ffe2cc', lo:'#b4521f', face:'pip', n, bounce:.25, voice:'pip'+n}; },
-  radius(o){ return R*(.8+.1*(+o.t[1]))*1.3; },   // 30% bigger on the floor; seats shrink them to fit
+  radius(o){ const u = W<520 ? Math.max(R, W*.055) : R;   // narrow screens: the wide plank makes R small, so floor blobs get a size of their own
+    return u*(.8+.1*(+o.t[1]))*1.3; },   // bigger on the floor; seats shrink them to fit
   label(t){ const n=+t[1]; return `${n} eye${n>1?'s':''}`; },
   accepts(){ return true; }, reqLabel(){ return ''; }, ghost(){ return null; }, seen(){},
   levels:[
