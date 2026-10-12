@@ -1011,7 +1011,10 @@ function loadState(s){
   (s.gate||[]).forEach((e,i)=>{ if(!e||!g.holesPos[i]||g.slots[i]) return; const o=makeOrb(dec(e),0,0); o.pop=1; o.hole={m:g,i}; g.slots[i]=o; });
   hatchList(s.orbs||[], .09); L.moves=s.moves||0;
 }
+// Time spent on the current level (kept across restarts of the same level).
+const levelClock={ key:'', t:0, nudged:false };
 function startLevel(wi, i, restore){
+  if (levelClock.key!==`${wi}:${i}`){ levelClock.key=`${wi}:${i}`; levelClock.t=0; levelClock.nudged=false; }
   S.world=wi; const w=world(); i=Math.max(0,Math.min(w.levels.length-1,i));
   const def=w.levels[i]; L={idx:i, def, moves:0, history:[], done:false}; S.prog[wi].level=i;
   orbs=[]; queue=[]; parts=[]; floats=[]; rings=[]; bubbles=[]; held=null;
@@ -1447,6 +1450,7 @@ function faces(dt){
 /* ======================= update ======================= */
 function update(dt){
   time+=dt;
+  if (L && !L.done){ levelClock.t+=dt; if (!levelClock.nudged && levelClock.t>60){ levelClock.nudged=true; updateHUD(); } }
   for (let i=queue.length-1;i>=0;i--){ queue[i].t-=dt; if(queue[i].t<=0){ const q=queue[i]; queue.splice(i,1); q.fn(); } }
   if (held){ let tx=ptr.x, ty=ptr.y;
     const h=findHole({...held,x:ptr.x,y:ptr.y},false); if(h){ tx+=(h.h.x-tx)*.35; ty+=(h.h.y-ty)*.35; }
@@ -1775,7 +1779,8 @@ function updateHUD(){
   $('#undo').disabled=!L.history.length||L.done;
   const nests=machines.filter(m=>m.type==='nest');
   $('#hint').innerHTML = (nests.length && nests.every(m=>m.used) && !L.done) ? 'Every Nest is used. <b>Undo</b> or <b>Restart</b> to try a different pairing.'
-    : (L.def.hint || 'Forgot how something works? Check the <b>Notebook</b>.');
+    : (levelClock.t>60 && !L.done) ? 'Forgot how something works? Check the <b>Notebook</b>.'   // only after a minute on the same level
+    : (L.def.hint || '');
 }
 $('#undo').addEventListener('click',()=>{ audio(); undo(); });
 $('#restart').addEventListener('click',()=>{ audio(); startLevel(S.world,L.idx); });
