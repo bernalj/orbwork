@@ -558,13 +558,13 @@ const WS = {
   label(t){ const n=+t[1]; return `${n} eye${n>1?'s':''}`; },
   accepts(){ return true; }, reqLabel(){ return ''; }, ghost(){ return null; }, seen(){},
   levels:[
-    {name:'Level',            orbs:['w2'],             machines:[], gate:ssGate({'-1':2}),          par:1, hint:'Everyone wants a ride on the <b>Seesaw</b>. Keep it level.'},
-    {name:'Reach',            orbs:['w1'],             machines:[], gate:ssGate({'-1':2}),          par:1, hint:''},
-    {name:'Trade places',     orbs:['w2'],             machines:[], gate:ssGate({'-2':3}),          par:1, hint:''},
-    {name:'Teamwork',         orbs:['w1','w2'],        machines:[], gate:ssGate({'-3':2,'-2':1}),   par:2, hint:''},
-    {name:'The middle',       orbs:['w1','w2'],        machines:[], gate:ssGate({'-2':3}),          par:2, hint:'Everyone has to be aboard.'},
-    {name:'Overshoot',        orbs:['w1','w1','w3'],   machines:[], gate:ssGate({'-1':2}),          par:3, hint:''},
-    {name:'Grand balance',    orbs:['w1','w2','w2','w2'], machines:[], gate:ssGate({'2':3,'-2':2}), par:4, hint:''},
+    {name:'Level',            orbs:['w2'],             machines:[], gate:ssGate({'-1':2}),          par:1, hint:'Everyone wants a ride. Nobody wants to be stuck up in the air.'},
+    {name:'Reach',            orbs:['w1'],             machines:[], gate:ssGate({'-1':2}),          par:1, hint:'Small, but it knows where to sit.'},
+    {name:'Trade places',     orbs:['w2'],             machines:[], gate:ssGate({'-2':3}),          par:1, hint:'Two is company. Three is a balancing act.'},
+    {name:'Teamwork',         orbs:['w1','w2'],        machines:[], gate:ssGate({'-3':2,'-2':1}),   par:2, hint:'Friends ride together.'},
+    {name:'The middle',       orbs:['w1','w2'],        machines:[], gate:ssGate({'-2':3}),          par:2, hint:'The best seat in the park is not where you think.'},
+    {name:'Heavyweights',     orbs:['w2','w3','w6'],   machines:[], gate:ssGate({'2':4}),           par:3, hint:'Six eyes, zero patience.'},
+    {name:'Grand balance',    orbs:['w1','w2','w5','w6'], machines:[], gate:ssGate({'1':6}),        par:4, hint:'Four new friends and one very stubborn regular.'},
   ],
 };
 /* ======================= WORLD 7 · THE LIGHTHOUSE ======================= */
