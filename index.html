@@ -573,7 +573,7 @@ const WL = {
   blurb:'Blobs made of light, and glass that light passes through. What is a color made of?',
   gatePlate:['#d9dde8','#8f97ad','#4b5269'],
   look(o){ const glass=o.t[0]==='F', c=o.t.slice(1);
-    return glass ? {hex:LCOL[c], face:'critter', mood:'happy', glass:true, bounce:.2, voice:'glass'} : {hex:LCOL[c], face:'critter', mood:'happy', glow:true, bounce:.4, voice:'light'}; },
+    return glass ? {hex:LCOL[c], face:'critter', mood:'happy', glass:true, bounce:.2, voice:'glass', ch:c} : {hex:LCOL[c], face:'critter', mood:'happy', glow:true, bounce:.4, voice:'light', ch:c}; },
   radius(o){ return R; },
   label(t){ const c=t.slice(1); return t[0]==='F' ? `${LNAME[c]} glass` : `${LNAME[c]} light`; },
   react(mt,ts){ const r=lightReact(mt,ts); if (r.fail) return {fail:r.fail};
@@ -587,8 +587,9 @@ const WL = {
     {name:'Red and Green',      orbs:['Lr','Lg'],                       machines:['lamp'],                  gate:['Lrg'],             par:1, hint:'The lighthouse keeper is afraid of the dark.'},
     {name:'Inside yellow',      orbs:['Lrg'],                           machines:['prism'],                 gate:['Lr','Lg'],         par:1, hint:'Light blobs glow brighter when they’re happy. They’re always happy.'},
     {name:'Colored glass',      orbs:['Lrgb','Fgb'],                    machines:['filter'],                gate:['Lgb'],             par:1, hint:'Glass blobs are see-through, and a little bit shy.'},
+    {name:'Lemon squeeze',      orbs:['Lr','Lrg','Fgb'],                machines:['filter'],                gate:['Lg'],              par:1, hint:'The lighthouse keeper wears sunglasses indoors.'},
+    {name:'Double glazing',     orbs:['Lrgb','Fgb','Frb','Frg'],        machines:['filter'],                gate:['Lb'],              par:2, hint:'Very energy efficient. Very hard to see through.'},
     {name:'Red glass',          orbs:['Fr','Frg','Lb','Lrg','Lrg'],     machines:['lamp','filter'],         gate:['Lr','Lrb'],        par:3, hint:'Red light refuses to wear sunglasses.'},
-    {name:'Too much magenta',   orbs:['Lg','Lgb','Lrb','Lrb','Lrgb'],   machines:['lamp','prism'],          gate:['Lgb','Lgb','Lrg'], par:3, hint:'Nobody can agree whether magenta is a real color.'},
     {name:'Two yellows',        orbs:['Fb','Fgb','Lrgb','Lrgb'],        machines:['lamp','prism','filter'], gate:['Lrg','Lrg'],       par:4, hint:'Yellow light tells the same joke every night.'},
     {name:'No shortcuts',       orbs:['Fg','Frb','Lrgb','Lrgb'],        machines:['lamp','prism','filter'], gate:['Lgb','Lrb','Lrg'], par:5, hint:'The lighthouse has never once seen a boat.'},
   ],
@@ -1181,6 +1182,10 @@ function chipT(t, wi=S.world, opts={}){
     inner=`<circle cx="7" cy="9" r="1.7" fill="#24110a"/><circle cx="13" cy="9" r="1.7" fill="#24110a"/>`+
       (grump?`<path d="M5 5.6 8.6 7M15 5.6 11.4 7M7.2 14.6Q10 12.2 12.8 14.6" stroke="#24110a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`
             :`<path d="M7.4 12.6Q10 15 12.6 12.6" stroke="#24110a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`); }
+  if (l.ch){ const dots=['r','g','b'].map((c,i)=>`<circle cx="${6+i*4}" cy="4.6" r="1.55" fill="${l.ch.includes(c)?CHC[c]:'#2a2650'}" stroke="${l.ch.includes(c)?'#fff':'#9a90b0'}" stroke-width=".5"/>`).join('');
+    return l.glass
+      ? `<svg class="chip" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="${l.hex}" fill-opacity=".35" stroke="${INK}" stroke-width="1.3"/><circle cx="10" cy="10" r="6.6" fill="none" stroke="#fff" stroke-width="1.2" opacity=".9"/>${dots}</svg>`
+      : `<svg class="chip" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.6" fill="${l.hex}" opacity=".35"/><circle cx="10" cy="10" r="8" fill="${l.hex}" stroke="${INK}" stroke-width="1.2"/><circle cx="7.4" cy="8" r="1.8" fill="#fff" opacity=".7"/>${dots}</svg>`; }
   return `<svg class="chip" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="${l.hex}" stroke="${INK}" stroke-width="1.3"/><circle cx="7" cy="6.5" r="2" fill="${hi}" opacity=".6"/>${inner}</svg>`;
 }
 
@@ -1461,6 +1466,8 @@ function resolveMachine(m){
       let alive=ins;
       if (res.transform){
         const gone=ins.filter((o,i)=>res.transform[i]===null);
+        if (m.type==='filter') ins.forEach((o,i)=>{ if (o.t[0]!=='L') return; const after=res.transform[i]?res.transform[i].slice(1):'', h=m.holesPos[i];   /* what the glass stops, falls away */
+          o.t.slice(1).split('').filter(c=>!after.includes(c)).forEach((c,k)=>{ for (let n=0;n<9;n++) parts.push({x:h.x+(Math.random()-.5)*HR, y:h.y-HR*.3, vx:(Math.random()-.5)*160, vy:-80-Math.random()*120, life:0, max:.9+k*.1, c:CHC[c], sz:R*.16, g:520}); }); });
         ins.forEach((o,i)=>{ const nt=res.transform[i]; if(nt===null) return; const was=o.t; o.t=nt; if(was!==o.t){ const h=m.holesPos[i]; burst(h.x,h.y,lookOf(o).hex,12,240); o.blinkT=0; } });
         gone.forEach(o=>{ const h=m.holesPos[o.hole.i], hex=lookOf(o).hex; burst(h.x,h.y,hex,18,320); ring(h.x,h.y,hex,HR*2.4); removeOrb(o); });
         if (gone.length){ sfx.chomp(gone.length); floatText(cx,m.rect.y-4,gone.length>1?'Chomp chomp!':'Chomp!','#ffd27a'); }
@@ -1788,6 +1795,13 @@ function personaFx(o,r,P,top,isHeld){
   if (P==='e'){ const tw=.6+.4*Math.sin(time*6+o.id); ctx.fillStyle=`rgba(255,250,210,${tw})`;
     [[-.7,-.75],[.72,-.62]].forEach(([sx,sy],k)=>{ const s=r*(.12+.04*k); ctx.save(); ctx.translate(sx*r,sy*r); ctx.rotate(time*2); ctx.beginPath(); for(let i=0;i<8;i++){ const a=i*Math.PI/4, rad=i%2?s*.35:s; ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad); } ctx.fill(); ctx.restore(); }); }
 }
+/* Lighthouse: three little dots on top of every Light/Glass blob show which of red, green and blue it holds */
+const CHC={r:'#ff4d4d', g:'#4dff6e', b:'#4d8bff'};
+function chanPips(l,r){ const glass=!!l.glass;
+  ['r','g','b'].forEach((c,i)=>{ const a=-Math.PI/2+(i-1)*.62, x=Math.cos(a)*r*.62, y=Math.sin(a)*r*.62, pr=r*.15, on=l.ch.includes(c);
+    ctx.beginPath(); ctx.arc(x,y,pr,0,7);
+    if (on){ ctx.fillStyle=CHC[c]; ctx.fill(); ctx.strokeStyle=glass?'rgba(255,255,255,.9)':'rgba(30,25,60,.75)'; ctx.lineWidth=Math.max(1,r*.05); ctx.stroke(); }
+    else { ctx.fillStyle='rgba(20,18,40,.35)'; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=Math.max(1,r*.04); ctx.stroke(); } }); }
 const AC={G:'#ffb02e', g:'#3f95f2', R:'#ff4f6d', W:'#f6f2ff', Y:'#ffd23f', B:'#4aa8ff', '?':'#9a90b0'};
 function appendages(l,r,ghost){
   if (l.crown){ ctx.fillStyle='#2f6b3a'; ctx.strokeStyle='#173d1f'; ctx.lineWidth=1;
@@ -1847,6 +1861,7 @@ function drawOrb(o,x,y,scale=1,alpha=1,ghost=false){
   if (ghost) ctx.globalAlpha=Math.min(1,alpha*1.8);
   if (l.face==='pip') pipFace(o,r,ghost,l); else if (l.face==='critter') critterFace(o,r,ghost,l); else if (l.face==='remix') remixFace(o,r,ghost,l); else glyph(o,r);
   if (o.glare && !ghost) angerFx(o,r);
+  if (l.ch) chanPips(l,r);
   if (l.baby && l.face==='critter' && l.line){ shellCap(r, l.line==='P'); if (l.line==='P') petals(l,r); }
   ctx.restore();
   if (l.badge && !ghost){ ctx.font=`800 ${Math.max(10,Math.round(r*.48))}px Nunito, system-ui, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -2082,9 +2097,19 @@ function renderNB(){
   } else if (nbTab===5){
     html+=ruleBox('Balance','',rulesFor('ws','balance'),'Put someone on the Seesaw and watch which way it tips.');
   } else if (nbTab===6){
-    const seen=seenList('wl|',()=>true,(p,v)=>`<span>${p.split('+').map(x=>chipT(x,6)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v==='-'?'darkness':v.split(',').map(x=>chipT(x,6)).join('')}</span>`);
-    html+=ruleBox('Light','',rulesFor('wl','light'),'Try the Lamp.', seen.length?`<div class="seen">${seen.join('')}</div>`:'');
-    html+=ruleBox('Glass','',rulesFor('wl','glass'),'Shows up in a later level.');
+    const fmt=(p,v)=>`<span>${p.split('+').map(x=>chipT(x,6)).join('')} → ${v==='x'?'<span class="x">nothing</span>':v==='-'?'darkness':v.split(',').map(x=>chipT(x,6)).join('')}</span>`;
+    const lightSeen=seenList('wl|',p=>!p.includes('F'),fmt), glassSeen=seenList('wl|',p=>p.includes('F'),fmt);
+    /* the keeper's color wheel: red, green and blue light, and what they make where they overlap */
+    const wheel=`<svg viewBox="0 0 200 180" style="width:100%;max-width:260px;display:block;margin:6px auto 2px" role="img" aria-label="Color wheel: red, green and blue light overlap into yellow, cyan, magenta and white">
+      <rect x="0" y="0" width="200" height="180" rx="14" fill="#1b1a33"/>
+      <g style="mix-blend-mode:screen;isolation:isolate">
+        <circle cx="72" cy="70" r="46" fill="#ff2a2a" style="mix-blend-mode:screen"/><circle cx="128" cy="70" r="46" fill="#2aff4a" style="mix-blend-mode:screen"/><circle cx="100" cy="116" r="46" fill="#2a5cff" style="mix-blend-mode:screen"/></g>
+      <g font-family="Nunito,system-ui,sans-serif" font-weight="800" font-size="10.5" text-anchor="middle" fill="#1b1a33">
+        <text x="52" y="58" fill="#fff">Red</text><text x="148" y="58" fill="#1b1a33">Green</text><text x="100" y="150" fill="#fff">Blue</text>
+        <text x="100" y="52">Yellow</text><text x="77" y="104" font-size="9.5">Magenta</text><text x="123" y="104" font-size="9.5">Cyan</text><text x="100" y="88">White</text></g></svg>`;
+    html+=`<div class="box"><h3><span class="l">Color wheel</span></h3>${wheel}<p style="margin:4px 0 0;font-size:.8rem;color:var(--muted)">The three dots on a blob show which of red, green and blue it holds.</p></div>`;
+    html+=ruleBox('Lamp and Prism','',rulesFor('wl','light'),'Try the Lamp.', lightSeen.length?`<div class="seen">${lightSeen.join('')}</div>`:'');
+    html+=ruleBox('Glass','',rulesFor('wl','glass'),'Shows up in a later level.', glassSeen.length?`<div class="seen">${glassSeen.join('')}</div>`:'');
   } else {
     const seen=seenList('w3|',()=>true,(p,v)=>`<span>${p.split('+').map(x=>chipT(W3.ghost(x),2)).join(' × ')} → ${v.map(s=>s==='x'?'<span class="x">no babies</span>':s).join(' / ')}</span>`);
     html+=ruleBox('Nest', '', rulesFor('w3','nest'), 'Put two parents in a Nest and watch the babies’ ears.');
