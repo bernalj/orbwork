@@ -2215,7 +2215,8 @@ function applyTheme(){ const t=PREF.theme||'light', dark=t==='dark'||(t==='auto'
   if (darkTheme()===dark && document.documentElement.dataset.theme) return;
   document.documentElement.dataset.theme=dark?'dark':'light';
   const m=$('meta[name=theme-color]'); if (m) m.content=dark?'#1d1c30':'#f6eddc';
-  tBg=null; if (W>1) layout(); }
+  tBg=null; if (W>1) layout();
+  if (scene==='play'){ if (L) draw(); } else if (scene!=='splash') titleDraw(); }   // the board behind Settings isn't redrawn while it's open: repaint it now
 function syncTheme(){ document.querySelectorAll('#theme-seg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.th===(PREF.theme||'light')))); }
 document.querySelectorAll('#theme-seg button').forEach(b=>b.addEventListener('click',()=>{ uiTick(); PREF.theme=b.dataset.th; savePrefs(); syncTheme(); applyTheme(); }));
 darkMQ.addEventListener('change', applyTheme);
